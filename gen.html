@@ -190,12 +190,40 @@
   });
   if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
 
+  function isSameTeam(a, b) {
+      return JSON.stringify(a) === JSON.stringify(b);
+  }
+
   function startSync() {
-      // 1. SYNC GENERATED TEAM
+      // 1. SYNC GENERATED TEAM WITH INTELLIGENT NAVIGATION CHECK
       db.ref('gen/team').on('value', snap => {
           if(document.getElementById('search-input').value.trim() !== '') return;
           var team = snap.val() || [];
-          showFinal(team, false); 
+          
+          if (team.length === 0) {
+              renderGrid([]);
+              return;
+          }
+
+          // Check if this update matches our current state (no action needed)
+          if (isSameTeam(team, HISTORY[HIST_PTR])) return;
+
+          // Check if this update is a "Back" navigation
+          if (HIST_PTR > 0 && isSameTeam(team, HISTORY[HIST_PTR - 1])) {
+              HIST_PTR--;
+              renderGrid(team);
+              return;
+          }
+
+          // Check if this update is a "Forward" navigation
+          if (HIST_PTR < HISTORY.length - 1 && isSameTeam(team, HISTORY[HIST_PTR + 1])) {
+              HIST_PTR++;
+              renderGrid(team);
+              return;
+          }
+
+          // Otherwise, it's a completely new generation
+          showFinal(team, true); 
       });
 
       // 2. SYNC USED POKEMON
@@ -327,8 +355,8 @@
        if(!SETTINGS.dupes) pool.splice(r,1); 
     }
     
+    // Only update DB. The listener handles the history push and rendering for everyone.
     db.ref('gen/team').set(picked);
-    showFinal(picked, true); 
   }
 
   // --- SEARCH LOGIC ---
@@ -574,16 +602,18 @@
       }
   }
   
-  // HISTORY
+  // HISTORY NAV (UPDATED: SYNCS VIEW FOR EVERYONE)
   function goHistory(d){ 
       var n = HIST_PTR + d; 
       if(n >= 0 && n < HISTORY.length){ 
           HIST_PTR = n; 
-          renderGrid(HISTORY[n]); 
+          renderGrid(HISTORY[n]);
+          // Sync this view to everyone
+          db.ref('gen/team').set(HISTORY[n]); 
       } 
   }
   
-  // CLEAR ACTIONS (Immediate Visual Clear + DB Clear)
+  // CLEAR ACTIONS (Reset Memory ONLY, no column clear)
   function doClear(){ 
       FILTERS = { gen:[], type:[], color:[] };
       // Sync Filters Clear
@@ -592,7 +622,7 @@
       document.getElementById('gen-grid').innerHTML = '';
       db.ref('gen/team').set(null); 
       document.getElementById('search-input').value = ""; 
-      window.parent.postMessage({ type: 'requestClearCols' }, '*');
+      // REMOVED: window.parent.postMessage({ type: 'requestClearCols' }, '*');
   }
   
   function doReset(){ 
@@ -600,7 +630,7 @@
       document.getElementById('gen-grid').innerHTML = ''; 
       db.ref('gen/team').set(null); 
       db.ref('gen/used').set(null); 
-      window.parent.postMessage({ type: 'requestClearCols' }, '*');
+      // REMOVED: window.parent.postMessage({ type: 'requestClearCols' }, '*');
   }
 </script>
 </body>
