@@ -60,7 +60,13 @@
     overflow: hidden;
     animation: slideIn 0.3s ease-out;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    transition: transform 0.2s, border-color 0.2s;
   }
+  
+  /* Dragging Styles */
+  .match-block.dragging { opacity: 0.4; transform: scale(0.98); }
+  .match-block.drop-target { border-top: 4px solid var(--theme-green); margin-top: -3px; } /* Visual cue line */
+
   @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
   /* Date Header */
@@ -75,6 +81,19 @@
     justify-content: space-between;
     align-items: center;
   }
+  
+  /* Drag Handle */
+  .drag-handle {
+      cursor: grab;
+      color: #555;
+      margin-right: 12px;
+      font-size: 14px;
+      padding: 4px;
+      transition: color 0.2s;
+  }
+  .drag-handle:hover { color: var(--theme-green); }
+  .drag-handle:active { cursor: grabbing; }
+
   .chal-badge {
     background: #6e00ff;
     color: #fff;
@@ -296,8 +315,8 @@
           return;
       }
 
-      // Sort Newest First
-      const entries = Object.entries(raw).sort((a,b) => b[1].timestamp - a[1].timestamp);
+      // Sort Newest First (Descending Timestamp)
+      const entries = Object.entries(raw).sort((a,b) => (b[1].timestamp||0) - (a[1].timestamp||0));
 
       entries.forEach(([key, data]) => {
           renderMatchBlock(key, data, container);
@@ -305,10 +324,9 @@
   });
 
   function renderMatchBlock(key, data, container) {
-      // 1. Determine Display Data
-      let dateStr = new Date(data.timestamp).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' });
+      let ts = data.timestamp || 0;
+      let dateStr = new Date(ts).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' });
       
-      // LOGIC FIX: Check for Challenge flag OR if rich record data exists (e.g. modes per game)
       let isChallenge = (data.settings && data.settings.mode === 'Challenge');
       let hasRichData = Array.isArray(data.record) && data.record.some(r => r.mode || r.side);
       let showDetails = isChallenge || hasRichData;
@@ -318,10 +336,8 @@
       let points = data.dashSnapshot ? data.dashSnapshot.points : (data.points || "-");
       let sp = data.dashSnapshot ? data.dashSnapshot.sp : (data.sp || "4"); 
 
-      // If Challenge mode, mode/side are "Various" in the main summary
       if(showDetails) { mode = "Various"; side = "Various"; }
 
-      // Calculate Record String
       let recordStr = "???";
       if(Array.isArray(data.record)) {
           recordStr = data.record.map(r => r.result).join(' - ');
@@ -329,7 +345,6 @@
           recordStr = data.record; 
       }
 
-      // Calculate Links
       let linkHtml = "";
       if(Array.isArray(data.links)) {
          data.links.forEach((l, idx) => {
@@ -344,7 +359,6 @@
           });
       }
 
-      // Build Details HTML (For Challenge Mode)
       let detailsHtml = "";
       let expandBtn = "";
       
@@ -366,11 +380,22 @@
           expandBtn = `<button class="act-btn exp-btn" id="btn-${key}" onclick="toggleDetails('${key}')"><i class="fas fa-chevron-down"></i></button>`;
       }
 
-      // 2. Build Block HTML
       let html = `
-      <div class="match-block">
+      <div class="match-block" 
+           id="block-${key}"
+           draggable="true" 
+           data-id="${key}" 
+           data-ts="${ts}"
+           ondragstart="dragStart(event)" 
+           ondragover="dragOver(event)" 
+           ondragleave="dragLeave(event)" 
+           ondrop="dragDrop(event)">
+           
         <div class="match-date-row">
-            <span>${dateStr}</span>
+            <div style="display:flex; align-items:center;">
+                <i class="fas fa-bars drag-handle"></i>
+                <span>${dateStr}</span>
+            </div>
             ${showDetails ? '<span class="chal-badge">CHALLENGE MODE</span>' : ''}
         </div>
         
@@ -403,6 +428,59 @@
       </div>
       `;
       container.innerHTML += html;
+  }
+
+  // --- DRAG & DROP LOGIC ---
+  let draggedId = null;
+
+  function dragStart(e) {
+      draggedId = e.currentTarget.getAttribute('data-id');
+      e.currentTarget.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function dragOver(e) {
+      e.preventDefault(); 
+      e.currentTarget.classList.add('drop-target');
+  }
+
+  function dragLeave(e) {
+      e.currentTarget.classList.remove('drop-target');
+  }
+
+  function dragDrop(e) {
+      e.preventDefault();
+      let targetEl = e.currentTarget;
+      targetEl.classList.remove('drop-target');
+      document.getElementById('block-' + draggedId).classList.remove('dragging');
+
+      let targetId = targetEl.getAttribute('data-id');
+      if (draggedId === targetId) return;
+
+      // 1. Get Timestamps of neighbors to calculate new time
+      let targetTime = parseFloat(targetEl.getAttribute('data-ts'));
+      
+      // Find the element *before* the target in the DOM (Visually above it)
+      // Since list is Descending: Above = Newer (Higher TS), Below = Older (Lower TS)
+      let prevEl = targetEl.previousElementSibling; 
+      
+      let newTime;
+      
+      if (prevEl) {
+          // Dropped between two items
+          let prevTime = parseFloat(prevEl.getAttribute('data-ts'));
+          // Calculate average to sit between them
+          newTime = (targetTime + prevTime) / 2;
+      } else {
+          // Dropped at the very top (Newest)
+          // Add a buffer to the current top time
+          newTime = targetTime + 100000; 
+          // Ideally use Date.now() if it's larger, but purely relative math is safer to force order
+          if(newTime <= Date.now()) newTime = Date.now() + 1000;
+      }
+
+      // 2. Update Firebase
+      db.ref('history/' + draggedId).update({ timestamp: newTime });
   }
 
   // --- ACTIONS ---
