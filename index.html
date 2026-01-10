@@ -28,21 +28,17 @@
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #444; transition: 0.3s; }
     .status-dot.active { background: #00ff9d; box-shadow: 0 0 10px #00ff9d; }
     
-    /* NOW PLAYING WIDGET - NARROWER & WIDER THUMB */
+    /* NOW PLAYING WIDGET */
     .np-widget { flex: 0 1 auto; width: 420px; height: 42px; background: rgba(0,0,0,0.6); border: var(--border); border-radius: 8px; display: flex; align-items: center; overflow: hidden; margin: 0 20px; padding-right: 10px; }
-    
-    /* Wider Thumbnail (16:9 approx) */
     .np-thumb-mini { width: 75px; height: 100%; background: #111; object-fit: cover; border-right: 1px solid #333; }
-    
     .np-info { flex: 1; overflow: hidden; padding: 0 12px; white-space: nowrap; mask-image: linear-gradient(90deg, transparent, #fff 5%, #fff 95%, transparent); }
     .np-text { font-size: 0.85rem; font-weight: 700; display: inline-block; color: var(--accent); }
-    
     .np-controls { display: flex; align-items: center; gap: 5px; margin-right: 8px; border-right: 1px solid #333; padding-right: 8px; }
     .media-tiny-btn { width: 28px; height: 28px; border-radius: 4px; border: none; background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
     .media-tiny-btn:hover { background: rgba(255,255,255,0.15); color: var(--accent); }
     .media-tiny-btn .material-icons { font-size: 18px; }
 
-    /* VOLUME CONTROL (TOP BAR) */
+    /* VOLUME CONTROL */
     .top-vol { display: flex; align-items: center; gap: 6px; }
     .top-vol-slider { -webkit-appearance: none; width: 60px; height: 3px; background: #444; border-radius: 2px; outline: none; }
     .top-vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 8px; height: 8px; background: #ccc; border-radius: 50%; cursor: pointer; }
@@ -62,6 +58,7 @@
     .p-ctrls { display: flex; flex-direction: column; gap: 4px; }
     .tiny-btn { width: 28px; height: 28px; background: #1a1a1a; border: 1px solid #444; color: #888; cursor: pointer; border-radius: 6px; font-weight: 900; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
     .tiny-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    
     .slot-list { display: flex; flex-direction: column; gap: 10px; flex: 1; }
     .slot { flex: 1; min-height: 65px; background: #080808; border: 1px dashed #333; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s; position: relative; overflow: hidden; }
     .slot:hover { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
@@ -70,8 +67,13 @@
     @keyframes snapIn { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
     .slot img { height: 90%; width: auto; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); z-index: 2; pointer-events: none; animation: snapIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     .slot-txt { display: none; }
-    .col-btn { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #666; font-weight: 800; cursor: pointer; border-radius: 8px; font-size: 0.75rem; letter-spacing: 1px; transition: 0.2s; }
+    
+    /* Column Buttons */
+    .col-btn-row { display: flex; gap: 5px; }
+    .col-btn { flex: 1; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #666; font-weight: 800; cursor: pointer; border-radius: 8px; font-size: 0.75rem; letter-spacing: 1px; transition: 0.2s; }
     .col-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .col-btn.export { flex: 0 0 40px; display: flex; align-items: center; justify-content: center; }
+
     .col-c { display: flex; flex-direction: column; background: rgba(15,15,15,0.4); backdrop-filter: var(--glass-blur); border: var(--border); border-radius: 16px; overflow: hidden; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
     .tab-bar { display: flex; height: 55px; padding: 0 20px; align-items: center; gap: 20px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; justify-content: center; }
     .tab { position: relative; padding: 10px 20px; font-weight: 800; color: #666; cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85rem; }
@@ -117,7 +119,10 @@
     <div class="col-p">
       <div class="p-header"><div class="p-name" style="color:var(--red)">ALB</div><div class="p-score" id="score-alb">0</div><div class="p-ctrls"><div class="tiny-btn" onclick="modScore('alb', 'add')">+</div><div class="tiny-btn" onclick="modScore('alb', 'sub')">-</div></div></div>
       <div class="slot-list" id="slots-alb"></div>
-      <button class="col-btn" onclick="clearCol('alb')">Clear</button>
+      <div class="col-btn-row">
+        <button class="col-btn" onclick="clearCol('alb')">Clear</button>
+        <button class="col-btn export" onclick="exportTeam('alb')" title="Export to Showdown"><i class="fas fa-file-export"></i></button>
+      </div>
     </div>
 
     <div class="col-c">
@@ -138,13 +143,18 @@
     <div class="col-p">
       <div class="p-header"><div class="p-name" style="color:var(--blue)">BIU</div><div class="p-score" id="score-biu">0</div><div class="p-ctrls"><div class="tiny-btn" onclick="modScore('biu', 'add')">+</div><div class="tiny-btn" onclick="modScore('biu', 'sub')">-</div></div></div>
       <div class="slot-list" id="slots-biu"></div>
-      <button class="col-btn" onclick="clearCol('biu')">Clear</button>
+      <div class="col-btn-row">
+        <button class="col-btn" onclick="clearCol('biu')">Clear</button>
+        <button class="col-btn export" onclick="exportTeam('biu')" title="Export to Showdown"><i class="fas fa-file-export"></i></button>
+      </div>
     </div>
   </div>
 
   <script>
     window.GEN_DRAG_PAYLOAD = null;
     var lastTopVol = 100;
+    // Track returning slot index to fix sync ghosts
+    window.returningIndex = -1;
 
     db.ref('dashboard').on('value', snap => {
         if(window.syncLock) return; 
@@ -156,7 +166,6 @@
         if(s.slotsBiu) renderColumn('biu', s.slotsBiu);
     });
 
-    // SYNC TOP BAR WITH MUSIC STATUS
     db.ref('music/status').on('value', snap => {
         const m = snap.val() || {};
         const titleEl = document.getElementById('np-title-top');
@@ -184,12 +193,10 @@
             });
         } 
         else {
-             // music.html now listens to this!
              db.ref('music/cmd').set({ action: action, time: Date.now() });
         }
     };
 
-    // --- VOLUME CONTROL (SEND TO IFRAME) ---
     window.sendVolume = function(val) {
         let frame = document.getElementById('frame-music');
         if(frame && frame.contentWindow) {
@@ -218,30 +225,39 @@
         else icon.innerText = "volume_up";
     }
 
-    // --- EXISTING DASHBOARD LOGIC (Drag/Score/etc) ---
     window.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'requestClearCols') {
             clearCol('alb'); clearCol('biu');
         }
-        // FIX: Handle Drop Message from Gen Iframe
         if (event.data && event.data.type === 'GENERATOR_DROP') {
             handleReturnLogic();
         }
     });
 
     function handleReturnLogic() {
-        if(window.returningId) {
+        if(window.returningId && window.returningElement) {
              let frame = document.getElementById('frame-gen');
              if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
-             if(window.returningElement) {
-                 window.returningElement.innerHTML = "";
-                 window.returningElement.classList.remove('filled');
-                 window.returningElement.draggable = false;
-                 var parentId = window.returningElement.parentElement.id;
-                 var side = parentId.split('-')[1]; 
+             
+             // Visual cleanup
+             window.returningElement.innerHTML = "";
+             window.returningElement.classList.remove('filled');
+             window.returningElement.draggable = false;
+             
+             var parentId = window.returningElement.parentElement.id;
+             var side = parentId.split('-')[1]; 
+             
+             // --- GHOST FIX: DIRECT DATABASE UPDATE ---
+             // Instead of scraping the whole DOM (which might be slow/buggy), we nullify this specific slot in DB immediately.
+             if(window.returningIndex !== -1) {
+                 var dbKey = side === 'alb' ? 'slotsAlb' : 'slotsBiu';
+                 db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
+             } else {
+                 // Fallback to old method just in case index wasn't captured
                  saveColumnState(side);
              }
-             window.returningId = null; window.returningElement = null;
+             
+             window.returningId = null; window.returningElement = null; window.returningIndex = -1;
         }
     }
 
@@ -269,10 +285,12 @@
         if(!data) { try { data = JSON.parse(ev.dataTransfer.getData("text/plain")); } catch(e){} }
         if(data) { 
             window.syncLock = true;
-            ev.currentTarget.innerHTML = `<img src="${data.img}"><div class="slot-txt" data-id="${data.id}">${data.name}</div>`; 
+            // --- SPRITE FIX: Added onerror fallback ---
+            ev.currentTarget.innerHTML = `<img src="${data.img}" onerror="this.src='https://play.pokemonshowdown.com/sprites/gen5/${data.id}.png'"><div class="slot-txt" data-id="${data.id}">${data.name}</div>`; 
             ev.currentTarget.classList.add('filled'); 
             ev.currentTarget.draggable = true;
-            ev.currentTarget.ondragstart = function(e) { slotDragStart(e, data.id); };
+            let idx = ev.currentTarget.dataset.idx;
+            ev.currentTarget.ondragstart = function(e) { slotDragStart(e, data.id, idx); };
             var parentId = ev.currentTarget.parentElement.id;
             var side = parentId.split('-')[1]; 
             saveColumnState(side);
@@ -283,10 +301,13 @@
         } 
     };
     
-    function slotDragStart(e, id) {
+    // Updated to capture Index
+    function slotDragStart(e, id, idx) {
         e.dataTransfer.setData("text/return", id);
         e.dataTransfer.effectAllowed = "move";
-        window.returningId = id; window.returningElement = e.target;
+        window.returningId = id; 
+        window.returningElement = e.target;
+        window.returningIndex = idx; // Store the index being dragged
     }
 
     window.allowReturnDrop = function(ev) { if(window.returningId) ev.preventDefault(); };
@@ -311,6 +332,37 @@
         saveColumnState(p);
         setTimeout(() => window.syncLock = false, 1000);
     };
+    
+    // --- NEW: Export to Showdown ---
+    window.exportTeam = function(side) {
+        var container = document.getElementById('slots-' + side);
+        var kids = container.getElementsByClassName('slot');
+        var exportText = "";
+        var count = 0;
+        
+        for(var i=0; i<kids.length; i++) {
+            var txt = kids[i].querySelector('.slot-txt');
+            if(txt) {
+                // Showdown format: Just the name works for default imports
+                exportText += txt.innerText + "\n";
+                // Add common defaults so Showdown parses it nicely
+                // exportText += "Level: 100\n\n"; 
+                exportText += "\n";
+                count++;
+            }
+        }
+        
+        if(count === 0) {
+            alert("Column is empty!");
+            return;
+        }
+        
+        navigator.clipboard.writeText(exportText).then(function() {
+            alert(side.toUpperCase() + "'s team copied to clipboard! Paste into Showdown Teambuilder.");
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+        });
+    }
 
     function saveColumnState(side) {
         var slots = [];
@@ -332,11 +384,13 @@
         for(var i=0; i<kids.length; i++) {
             if(data[i]) {
                 if(!kids[i].classList.contains('filled') || kids[i].innerText !== data[i].name) {
-                    kids[i].innerHTML = `<img src="${data[i].img}"><div class="slot-txt" data-id="${data[i].id}">${data[i].name}</div>`;
+                    // --- SPRITE FIX: Added onerror fallback to render logic too ---
+                    kids[i].innerHTML = `<img src="${data[i].img}" onerror="this.src='https://play.pokemonshowdown.com/sprites/gen5/${data[i].id}.png'"><div class="slot-txt" data-id="${data[i].id}">${data[i].name}</div>`;
                     kids[i].classList.add('filled');
                     kids[i].draggable = true;
                     let pid = data[i].id; 
-                    kids[i].ondragstart = function(e) { slotDragStart(e, pid); };
+                    let idx = i; // capture index
+                    kids[i].ondragstart = function(e) { slotDragStart(e, pid, idx); };
                 }
             } else {
                 if(kids[i].classList.contains('filled')) {
