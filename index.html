@@ -23,10 +23,15 @@
 
     /* TOP BAR */
     .top-bar { height: 60px; display: flex; align-items: center; padding: 0 25px; background: rgba(10,10,10,0.8); backdrop-filter: var(--glass-blur); border-bottom: var(--border); z-index: 1000; justify-content: space-between; }
+    
     .top-left { display: flex; align-items: center; gap: 15px; flex: 1; }
-    .status-badge { display: flex; align-items: center; gap: 8px; font-weight: bold; color: #888; font-size: 0.8rem; background: rgba(0,0,0,0.4); padding: 6px 14px; border-radius: 20px; border: var(--border); }
+    
+    .live-status-container { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+    .status-badge { display: flex; align-items: center; gap: 8px; font-weight: bold; color: #888; font-size: 0.8rem; background: rgba(0,0,0,0.4); padding: 4px 12px; border-radius: 20px; border: var(--border); }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #444; transition: 0.3s; }
     .status-dot.active { background: #00ff9d; box-shadow: 0 0 10px #00ff9d; }
+    
+    .presence-text { font-size: 10px; color: var(--accent); font-weight: 700; margin-left: 8px; opacity: 0.8; letter-spacing: 0.5px; display: flex; gap: 5px; }
     
     /* NOW PLAYING WIDGET */
     .np-widget { flex: 0 1 auto; width: 420px; height: 42px; background: rgba(0,0,0,0.6); border: var(--border); border-radius: 8px; display: flex; align-items: center; overflow: hidden; margin: 0 20px; padding-right: 10px; }
@@ -82,13 +87,28 @@
     .tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 3px; background: var(--accent); border-radius: 2px; box-shadow: 0 -2px 10px var(--accent); }
     .tab-content { flex: 1; overflow: hidden; display: none; height: 100%; width: 100%; position:relative; }
     .tab-content.active { display: block; }
+
+    /* LOADING OVERLAY */
+    #export-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 5000; display: none; justify-content: center; align-items: center; flex-direction: column; gap: 15px; backdrop-filter: blur(5px); }
+    .loading-spin { width: 40px; height: 40px; border: 4px solid #333; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .export-msg { color: #fff; font-weight: 700; font-size: 1.2rem; }
+
   </style>
 </head>
 <body>
+  
+  <div id="export-overlay">
+      <div class="loading-spin"></div>
+      <div class="export-msg">GENERATING STRATEGY...</div>
+  </div>
 
   <div class="top-bar">
     <div class="top-left">
-      <div class="status-badge"><div id="status-dot" class="status-dot active"></div> Live</div>
+      <div class="live-status-container">
+        <div class="status-badge"><div id="status-dot" class="status-dot active"></div> Live</div>
+        <div id="presence-list" class="presence-text"><i class="fas fa-users" style="font-size: 9px;"></i> 0 Online</div>
+      </div>
       
       <div class="np-widget">
         <img id="np-img-top" class="np-thumb-mini" src="">
@@ -153,9 +173,31 @@
   <script>
     window.GEN_DRAG_PAYLOAD = null;
     var lastTopVol = 100;
-    // Track returning slot index to fix sync ghosts
     window.returningIndex = -1;
+    
+    // --- PRESENCE LOGIC (COUNT ONLY) ---
+    var myId = Date.now().toString() + Math.random().toString().slice(2,5);
+    var presenceRef = db.ref('presence');
+    var connectedRef = db.ref('.info/connected');
+    
+    connectedRef.on('value', function(snap) {
+        if (snap.val() === true) {
+            var userRef = presenceRef.child(myId);
+            userRef.onDisconnect().remove();
+            // Just saving "true" is enough to count keys
+            userRef.set(true);
+        }
+    });
+    
+    presenceRef.on('value', function(snap) {
+        var val = snap.val() || {};
+        // Just count the number of keys in the object
+        var count = Object.keys(val).length;
+        document.getElementById('presence-list').innerHTML = `<i class="fas fa-users" style="font-size: 9px;"></i> ${count} Online`;
+    });
 
+
+    // --- DASHBOARD SYNC ---
     db.ref('dashboard').on('value', snap => {
         if(window.syncLock) return; 
         const s = snap.val() || {};
@@ -239,7 +281,6 @@
              let frame = document.getElementById('frame-gen');
              if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
              
-             // Visual cleanup
              window.returningElement.innerHTML = "";
              window.returningElement.classList.remove('filled');
              window.returningElement.draggable = false;
@@ -247,13 +288,10 @@
              var parentId = window.returningElement.parentElement.id;
              var side = parentId.split('-')[1]; 
              
-             // --- GHOST FIX: DIRECT DATABASE UPDATE ---
-             // Instead of scraping the whole DOM (which might be slow/buggy), we nullify this specific slot in DB immediately.
              if(window.returningIndex !== -1) {
                  var dbKey = side === 'alb' ? 'slotsAlb' : 'slotsBiu';
                  db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
              } else {
-                 // Fallback to old method just in case index wasn't captured
                  saveColumnState(side);
              }
              
@@ -285,7 +323,6 @@
         if(!data) { try { data = JSON.parse(ev.dataTransfer.getData("text/plain")); } catch(e){} }
         if(data) { 
             window.syncLock = true;
-            // --- SPRITE FIX: Added onerror fallback ---
             ev.currentTarget.innerHTML = `<img src="${data.img}" onerror="this.src='https://play.pokemonshowdown.com/sprites/gen5/${data.id}.png'"><div class="slot-txt" data-id="${data.id}">${data.name}</div>`; 
             ev.currentTarget.classList.add('filled'); 
             ev.currentTarget.draggable = true;
@@ -301,13 +338,12 @@
         } 
     };
     
-    // Updated to capture Index
     function slotDragStart(e, id, idx) {
         e.dataTransfer.setData("text/return", id);
         e.dataTransfer.effectAllowed = "move";
         window.returningId = id; 
         window.returningElement = e.target;
-        window.returningIndex = idx; // Store the index being dragged
+        window.returningIndex = idx;
     }
 
     window.allowReturnDrop = function(ev) { if(window.returningId) ev.preventDefault(); };
@@ -333,34 +369,66 @@
         setTimeout(() => window.syncLock = false, 1000);
     };
     
-    // --- NEW: Export to Showdown ---
-    window.exportTeam = function(side) {
+    // --- EXPORT WITH API STATS ---
+    window.exportTeam = async function(side) {
         var container = document.getElementById('slots-' + side);
         var kids = container.getElementsByClassName('slot');
         var exportText = "";
-        var count = 0;
+        var monsToFetch = [];
         
         for(var i=0; i<kids.length; i++) {
             var txt = kids[i].querySelector('.slot-txt');
-            if(txt) {
-                // Showdown format: Just the name works for default imports
-                exportText += txt.innerText + "\n";
-                // Add common defaults so Showdown parses it nicely
-                // exportText += "Level: 100\n\n"; 
-                exportText += "\n";
-                count++;
+            if(txt && txt.dataset.id) {
+                monsToFetch.push({ name: txt.innerText.trim(), id: txt.dataset.id });
             }
         }
         
-        if(count === 0) {
-            alert("Column is empty!");
-            return;
+        if(monsToFetch.length === 0) { alert("Column is empty!"); return; }
+
+        document.getElementById('export-overlay').style.display = 'flex';
+
+        for (let mon of monsToFetch) {
+            try {
+                let query = mon.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+                let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${query}`);
+                if(!res.ok) throw new Error("Not found");
+                let data = await res.json();
+                
+                let stats = data.stats; 
+                let sortedStats = [...stats].sort((a,b) => b.base_stat - a.base_stat);
+                let best1 = sortedStats[0].stat.name;
+                let best2 = sortedStats[1].stat.name;
+                
+                const statMap = { 'hp':'HP', 'attack':'Atk', 'defense':'Def', 'special-attack':'SpA', 'special-defense':'SpD', 'speed':'Spe' };
+                let natureStat = best1 === 'hp' ? best2 : best1;
+                let natureMap = { 'attack':'Adamant', 'defense':'Impish', 'special-attack':'Modest', 'special-defense':'Calm', 'speed':'Jolly' };
+                let nature = natureMap[natureStat] || 'Serious';
+
+                let levelMoves = data.moves.filter(m => m.version_group_details.some(d => d.move_learn_method.name === 'level-up'));
+                let moves = levelMoves.slice(-4).map(m => m.move.name);
+                moves = moves.map(m => m.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
+
+                exportText += `${mon.name} @ Leftovers\n`;
+                exportText += `Ability: ${data.abilities[0].ability.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}\n`;
+                exportText += `${nature} Nature\n`;
+                exportText += `EVs: 252 ${statMap[best1]} / 252 ${statMap[best2]} / 4 HP\n`;
+                
+                if(moves.length > 0) {
+                    moves.forEach(m => exportText += `- ${m}\n`);
+                } else {
+                    exportText += `- Tackle\n`;
+                }
+                exportText += `\n`;
+
+            } catch(e) {
+                console.log("Export fallback for", mon.name);
+                exportText += `${mon.name}\n\n`;
+            }
         }
-        
+
+        document.getElementById('export-overlay').style.display = 'none';
         navigator.clipboard.writeText(exportText).then(function() {
-            alert(side.toUpperCase() + "'s team copied to clipboard! Paste into Showdown Teambuilder.");
-        }, function(err) {
-            console.error('Could not copy text: ', err);
+            alert(side.toUpperCase() + "'s team (with Stats/Moves) copied to clipboard!");
         });
     }
 
@@ -384,12 +452,11 @@
         for(var i=0; i<kids.length; i++) {
             if(data[i]) {
                 if(!kids[i].classList.contains('filled') || kids[i].innerText !== data[i].name) {
-                    // --- SPRITE FIX: Added onerror fallback to render logic too ---
                     kids[i].innerHTML = `<img src="${data[i].img}" onerror="this.src='https://play.pokemonshowdown.com/sprites/gen5/${data[i].id}.png'"><div class="slot-txt" data-id="${data[i].id}">${data[i].name}</div>`;
                     kids[i].classList.add('filled');
                     kids[i].draggable = true;
                     let pid = data[i].id; 
-                    let idx = i; // capture index
+                    let idx = i; 
                     kids[i].ondragstart = function(e) { slotDragStart(e, pid, idx); };
                 }
             } else {
