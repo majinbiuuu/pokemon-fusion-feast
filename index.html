@@ -17,17 +17,27 @@
   <style>
     /* SHELL LAYOUT */
     html, body { 
-      background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; 
+      background: var(--bg); 
+      /* Dynamic Background Support */
+      background-position: center center;
+      background-size: cover;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      color: var(--text); font-family: 'Segoe UI', sans-serif; 
       height: 100vh; overflow: hidden; display: flex; flex-direction: column; margin: 0; padding: 0; font-size: 14px; 
+      transition: background 0.5s ease;
+    }
+    
+    /* Overlay to ensure text readability if background is bright */
+    body::before {
+        content: ''; position: fixed; top:0; left:0; width:100%; height:100%;
+        background: rgba(0,0,0,0.4); z-index: -1; pointer-events: none;
     }
 
     /* TOP BAR */
     .top-bar { height: 60px; display: flex; align-items: center; padding: 0 25px; background: rgba(10,10,10,0.8); backdrop-filter: var(--glass-blur); border-bottom: var(--border); z-index: 1000; justify-content: space-between; }
-    
     .top-left { display: flex; align-items: center; gap: 15px; flex: 1; }
-    
-    .live-status-container { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
-    .status-badge { display: flex; align-items: center; gap: 8px; font-weight: bold; color: #888; font-size: 0.8rem; background: rgba(0,0,0,0.4); padding: 4px 12px; border-radius: 20px; border: var(--border); }
+    .status-badge { display: flex; align-items: center; gap: 8px; font-weight: bold; color: #888; font-size: 0.8rem; background: rgba(0,0,0,0.4); padding: 6px 14px; border-radius: 20px; border: var(--border); }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #444; transition: 0.3s; }
     .status-dot.active { background: #00ff9d; box-shadow: 0 0 10px #00ff9d; }
     
@@ -51,24 +61,24 @@
 
     .top-right { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-end; }
     .theme-btn-group { display: flex; gap: 10px; }
-    .theme-color-btn, .theme-party-btn { width: 32px; height: 32px; border-radius: 50%; background: #222; border: 1px solid #444; color: #888; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-    .theme-color-btn:hover, .theme-party-btn:hover { color: #fff; border-color: var(--accent); background: rgba(255,255,255,0.1); }
+    .theme-color-btn, .theme-party-btn, .theme-gear-btn { width: 32px; height: 32px; border-radius: 50%; background: #222; border: 1px solid #444; color: #888; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+    .theme-color-btn:hover, .theme-party-btn:hover, .theme-gear-btn:hover { color: #fff; border-color: var(--accent); background: rgba(255,255,255,0.1); }
 
     /* MAIN STAGE */
     .stage { flex: 1; display: grid; grid-template-columns: 240px 1fr 240px; gap: 20px; padding: 20px 25px 25px 25px; height: calc(100vh - 60px); box-sizing: border-box; }
-    .col-p { background: #000; border: 1px solid #333; border-radius: 16px; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    .col-p { background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); border: 1px solid #333; border-radius: 16px; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
     .p-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding-bottom: 12px; margin-bottom: 5px; }
-    .p-name { font-size: 2rem; font-weight: 900; letter-spacing: -1px; }
+    .p-name { font-size: 2rem; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; }
     .p-score { font-size: 3rem; font-weight: 900; line-height: 1; transition: color 0.2s; }
     .p-ctrls { display: flex; flex-direction: column; gap: 4px; }
     .tiny-btn { width: 28px; height: 28px; background: #1a1a1a; border: 1px solid #444; color: #888; cursor: pointer; border-radius: 6px; font-weight: 900; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
     .tiny-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
     
     .slot-list { display: flex; flex-direction: column; gap: 10px; flex: 1; }
-    .slot { flex: 1; min-height: 65px; background: #080808; border: 1px dashed #333; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s; position: relative; overflow: hidden; }
+    .slot { flex: 1; min-height: 65px; background: rgba(8,8,8,0.8); border: 1px dashed #333; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s; position: relative; overflow: hidden; }
     .slot:hover { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
     .slot.drag-over { border-color: var(--accent) !important; background: rgba(255,255,255, 0.05) !important; box-shadow: 0 0 15px var(--accent); transform: scale(1.02); }
-    .slot.filled { border-style: solid; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); background: #111; }
+    .slot.filled { border-style: solid; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); background: rgba(17,17,17,0.9); }
     @keyframes snapIn { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
     .slot img { height: 90%; width: auto; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); z-index: 2; pointer-events: none; animation: snapIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     .slot-txt { display: none; }
@@ -79,7 +89,7 @@
     .col-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
     .col-btn.export { flex: 0 0 40px; display: flex; align-items: center; justify-content: center; }
 
-    .col-c { display: flex; flex-direction: column; background: rgba(15,15,15,0.4); backdrop-filter: var(--glass-blur); border: var(--border); border-radius: 16px; overflow: hidden; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    .col-c { display: flex; flex-direction: column; background: rgba(15,15,15,0.6); backdrop-filter: var(--glass-blur); border: var(--border); border-radius: 16px; overflow: hidden; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
     .tab-bar { display: flex; height: 55px; padding: 0 20px; align-items: center; gap: 20px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; justify-content: center; }
     .tab { position: relative; padding: 10px 20px; font-weight: 800; color: #666; cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85rem; }
     .tab:hover { color: #ccc; }
@@ -94,6 +104,45 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .export-msg { color: #fff; font-weight: 700; font-size: 0.85rem; letter-spacing: 1px; }
 
+    /* --- SETTINGS MODAL --- */
+    #settings-modal {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); z-index: 5000;
+        display: none; justify-content: center; align-items: center;
+        backdrop-filter: blur(5px);
+    }
+    .modal-box {
+        background: rgba(20,20,20,0.95);
+        border: 1px solid #444; border-radius: 12px;
+        width: 400px; padding: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        display: flex; flex-direction: column; gap: 15px;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 5px; }
+    .modal-title { font-weight: 900; font-size: 1.2rem; color: #fff; }
+    .modal-close { cursor: pointer; color: #666; transition: 0.2s; font-size: 1.2rem; }
+    .modal-close:hover { color: #fff; }
+    
+    .setting-group { display: flex; flex-direction: column; gap: 8px; }
+    .setting-label { font-size: 0.8rem; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+    .setting-row { display: flex; gap: 10px; align-items: center; }
+    
+    .st-input {
+        background: #111; border: 1px solid #333; color: #fff; padding: 8px; border-radius: 4px;
+        flex: 1; font-family: inherit; font-size: 0.9rem;
+    }
+    .st-input:focus { outline: none; border-color: var(--accent); }
+    .st-color { 
+        width: 40px; height: 35px; padding: 0; background: none; border: none; cursor: pointer; 
+    }
+    
+    .st-btn {
+        padding: 8px; background: #222; border: 1px solid #444; color: #ccc; 
+        cursor: pointer; border-radius: 4px; font-weight: 700; transition: 0.2s;
+        text-align: center; flex: 1;
+    }
+    .st-btn:hover { background: #333; color: #fff; border-color: #666; }
+
   </style>
 </head>
 <body>
@@ -101,6 +150,48 @@
   <div id="export-overlay">
       <div class="loading-spin"></div>
       <div class="export-msg">LOADING SMOGON DATA...</div>
+  </div>
+
+  <div id="settings-modal" onclick="if(event.target===this) toggleSettings()">
+      <div class="modal-box">
+          <div class="modal-header">
+              <div class="modal-title">DASHBOARD SETTINGS</div>
+              <div class="modal-close" onclick="toggleSettings()">&times;</div>
+          </div>
+          
+          <div class="setting-group">
+              <div class="setting-label">Global Accent Theme</div>
+              <div class="setting-row">
+                  <input type="color" id="st-theme-color" class="st-color" onchange="saveConfig('theme', this.value)">
+                  <div style="font-size:0.8rem; color:#888;">Pick a color to update the entire UI.</div>
+              </div>
+          </div>
+
+          <div class="setting-group">
+              <div class="setting-label">Player 1 (Left)</div>
+              <div class="setting-row">
+                  <input type="text" id="st-p1-name" class="st-input" placeholder="Name" onchange="saveConfig('p1Name', this.value)">
+                  <input type="color" id="st-p1-color" class="st-color" onchange="saveConfig('p1Color', this.value)">
+              </div>
+          </div>
+
+          <div class="setting-group">
+              <div class="setting-label">Player 2 (Right)</div>
+              <div class="setting-row">
+                  <input type="text" id="st-p2-name" class="st-input" placeholder="Name" onchange="saveConfig('p2Name', this.value)">
+                  <input type="color" id="st-p2-color" class="st-color" onchange="saveConfig('p2Color', this.value)">
+              </div>
+          </div>
+          
+          <div class="setting-group">
+              <div class="setting-label">Background Wallpaper</div>
+              <div class="setting-row">
+                  <input type="text" id="st-bg-url" class="st-input" placeholder="Image URL (http...)" onchange="saveConfig('bgUrl', this.value)">
+                  <button class="st-btn" style="flex:0 0 60px;" onclick="saveConfig('bgUrl', '')">Clear</button>
+              </div>
+          </div>
+
+      </div>
   </div>
 
   <div class="top-bar">
@@ -129,15 +220,20 @@
 
     <div class="top-right">
       <div class="theme-btn-group">
-        <div class="theme-color-btn" onclick="window.changeTheme()" title="Change Theme"><i class="fas fa-palette"></i></div>
+        <div class="theme-color-btn" onclick="window.changeTheme()" title="Quick Random Theme"><i class="fas fa-palette"></i></div>
         <div class="theme-party-btn" onclick="window.toggleParty()" title="Party Mode"><i class="fas fa-infinity"></i></div>
+        <div class="theme-gear-btn" onclick="toggleSettings()" title="Settings"><i class="fas fa-cog"></i></div>
       </div>
     </div>
   </div>
 
   <div class="stage">
     <div class="col-p">
-      <div class="p-header"><div class="p-name" style="color:var(--red)">ALB</div><div class="p-score" id="score-alb">0</div><div class="p-ctrls"><div class="tiny-btn" onclick="modScore('alb', 'add')">+</div><div class="tiny-btn" onclick="modScore('alb', 'sub')">-</div></div></div>
+      <div class="p-header">
+          <div class="p-name" id="disp-p1-name" style="color:var(--red)">ALB</div>
+          <div class="p-score" id="score-alb">0</div>
+          <div class="p-ctrls"><div class="tiny-btn" onclick="modScore('alb', 'add')">+</div><div class="tiny-btn" onclick="modScore('alb', 'sub')">-</div></div>
+      </div>
       <div class="slot-list" id="slots-alb"></div>
       <div class="col-btn-row">
         <button class="col-btn" onclick="clearCol('alb')">Clear</button>
@@ -161,7 +257,11 @@
     </div>
 
     <div class="col-p">
-      <div class="p-header"><div class="p-name" style="color:var(--blue)">BIU</div><div class="p-score" id="score-biu">0</div><div class="p-ctrls"><div class="tiny-btn" onclick="modScore('biu', 'add')">+</div><div class="tiny-btn" onclick="modScore('biu', 'sub')">-</div></div></div>
+      <div class="p-header">
+          <div class="p-name" id="disp-p2-name" style="color:var(--blue)">BIU</div>
+          <div class="p-score" id="score-biu">0</div>
+          <div class="p-ctrls"><div class="tiny-btn" onclick="modScore('biu', 'add')">+</div><div class="tiny-btn" onclick="modScore('biu', 'sub')">-</div></div>
+      </div>
       <div class="slot-list" id="slots-biu"></div>
       <div class="col-btn-row">
         <button class="col-btn" onclick="clearCol('biu')">Clear</button>
@@ -176,6 +276,59 @@
     window.returningIndex = -1;
     window.SMOGON_CACHE = null; 
     
+    // --- SETTINGS LOGIC ---
+    window.toggleSettings = function() {
+        let el = document.getElementById('settings-modal');
+        el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
+    };
+
+    window.saveConfig = function(key, val) {
+        db.ref('config/' + key).set(val);
+    };
+
+    // --- SYNC CONFIG (Theme, Names, BG) ---
+    db.ref('config').on('value', snap => {
+        const c = snap.val() || {};
+        
+        // 1. Theme Color
+        if(c.theme) {
+            document.documentElement.style.setProperty('--accent', c.theme);
+            // Also message iframes to update their theme
+            // (Assumes frames have a listener for THEME_UPDATE as added previously)
+            // But basic CSS variables usually don't cascade into iframes without JS
+            // This relies on the frame's internal listeners.
+        }
+
+        // 2. Background
+        if(c.bgUrl) {
+            document.body.style.backgroundImage = `url('${c.bgUrl}')`;
+            document.getElementById('st-bg-url').value = c.bgUrl;
+        } else {
+            document.body.style.backgroundImage = 'none';
+            document.getElementById('st-bg-url').value = '';
+        }
+
+        // 3. Player 1
+        const p1Name = c.p1Name || "ALB";
+        const p1Color = c.p1Color || "#ff4444";
+        document.getElementById('disp-p1-name').innerText = p1Name;
+        document.getElementById('disp-p1-name').style.color = p1Color;
+        
+        if(document.activeElement !== document.getElementById('st-p1-name')) 
+            document.getElementById('st-p1-name').value = p1Name;
+        document.getElementById('st-p1-color').value = p1Color;
+
+        // 4. Player 2
+        const p2Name = c.p2Name || "BIU";
+        const p2Color = c.p2Color || "#4488ff";
+        document.getElementById('disp-p2-name').innerText = p2Name;
+        document.getElementById('disp-p2-name').style.color = p2Color;
+
+        if(document.activeElement !== document.getElementById('st-p2-name')) 
+            document.getElementById('st-p2-name').value = p2Name;
+        document.getElementById('st-p2-color').value = p2Color;
+    });
+
     // --- PRESENCE LOGIC ---
     var myId = Date.now().toString() + Math.random().toString().slice(2,5);
     var presenceRef = db.ref('presence');
