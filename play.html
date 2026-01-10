@@ -15,7 +15,8 @@
     --theme-green: var(--accent);
     --glass-bg: rgba(20, 20, 20, 0.85);
     --glass-border: rgba(255, 255, 255, 0.15);
-    --card-dark: rgba(0, 0, 0, 0.85); 
+    /* UPDATED: More transparent background for cards */
+    --card-dark: rgba(0, 0, 0, 0.4); 
     --text-main: #eee;
     --text-dim: #888;
   }
@@ -127,8 +128,12 @@
   .x3-switch-container.active .x3-lbl { color: var(--theme-green); }
   
   .qg-display { display: flex; gap: 15px; margin-top: 15px;}
+  
   .qg-box { 
-    flex: 1; background: #080808; border: 1px solid #333; border-radius: 8px; position: relative;
+    flex: 1; 
+    /* UPDATED: More transparent background */
+    background: var(--card-dark); 
+    border: 1px solid #333; border-radius: 8px; position: relative;
     display: flex; align-items: center; justify-content: center; padding: 10px 15px; min-height: 60px; 
   }
   .qg-box-label { 
