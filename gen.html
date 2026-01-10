@@ -39,7 +39,7 @@
   .amt-btn:hover { background: rgba(255, 255, 255, 0.1); }
   .amt-val { color: #fff; font-weight: 900; padding: 0 8px; min-width: 20px; font-size: 14px; }
   
-  /* SEARCH BAR (UPDATED) */
+  /* SEARCH BAR */
   .search-wrapper { position: relative; width: 160px; }
   .search-input {
       width: 100%; background: #050505; border: 1px solid var(--theme-green); color: #fff;
@@ -72,7 +72,6 @@
   #active-tags { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; max-width: 400px; margin-left: auto; }
   .tag { background: rgba(0,0,0,0.9); border: 1px solid var(--theme-green); color: var(--theme-green); padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; pointer-events: auto; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.6); animation: popIn 0.2s ease-out; }
   .tag-x { font-size: 11px; cursor: pointer; opacity: 0.6; } .tag-x:hover { opacity: 1; } .tag-x::after { content: '\2715'; } 
-  @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
   /* GRID */
   #gen-grid { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; padding-bottom: 60px; }
@@ -82,12 +81,10 @@
   
   /* SPRITES */
   .poke-img { width: 110px; height: 110px; object-fit: contain; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.6)); transition: 0.2s; margin-bottom: 5px; pointer-events: none; }
-  
   .poke-name { color: #fff; font-weight: 900; font-size: 14px; margin-top: 5px; text-transform: capitalize; }
   .poke-type { font-size: 11px; font-weight: 700; color: #888; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
   .shiny-star { position: absolute; top: 10px; right: 10px; font-size: 14px; color: #ffff00; text-shadow: 0 0 5px orange; animation: sparkle 2s infinite; }
   .shiny-star::after { content: '\2726'; }
-  @keyframes sparkle { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(1.2);} }
 
   /* OVERLAY */
   #gen-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
@@ -143,20 +140,17 @@
   if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // --- CONFIG ---
   var TYPES = [ {v:'fire',t:'🔥 Fire'}, {v:'water',t:'💧 Water'}, {v:'grass',t:'🍃 Grass'}, {v:'electric',t:'⚡ Electric'}, {v:'psychic',t:'🔮 Psychic'}, {v:'ice',t:'❄️ Ice'}, {v:'dragon',t:'🐉 Dragon'}, {v:'dark',t:'🌑 Dark'}, {v:'fairy',t:'🎀 Fairy'}, {v:'normal',t:'🙂 Normal'}, {v:'fighting',t:'🥊 Fighting'}, {v:'flying',t:'🌪️ Flying'}, {v:'poison',t:'💀 Poison'}, {v:'ground',t:'🌎 Ground'}, {v:'rock',t:'🏔️ Rock'}, {v:'bug',t:'🦗 Bug'}, {v:'ghost',t:'👻 Ghost'}, {v:'steel',t:'⚙️ Steel'} ];
   var COLORS = ['Black','Blue','Brown','Green','Pink','Purple','Red','White','Yellow'];
   var GENS = [ {v:'1',t:'Gen 1 - Kanto'},{v:'2',t:'Gen 2 - Johto'},{v:'3',t:'Gen 3 - Hoenn'}, {v:'4',t:'Gen 4 - Sinnoh'},{v:'5',t:'Gen 5 - Unova'},{v:'6',t:'Gen 6 - Kalos'}, {v:'7',t:'Gen 7 - Alola'},{v:'8',t:'Gen 8 - Galar'},{v:'9',t:'Gen 9 - Paldea'} ];
   var SHINY_MAP = { 'charizard':'black','greninja':'black','rayquaza':'black','haxorus':'black','gyarados':'red','metagross':'silver','umbreon':'blue','psyduck':'blue','ponyta':'blue','mew':'blue','ditto':'blue','wooloo':'black','cetitan':'black','koraidon':'black', 'ninetalesalola':'white','miraidon':'white' };
   var COLOR_OVERRIDE = { 'ironbundle': ['white','blue'], 'ninetalesalola': ['white','blue'] };
 
-  // --- STATE ---
   var RAW_DB = {};
   var ALL_KEYS = [];
   var GLOBAL_SEEN = []; 
   var USED_IDS = []; 
-  
-  // State Containers (Synced via Firebase)
+  // Initial local state must match expected DB structure to prevent undefined errors
   var FILTERS = { gen:[], type:[], color:[] };
   var SETTINGS = { mega:false, evolved:true, dupes:true };
   var HISTORY = []; var HIST_PTR = -1;
@@ -165,12 +159,8 @@
   initDropdowns();
   document.addEventListener('click', function(e){ if(!e.target.closest('.dd-wrapper')) closeAllDD(); });
 
-  // --- FIX: DRAG & DROP RETURN LISTENER ---
   document.body.addEventListener('dragover', function(e) { e.preventDefault(); });
-  document.body.addEventListener('drop', function(e) {
-      e.preventDefault();
-      window.parent.postMessage({ type: 'GENERATOR_DROP' }, '*');
-  });
+  document.body.addEventListener('drop', function(e) { e.preventDefault(); window.parent.postMessage({ type: 'GENERATOR_DROP' }, '*'); });
 
   fetch("https://play.pokemonshowdown.com/data/pokedex.json").then(res => res.json()).then(data => {
       RAW_DB = data;
@@ -180,104 +170,58 @@
   }).catch(e => { document.getElementById('gen-msg').innerText = "DATA ERROR"; });
 
   window.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'THEME_UPDATE') {
-          document.documentElement.style.setProperty('--accent', event.data.color);
-      }
-      if (event.data && event.data.type === 'markUsed') {
-          markUsedLocal(event.data.id);
-      }
-      if (event.data && event.data.type === 'freePokemon') {
-          freePokemonLocal(event.data.id);
-      }
+      if (event.data && event.data.type === 'THEME_UPDATE') { document.documentElement.style.setProperty('--accent', event.data.color); }
+      if (event.data && event.data.type === 'markUsed') { markUsedLocal(event.data.id); }
+      if (event.data && event.data.type === 'freePokemon') { freePokemonLocal(event.data.id); }
   });
-  if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
 
   function startSync() {
-      // 1. Sync State (Filters, Settings, Search, Amount)
-      db.ref('gen/state').on('value', snap => {
-          var s = snap.val() || {};
-          
-          // Filters
-          FILTERS = s.filters || { gen:[], type:[], color:[] };
-          renderTags(); // Updates visual tags and dropdown checks
-          
-          // Settings
-          SETTINGS = s.settings || { mega:false, evolved:true, dupes:true };
-          updateToggleVisuals();
-          
-          // Amount
-          AMT_IDX = (s.amountIdx !== undefined) ? s.amountIdx : 3;
-          document.getElementById('amt-display').innerText = AMT_OPTS[AMT_IDX];
-          
-          // Search
-          var searchVal = s.search || "";
-          var input = document.getElementById('search-input');
-          // Only update input if different to allow typing without jitter
-          if(input.value !== searchVal) {
-              input.value = searchVal;
-              // If there is a search term, run the local search visualizer
-              if(searchVal) handleSearchVisuals(searchVal);
-          }
-          // If search is cleared remotely, ensure grid matches synced team
-          if(searchVal === "" && document.getElementById('gen-grid').innerHTML === "") {
-             db.ref('gen/team').once('value', snap => showFinal(snap.val() || [], false));
-          }
-      });
-
-      // 2. Sync Team (Output)
+      // 1. Sync Team Display (Visuals)
       db.ref('gen/team').on('value', snap => {
-          // If searching, ignore team updates until search is cleared
           if(document.getElementById('search-input').value.trim() !== '') return;
-          var team = snap.val() || [];
-          showFinal(team, false); 
+          showFinal(snap.val() || [], false); 
       });
 
-      // 3. Sync Used
+      // 2. Sync Used Pokemon
       db.ref('gen/used').on('value', snap => {
           var map = snap.val() || {};
           USED_IDS = Object.keys(map);
           updateUsedVisuals();
       });
-  }
 
-  // --- SYNC ACTIONS (These write to DB) ---
-  function toggleTag(cat, val, el){
-    var current = FILTERS[cat] ? [...FILTERS[cat]] : [];
-    var idx = current.indexOf(val);
-    if(idx === -1) current.push(val); else current.splice(idx, 1);
-    db.ref('gen/state/filters/' + cat).set(current);
-  }
+      // 3. Sync Filters & Settings (The Brain)
+      db.ref('gen/filters').on('value', snap => {
+          // CRITICAL FIX: Fallback to empty array if DB sends null, preventing undefined crashes
+          var v = snap.val() || {};
+          FILTERS = {
+              gen: v.gen || [],
+              type: v.type || [],
+              color: v.color || []
+          };
+          renderTags();
+          updateDropdownCheckmarks();
+      });
 
-  function removeTag(cat, val){
-    var current = FILTERS[cat] ? [...FILTERS[cat]] : [];
-    var idx = current.indexOf(val);
-    if(idx > -1) {
-        current.splice(idx, 1);
-        db.ref('gen/state/filters/' + cat).set(current);
-    }
-  }
+      db.ref('gen/settings').on('value', snap => {
+          SETTINGS = snap.val() || { mega:false, evolved:true, dupes:true };
+          updateToggleVisuals();
+      });
 
-  function toggleSetting(k){ 
-      db.ref('gen/state/settings/' + k).set(!SETTINGS[k]);
-  }
-
-  function modAmt(n){ 
-      var next = AMT_IDX + n;
-      if(next < 0) next = AMT_OPTS.length - 1;
-      if(next >= AMT_OPTS.length) next = 0;
-      db.ref('gen/state/amountIdx').set(next);
-  }
-
-  function pushSearch(val) {
-      db.ref('gen/state/search').set(val);
-      handleSearchVisuals(val); // Update local instantly for smoothness
+      // 4. Sync Search
+      db.ref('gen/search').on('value', snap => {
+          var term = snap.val() || "";
+          var input = document.getElementById('search-input');
+          if(input.value !== term) {
+              input.value = term;
+              handleSearch(term);
+          }
+      });
   }
 
   // --- LOGIC ---
   function runGen() {
-    // 1. Clear Search in DB
-    db.ref('gen/state/search').set("");
-
+    db.ref('gen/search').set(""); 
+    
     var amount = AMT_OPTS[AMT_IDX];
     if(ALL_KEYS.length===0) return;
 
@@ -333,16 +277,14 @@
          if(pColor === 'gray') { if(activeColors.includes('black') || activeColors.includes('white')) colorMatch = true; } 
          else if(activeColors.includes(pColor)) colorMatch = true;
          if(COLOR_OVERRIDE[key] && COLOR_OVERRIDE[key].some(c => activeColors.includes(c))) colorMatch = true;
-         var baseKey = key;
-         for(var k in SHINY_MAP) { if(baseKey.includes(k) && activeColors.includes(SHINY_MAP[k])) { colorMatch=true; shiny=true; } }
+         for(var k in SHINY_MAP) { if(key.includes(k) && activeColors.includes(SHINY_MAP[k])) { colorMatch=true; shiny=true; } }
          if(!colorMatch) continue;
       }
       pool.push({ key: key, data: p, shiny: shiny });
     }
 
     if(pool.length === 0) { 
-        // We set empty array to team to trigger clear
-        db.ref('gen/team').set(null);
+        document.getElementById('gen-grid').innerHTML = '<div class="empty-msg" onclick="doReset()">POOL EMPTY - RESET MEMORY</div>'; 
         return; 
     }
 
@@ -352,8 +294,6 @@
     for(var k=0; k<amount; k++) {
        if(pool.length===0) break;
        var r = Math.floor(Math.random() * pool.length);
-       
-       // Deep copy to not mutate original pool reference for shiny logic
        var candidate = JSON.parse(JSON.stringify(pool[r])); 
        var root = candidate.data.baseSpecies || candidate.data.name;
        
@@ -362,10 +302,8 @@
            batchSpecies.push(root);
            GLOBAL_SEEN.push(root); 
        }
-       
-       // SYNC SHINY LOGIC:
-       // We decide shininess HERE (Server-Side simulation)
-       // If no colors are selected, 1/100 chance. If colors selected, 'shiny' property is already set from loop above.
+
+       // SYNC SHINY LOGIC
        if(candidate.shiny === false && activeColorsLength() === 0) {
            if(Math.random() < 0.01) candidate.shiny = true;
        }
@@ -375,46 +313,33 @@
     }
     
     db.ref('gen/team').set(picked);
-    // Note: showFinal will be called by the listener
+    showFinal(picked, true); 
   }
 
-  // --- VISUAL RENDERING ---
-  function handleSearchVisuals(term) {
+  function pushSearch(val) { db.ref('gen/search').set(val); }
+
+  function handleSearch(term) {
       term = term.trim().toLowerCase();
       var g = document.getElementById('gen-grid'); 
-      
       if(term === "") {
           g.innerHTML = "";
-          db.ref('gen/team').once('value', snap => {
-              showFinal(snap.val() || [], false);
-          });
+          db.ref('gen/team').once('value', snap => { showFinal(snap.val() || [], false); });
           return;
       }
-
       var results = [];
-      var limit = 50; 
-      
       for(var i=0; i<ALL_KEYS.length; i++) {
-          if(results.length >= limit) break;
-          var key = ALL_KEYS[i];
-          var p = RAW_DB[key];
-          
+          if(results.length >= 50) break;
+          var key = ALL_KEYS[i]; var p = RAW_DB[key];
           if(key.includes('totem') || key.includes('starter') || key.includes('gmax')) continue;
-          
-          var nameLow = p.name.toLowerCase();
-          
-          if(nameLow.includes(term) || key.includes(term)) {
+          if(p.name.toLowerCase().includes(term) || key.includes(term)) {
               results.push({ key: key, data: p, shiny: false });
           }
       }
-      
       renderGrid(results);
   }
 
   function getGenByNum(num) {
-    if(!num) return 0;
-    var n = parseInt(num);
-    if(isNaN(n)) return 0; 
+    var n = parseInt(num); if(isNaN(n)) return 0; 
     if(n <= 151) return 1; if(n <= 251) return 2; if(n <= 386) return 3; if(n <= 493) return 4;
     if(n <= 649) return 5; if(n <= 721) return 6; if(n <= 809) return 7; if(n <= 905) return 8;
     return 9;
@@ -422,94 +347,61 @@
 
   function showFinal(team, pushHist) {
     if(!team) team = []; 
-    
     if(pushHist && team.length > 0) {
-        if(HIST_PTR < HISTORY.length - 1) {
-            HISTORY = HISTORY.slice(0, HIST_PTR + 1);
-        }
-        HISTORY.push(team); 
-        HIST_PTR = HISTORY.length - 1;
+        if(HIST_PTR < HISTORY.length - 1) { HISTORY = HISTORY.slice(0, HIST_PTR + 1); }
+        HISTORY.push(team); HIST_PTR = HISTORY.length - 1;
     }
     renderGrid(team);
   }
 
   function renderGrid(team) {
-    var g = document.getElementById('gen-grid'); 
-    g.innerHTML=''; 
-    
-    if(!team || team.length === 0) {
-         if(document.getElementById('search-input').value === "") {
-            g.innerHTML = '<div class="empty-msg" onclick="doReset()">POOL EMPTY - RESET MEMORY</div>'; 
-         }
-         return; 
-    }
-
+    var g = document.getElementById('gen-grid'); g.innerHTML=''; 
+    if(!team || team.length === 0) return; 
     team.forEach(function(item) {
-       var p = item.data;
-       // Sync Shiny: Use the property from the object, NOT random logic
-       var shiny = item.shiny;
-       
+       var p = item.data; var shiny = item.shiny;
        var displayName = p.name.replace(/-/g, ' '); 
        var types = p.types; 
        var rawBase = p.baseSpecies || p.name;
        var cleanName = rawBase.toLowerCase().replace('♀','f').replace('♂','m').replace(/[^a-z0-9]/g, '');
        var spriteName = cleanName;
-
        var folder = shiny ? 'ani-shiny' : 'ani';
        var backupFolder = shiny ? 'gen5-shiny' : 'gen5';
        var mainImg = "https://play.pokemonshowdown.com/sprites/" + folder + "/" + spriteName + ".gif";
        var backupImg = "https://play.pokemonshowdown.com/sprites/" + backupFolder + "/" + spriteName + ".png";
-
        var typeHtml = types.map(function(t) { 
             var found = TYPES.find(obj => obj.v === t.toLowerCase());
             return found ? found.t : t;
        }).join(' / ');
-
        var d=document.createElement('div'); d.className='poke-card';
-       d.draggable=true; 
-       d.id = 'pk-'+spriteName; 
-       
+       d.draggable=true; d.id = 'pk-'+spriteName; 
        if(USED_IDS.includes(spriteName)) d.classList.add('used');
-
        var payload = {id: spriteName, name: displayName, img: mainImg};
-       var jsonStr = JSON.stringify(payload);
-       d.setAttribute('data-json', jsonStr);
-       
+       var jsonStr = JSON.stringify(payload); d.setAttribute('data-json', jsonStr);
        var html = '<img class="poke-img" src="'+mainImg+'" onerror="this.src=\''+backupImg+'\'"><div class="poke-name">'+displayName+'</div><div class="poke-type">'+typeHtml+'</div>';
        if(shiny) html += '<div class="shiny-star">&#10022;</div>';
        d.innerHTML = html;
-
        d.addEventListener('dragstart', function(e){ 
           if(window.parent) window.parent.GEN_DRAG_PAYLOAD = payload;
           e.dataTransfer.setData("text/plain", jsonStr);
           e.dataTransfer.effectAllowed = "copy";
           e.dataTransfer.setDragImage(d, 75, 75);
        });
-       
        g.appendChild(d);
     });
   }
 
   function markUsedLocal(id) {
       if(!USED_IDS.includes(id)) {
-          USED_IDS.push(id);
-          db.ref('gen/used/' + id).set(true);
-          
+          USED_IDS.push(id); db.ref('gen/used/' + id).set(true);
           var p = RAW_DB[id];
-          if(p) {
-              var root = p.baseSpecies || p.name;
-              if(!GLOBAL_SEEN.includes(root)) GLOBAL_SEEN.push(root);
-          }
+          if(p) { var root = p.baseSpecies || p.name; if(!GLOBAL_SEEN.includes(root)) GLOBAL_SEEN.push(root); }
       }
       updateUsedVisuals();
   }
 
   function freePokemonLocal(id) {
       var idx = USED_IDS.indexOf(id);
-      if(idx > -1) {
-          USED_IDS.splice(idx, 1);
-          db.ref('gen/used/' + id).remove();
-      }
+      if(idx > -1) { USED_IDS.splice(idx, 1); db.ref('gen/used/' + id).remove(); }
       updateUsedVisuals();
   }
 
@@ -524,7 +416,6 @@
   
   function activeColorsLength() { return FILTERS.color.length; }
 
-  // --- ACTIONS ---
   function initDropdowns() {
     buildDD('dd-gen', GENS, 'gen', function(v){ return v.t; }, true);
     buildDD('dd-type', TYPES, 'type', function(v){ return v.t; }, true);
@@ -535,75 +426,80 @@
     for(var i=0;i<list.length;i++){
       var val = isObj?list[i].v:list[i];
       var lbl = isObj?list[i].t:lblFn(val);
-      h+='<div class="dd-item" onclick="toggleTag(\''+cat+'\',\''+val+'\',this)"><div class="dd-box"></div>'+lbl+'</div>';
+      // Added robust data attributes
+      h+='<div class="dd-item" data-cat="'+cat+'" data-val="'+val+'" onclick="toggleTag(\''+cat+'\',\''+val+'\',this)"><div class="dd-box"></div>'+lbl+'</div>';
     }
     document.getElementById(id).innerHTML = h;
   }
   function toggleDD(cat){ var el=document.getElementById('dd-'+cat); var s=el.classList.contains('show'); closeAllDD(); if(!s)el.classList.add('show'); } 
   function closeAllDD(){ var els=document.querySelectorAll('.dd-menu'); for(var i=0;i<els.length;i++) els[i].classList.remove('show'); }
   
-  // This renders the tags based on FILTERS (which is synced from DB)
+  function toggleTag(cat, val){
+    // Use local FILTERS copy to determine next state to avoid race conditions
+    var current = FILTERS[cat] ? [...FILTERS[cat]] : [];
+    var idx = current.indexOf(val);
+    if(idx === -1) current.push(val); else current.splice(idx, 1);
+    db.ref('gen/filters/' + cat).set(current);
+  }
+
+  function updateDropdownCheckmarks() {
+    ['gen','type','color'].forEach(cat => {
+      var items = document.querySelectorAll(`.dd-item[data-cat="${cat}"]`);
+      items.forEach(item => {
+        var val = item.getAttribute('data-val');
+        if((FILTERS[cat] || []).indexOf(val) > -1) item.classList.add('selected');
+        else item.classList.remove('selected');
+      });
+    });
+  }
+
   function renderTags(){
     var c=document.getElementById('active-tags'); c.innerHTML='';
-    var cats=['gen','type','color'];
-    for(var i=0;i<cats.length;i++){
-      var cat=cats[i];
-      var vals=FILTERS[cat] || [];
-      for(var j=0;j<vals.length;j++){
-        var val=vals[j];
-        var txt=val;
+    ['gen','type','color'].forEach(cat => {
+      (FILTERS[cat] || []).forEach(val => {
+        var txt = val;
         if(cat==='gen') txt=GENS.find(function(x){return x.v===val}).t.split(' - ')[0];
         if(cat==='type') txt=TYPES.find(function(x){return x.v===val}).t; 
-        if(cat==='color') txt=val;
         var d=document.createElement('div'); d.className='tag';
         d.innerHTML='<span>'+txt+'</span><span class="tag-x" onclick="removeTag(\''+cat+'\',\''+val+'\')"></span>';
         c.appendChild(d);
-      }
+      });
+    });
+  }
+
+  function removeTag(cat, val){
+    var current = FILTERS[cat] ? [...FILTERS[cat]] : [];
+    var idx = current.indexOf(val);
+    if(idx > -1) {
+        current.splice(idx, 1);
+        db.ref('gen/filters/' + cat).set(current);
     }
-    
-    // VISUAL UPDATE FOR DROPDOWNS
-    // Reset all checked states first
-    var allItems = document.querySelectorAll('.dd-item');
-    allItems.forEach(el => el.classList.remove('selected'));
-    
-    // Apply selected class based on FILTERS
-    cats.forEach(cat => {
-       (FILTERS[cat] || []).forEach(val => {
-           // We find the matching element by looking at its onclick attribute text
-           var selector = `.dd-item[onclick*="'${cat}','${val}'"]`;
-           var found = document.querySelector(selector);
-           if(found) found.classList.add('selected');
-       });
+  }
+
+  function modAmt(n){ AMT_IDX+=n; if(AMT_IDX<0)AMT_IDX=AMT_OPTS.length-1; if(AMT_IDX>=AMT_OPTS.length)AMT_IDX=0; document.getElementById('amt-display').innerText=AMT_OPTS[AMT_IDX]; }
+  
+  function toggleSetting(k){ 
+    db.ref('gen/settings/' + k).set(!SETTINGS[k]);
+  }
+
+  function updateToggleVisuals() {
+    ['mega','dupes','evolved'].forEach(k => {
+      var b=document.getElementById('btn-'+k);
+      if(SETTINGS[k]) b.classList.add('active'); 
+      else b.classList.remove('active');
     });
   }
   
-  function updateToggleVisuals() {
-      ['mega','dupes','evolved'].forEach(k => {
-          var b = document.getElementById('btn-'+k);
-          if(SETTINGS[k]) b.classList.add('active'); else b.classList.remove('active');
-      });
-  }
-  
-  // HISTORY
   function goHistory(d){ 
       var n = HIST_PTR + d; 
-      if(n >= 0 && n < HISTORY.length){ 
-          HIST_PTR = n; 
-          // For history navigation, we don't sync history pointer, just the team
-          db.ref('gen/team').set(HISTORY[n]);
-      } 
+      if(n >= 0 && n < HISTORY.length){ HIST_PTR = n; renderGrid(HISTORY[n]); } 
   }
   
-  // CLEAR ACTIONS (Immediate Visual Clear + DB Clear)
   function doClear(){ 
-      // Reset State in DB
-      db.ref('gen/state/filters').set({ gen:[], type:[], color:[] });
-      db.ref('gen/state/search').set("");
-      
-      // Clear team
+      db.ref('gen/filters').set({ gen:[], type:[], color:[] });
+      db.ref('gen/search').set("");
       db.ref('gen/team').set(null); 
-      
-      // Communicate to Parent
+      document.getElementById('search-input').value = ""; 
       window.parent.postMessage({ type: 'requestClearCols' }, '*');
   }
   
