@@ -1,534 +1,607 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>PokéGen - Sync</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        :root {
-            --bg-color: #1a1a1a;
-            --text-color: #f0f0f0;
-            --accent-color: #ffcb05; /* Pokémon Yellow */
-            --secondary-accent: #3b4cca; /* Pokémon Blue */
-            --panel-bg: #2b2b2b;
-            --border-color: #444;
-            --success-color: #4caf50;
-            --danger-color: #f44336;
-        }
+<meta charset="UTF-8">
+<title>Generator</title>
+<link href="style-global.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-        /* --- Navigation Bar --- */
-        nav {
-            width: 80px;
-            background-color: #000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 20px;
-            border-right: 2px solid var(--border-color);
-            z-index: 100;
-        }
+<style>
+  :root { --theme-green: var(--accent); }
+  body { font-family: 'Segoe UI', sans-serif; color: #eee; text-align: center; margin: 0; padding: 10px; box-sizing: border-box; background: transparent; user-select: none; min-height: 100vh; }
 
-        nav a {
-            color: #666;
-            font-size: 24px;
-            margin-bottom: 30px;
-            transition: color 0.3s, transform 0.2s;
-            text-decoration: none;
-        }
+  /* PANEL */
+  .control-panel { background: rgba(8, 8, 8, 0.95); border: 1px solid #333; border-radius: 12px; padding: 10px 15px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); backdrop-filter: blur(10px); position: relative; z-index: 10; margin-bottom: 20px; }
+  .cp-row { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; position: relative; }
+  .cp-row.bottom { justify-content: space-between; margin-top: 5px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); align-items: center; min-height: 45px; }
 
-        nav a:hover, nav a.active {
-            color: var(--accent-color);
-            transform: scale(1.1);
-        }
+  /* DROPDOWNS */
+  .dd-wrapper { position: relative; display: inline-block; flex: 1; min-width: 120px; max-width: 180px; } 
+  .dd-btn { background: #050505; color: #fff; border: 1px solid var(--theme-green); padding: 6px 10px; border-radius: 6px; font-weight: 700; text-transform: uppercase; cursor: pointer; font-size: 13px; box-shadow: 0 0 5px var(--theme-green); width: 100%; box-sizing: border-box; text-align: left; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+  .dd-btn:hover { background: #151515; box-shadow: 0 0 15px var(--theme-green); }
+  .arrow-down { font-size: 10px; color: var(--theme-green); }
+  .dd-menu { display: none; position: absolute; top: 105%; left: 0; width: 100%; max-height: 350px; overflow-y: auto; background: #0a0a0a; border: 1px solid #333; border-radius: 6px; box-shadow: 0 10px 40px #000; z-index: 2000; padding: 4px; box-sizing: border-box; }
+  .dd-menu.show { display: block; }
+  .dd-item { display: flex; align-items: center; padding: 8px; cursor: pointer; border-radius: 4px; font-size: 13px; font-weight: 600; color: #aaa; transition: 0.1s; text-align: left; }
+  .dd-item:hover { background: #222; color: #fff; }
+  .dd-item.selected { background: rgba(255, 255, 255, 0.1); color: var(--theme-green); }
+  .dd-box { width: 12px; height: 12px; border: 1px solid #555; border-radius: 2px; margin-right: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+  .dd-item.selected .dd-box { background: var(--theme-green); border-color: var(--theme-green); color: #000; font-weight: bold; }
+  .dd-item.selected .dd-box::after { content: '\2713'; }
 
-        /* --- Main Layout --- */
-        main {
-            flex: 1;
-            display: flex;
-            position: relative;
-        }
+  /* AMOUNT BOX */
+  .amount-box { display: flex; align-items: center; background: #000; border: 1px solid var(--theme-green); border-radius: 6px; overflow: hidden; height: 32px; }
+  .amt-btn { background: transparent; border: none; color: var(--theme-green); font-weight: 900; padding: 0 12px; cursor: pointer; font-size: 16px; height: 100%; }
+  .amt-btn:hover { background: rgba(255, 255, 255, 0.1); }
+  .amt-val { color: #fff; font-weight: 900; padding: 0 8px; min-width: 20px; font-size: 14px; }
+  
+  /* SEARCH BAR (UPDATED) */
+  .search-wrapper { position: relative; width: 160px; }
+  .search-input {
+      width: 100%; background: #050505; border: 1px solid var(--theme-green); color: #fff;
+      padding: 6px 10px 6px 28px; border-radius: 6px; font-weight: 700; font-size: 12px;
+      box-shadow: none; outline: none; transition: 0.2s;
+      font-family: inherit; box-sizing: border-box; height: 30px;
+  }
+  .search-input:focus { box-shadow: 0 0 10px var(--theme-green); background: #111; }
+  .search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--theme-green); font-size: 12px; pointer-events: none; }
 
-        /* --- Left Column (Player 1) --- */
-        .player-column {
-            flex: 1;
-            background-color: #222;
-            border-right: 1px solid var(--border-color);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-        }
+  /* TOGGLES */
+  .toggle-btn { background: #050505; border: 1px solid var(--theme-green); color: var(--theme-green); padding: 5px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 12px; transition: 0.2s; display: flex; align-items: center; gap: 6px; height: 30px; }
+  .toggle-btn:hover { background: rgba(255, 255, 255, 0.1); }
+  .toggle-btn.active { background: var(--theme-green); color: #000; box-shadow: 0 0 10px var(--theme-green); }
+  
+  /* CENTER NAV */
+  .gen-wrapper-center { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; }
+  .nav-arrow { background: #111; border: 1px solid #444; color: #888; width: 36px; height: 36px; border-radius: 6px; cursor: pointer; font-weight: 900; font-size: 16px; transition: 0.2s; display:flex; align-items:center; justify-content:center; }
+  .nav-arrow:hover { border-color: #fff; color: #fff; background: #222; }
+  .big-gen-btn { background: var(--theme-green); color: #000; border: none; padding: 0 40px; height: 40px; font-size: 16px; font-weight: 900; border-radius: 6px; cursor: pointer; letter-spacing: 1px; box-shadow: 0 0 15px var(--theme-green); transition: 0.2s; text-transform: uppercase; }
+  .big-gen-btn:hover { filter: brightness(1.2); transform: scale(1.02); box-shadow: 0 0 25px var(--theme-green); }
+  .big-gen-btn:active { transform: scale(0.96); }
+  
+  /* LEFT ACTIONS */
+  .left-actions { display: flex; gap: 8px; }
+  .action-btn { background: transparent; border: 1px solid #444; color: #888; padding: 8px 12px; border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer; text-transform: uppercase; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+  .action-btn:hover { border-color: #fff; color: #fff; background: #222; transform: translateY(-2px); }
+  
+  /* TAGS */
+  #active-tags { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; max-width: 400px; margin-left: auto; }
+  .tag { background: rgba(0,0,0,0.9); border: 1px solid var(--theme-green); color: var(--theme-green); padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; pointer-events: auto; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.6); animation: popIn 0.2s ease-out; }
+  .tag-x { font-size: 11px; cursor: pointer; opacity: 0.6; } .tag-x:hover { opacity: 1; } .tag-x::after { content: '\2715'; } 
+  @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        .player-header {
-            font-family: 'Press Start 2P', cursive;
-            color: var(--accent-color);
-            margin-bottom: 20px;
-            font-size: 1.2rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+  /* GRID */
+  #gen-grid { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; padding-bottom: 60px; }
+  .poke-card { background: #111; border: 1px solid #333; border-radius: 12px; width: 150px; padding: 15px 10px; text-align: center; cursor: grab; position: relative; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 8px 20px rgba(0,0,0,0.5); user-select: none; }
+  .poke-card:hover { transform: translateY(-5px); border-color: var(--theme-green); box-shadow: 0 0 20px var(--theme-green); }
+  .poke-card.used { opacity: 0.2; filter: grayscale(1); border-style: dashed; pointer-events: none; }
+  
+  /* SPRITES */
+  .poke-img { width: 110px; height: 110px; object-fit: contain; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.6)); transition: 0.2s; margin-bottom: 5px; pointer-events: none; }
+  
+  .poke-name { color: #fff; font-weight: 900; font-size: 14px; margin-top: 5px; text-transform: capitalize; }
+  .poke-type { font-size: 11px; font-weight: 700; color: #888; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .shiny-star { position: absolute; top: 10px; right: 10px; font-size: 14px; color: #ffff00; text-shadow: 0 0 5px orange; animation: sparkle 2s infinite; }
+  .shiny-star::after { content: '\2726'; }
+  @keyframes sparkle { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(1.2);} }
 
-        .pokemon-list {
-            width: 100%;
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding-right: 5px;
-        }
-
-        .pokemon-slot {
-            background-color: var(--panel-bg);
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            padding: 0 15px;
-            transition: all 0.2s;
-            cursor: grab;
-            position: relative;
-        }
-        
-        .pokemon-slot:hover {
-            border-color: var(--accent-color);
-            transform: translateY(-2px);
-        }
-
-        .pokemon-slot img {
-            width: 60px;
-            height: 60px;
-            margin-right: 15px;
-            image-rendering: pixelated;
-        }
-
-        .pokemon-info {
-            flex: 1;
-        }
-
-        .pokemon-name {
-            font-weight: bold;
-            font-size: 1.1rem;
-            display: block;
-        }
-
-        .pokemon-types {
-            font-size: 0.8rem;
-            color: #aaa;
-            margin-top: 4px;
-        }
-        
-        .delete-btn {
-            background: none;
-            border: none;
-            color: var(--danger-color);
-            cursor: pointer;
-            font-size: 1.2rem;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .pokemon-slot:hover .delete-btn {
-            opacity: 1;
-        }
-
-        /* --- Center (Generator) --- */
-        .generator-column {
-            flex: 1.5;
-            background-color: var(--bg-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            position: relative;
-            border-right: 1px solid var(--border-color);
-        }
-
-        .gen-controls {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            background: var(--panel-bg);
-            padding: 10px 20px;
-            border-radius: 30px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-
-        .filter-btn {
-            background: none;
-            border: none;
-            color: #888;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 0.7rem;
-            cursor: pointer;
-            padding: 8px 12px;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-
-        .filter-btn:hover {
-            color: #fff;
-        }
-
-        .filter-btn.active {
-            color: var(--accent-color);
-            text-shadow: 0 0 5px rgba(255, 203, 5, 0.5);
-        }
-
-        .display-area {
-            flex: 1;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-
-        /* The big generated card */
-        .generated-card {
-            background: linear-gradient(145deg, #2b2b2b, #1e1e1e);
-            border: 4px solid var(--border-color);
-            border-radius: 20px;
-            width: 300px;
-            height: 400px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            transition: transform 0.3s;
-            position: relative;
-            cursor: grab;
-        }
-
-        .generated-card:hover {
-            transform: scale(1.02);
-            border-color: var(--accent-color);
-        }
-
-        .generated-card img {
-            width: 180px;
-            height: 180px;
-            image-rendering: pixelated;
-            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
-        }
-
-        .generated-name {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 1.2rem;
-            margin-top: 20px;
-            color: var(--accent-color);
-            text-align: center;
-            line-height: 1.5;
-        }
-        
-        .generated-types {
-            margin-top: 10px;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .type-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: white;
-            text-shadow: 1px 1px 2px black;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .main-btn {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 0.9rem;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.1s;
-            box-shadow: 0 4px 0 #000;
-        }
-
-        .main-btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 0 0 #000;
-        }
-
-        #generate-btn {
-            background-color: var(--success-color);
-            color: white;
-        }
-
-        #reset-btn {
-            background-color: var(--danger-color);
-            color: white;
-        }
-
-        /* --- Scrollbar --- */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1a1a1a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #444;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-
-        /* --- Dragging Visuals --- */
-        .dragging {
-            opacity: 0.5;
-            border: 2px dashed var(--accent-color) !important;
-        }
-
-        .drop-target {
-            background-color: rgba(255, 203, 5, 0.1) !important;
-            border: 2px dashed var(--accent-color) !important;
-        }
-        
-        /* Loading/Error States */
-        .status-msg {
-            font-family: 'Press Start 2P', cursive;
-            color: #666;
-            text-align: center;
-            line-height: 2;
-        }
-
-    </style>
+  /* OVERLAY */
+  #gen-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+  .spin { width: 60px; height: 60px; border: 6px solid #333; border-top-color: var(--theme-green); border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty-msg { color: #ff4444; font-weight: 900; font-size: 18px; margin-top: 40px; text-transform: uppercase; letter-spacing: 1px; animation: pulse 2s infinite; width: 100%; text-align: center; cursor: pointer; }
+</style>
 </head>
 <body>
 
-    <nav>
-        <a href="index.html" class="active" title="Generator"><i class="fas fa-random"></i></a>
-        <a href="play.html" title="Play"><i class="fas fa-gamepad"></i></a>
-        <a href="history.html" title="History"><i class="fas fa-history"></i></a>
-        <a href="music.html" title="Music"><i class="fas fa-music"></i></a>
-    </nav>
+  <div id="gen-overlay">
+    <div class="spin"></div>
+    <div id="gen-msg" style="margin-top:20px; color:var(--theme-green); font-weight:900; font-size:16px; letter-spacing:1px;">DOWNLOADING POKEDEX...</div>
+  </div>
 
-    <main>
-        
-        <div class="player-column" id="p1-column" ondrop="drop(event, 'p1')" ondragover="allowDrop(event)">
-            <div class="player-header">ALB</div>
-            <div class="pokemon-list" id="p1-list">
-                </div>
-        </div>
+  <div class="control-panel">
+    <div class="cp-row">
+      <div class="dd-wrapper"><div class="dd-btn" onclick="toggleDD('gen')">GENERATIONS <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-gen"></div></div>
+      <div class="dd-wrapper"><div class="dd-btn" onclick="toggleDD('type')">TYPES <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-type"></div></div>
+      <div class="dd-wrapper"><div class="dd-btn" onclick="toggleDD('color')">COLORS <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-color"></div></div>
+      <div class="amount-box"><button class="amt-btn" onclick="modAmt(-1)">-</button><span class="amt-val" id="amt-display">6</span><button class="amt-btn" onclick="modAmt(1)">+</button></div>
+    </div>
 
-        <div class="generator-column">
-            
-            <div class="gen-controls">
-                <button class="filter-btn active" id="btn-gen" onclick="setFilterMode('gen')">GEN</button>
-                <button class="filter-btn" id="btn-type" onclick="setFilterMode('type')">TYPE</button>
-                <button class="filter-btn" id="btn-color" onclick="setFilterMode('color')">COLOR</button>
-            </div>
+    <div class="cp-row">
+      <button class="toggle-btn" id="btn-mega" onclick="toggleSetting('mega')"><span>&#9673;</span> MEGAMIND</button>
+      <button class="toggle-btn active" id="btn-dupes" onclick="toggleSetting('dupes')"><span>&ne;</span> NO DUPES</button>
+      <button class="toggle-btn active" id="btn-evolved" onclick="toggleSetting('evolved')"><span>&#11014;</span> EVOLVED</button>
+      
+      <div class="search-wrapper">
+          <span class="search-icon"><i class="fas fa-search"></i></span>
+          <input type="text" class="search-input" id="search-input" placeholder="Search..." oninput="handleSearch(this.value)">
+      </div>
+    </div>
 
-            <div class="display-area" id="display-area">
-                <div class="status-msg">READY<br>PRESS GENERATE</div>
-            </div>
+    <div class="cp-row bottom">
+      <div class="left-actions">
+        <button class="action-btn" onclick="doClear()"><span>&#10006;</span> CLEAR ALL</button>
+        <button class="action-btn" onclick="doReset()"><span>&#10227;</span> RESET MEMORY</button>
+      </div>
+      <div class="gen-wrapper-center">
+        <button class="nav-arrow" onclick="goHistory(-1)">&#10094;</button>
+        <button class="big-gen-btn" onclick="runGen()">GENERATE</button>
+        <button class="nav-arrow" onclick="goHistory(1)">&#10095;</button>
+      </div>
+      <div id="active-tags"></div>
+    </div>
+  </div>
 
-            <div class="action-buttons">
-                <button class="main-btn" id="generate-btn" onclick="generatePokemon()">GENERATE</button>
-                <button class="main-btn" id="reset-btn" onclick="resetGen()">CLEAR</button>
-            </div>
+  <div id="gen-grid"></div>
 
-        </div>
+<script>
+  const firebaseConfig = { apiKey: "AIzaSyDz82Dp56EISYqk3hza3upJ2pAjsStgMKo", authDomain: "pokemon-masters-d153a.firebaseapp.com", databaseURL: "https://pokemon-masters-d153a-default-rtdb.firebaseio.com", projectId: "pokemon-masters-d153a", storageBucket: "pokemon-masters-d153a.firebasestorage.app", messagingSenderId: "67655442054", appId: "1:67655442054:web:705baa26ffda58b5d3fb07", measurementId: "G-LGW9RJZDP3" };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-        <div class="player-column" id="p2-column" ondrop="drop(event, 'p2')" ondragover="allowDrop(event)">
-            <div class="player-header">BIU</div>
-            <div class="pokemon-list" id="p2-list">
-                </div>
-        </div>
+  // --- CONFIG ---
+  var TYPES = [ {v:'fire',t:'🔥 Fire'}, {v:'water',t:'💧 Water'}, {v:'grass',t:'🍃 Grass'}, {v:'electric',t:'⚡ Electric'}, {v:'psychic',t:'🔮 Psychic'}, {v:'ice',t:'❄️ Ice'}, {v:'dragon',t:'🐉 Dragon'}, {v:'dark',t:'🌑 Dark'}, {v:'fairy',t:'🎀 Fairy'}, {v:'normal',t:'🙂 Normal'}, {v:'fighting',t:'🥊 Fighting'}, {v:'flying',t:'🌪️ Flying'}, {v:'poison',t:'💀 Poison'}, {v:'ground',t:'🌎 Ground'}, {v:'rock',t:'🏔️ Rock'}, {v:'bug',t:'🦗 Bug'}, {v:'ghost',t:'👻 Ghost'}, {v:'steel',t:'⚙️ Steel'} ];
+  var COLORS = ['Black','Blue','Brown','Green','Pink','Purple','Red','White','Yellow'];
+  var GENS = [ {v:'1',t:'Gen 1 - Kanto'},{v:'2',t:'Gen 2 - Johto'},{v:'3',t:'Gen 3 - Hoenn'}, {v:'4',t:'Gen 4 - Sinnoh'},{v:'5',t:'Gen 5 - Unova'},{v:'6',t:'Gen 6 - Kalos'}, {v:'7',t:'Gen 7 - Alola'},{v:'8',t:'Gen 8 - Galar'},{v:'9',t:'Gen 9 - Paldea'} ];
+  var SHINY_MAP = { 'charizard':'black','greninja':'black','rayquaza':'black','haxorus':'black','gyarados':'red','metagross':'silver','umbreon':'blue','psyduck':'blue','ponyta':'blue','mew':'blue','ditto':'blue','wooloo':'black','cetitan':'black','koraidon':'black', 'ninetalesalola':'white','miraidon':'white' };
+  var COLOR_OVERRIDE = { 'ironbundle': ['white','blue'], 'ninetalesalola': ['white','blue'] };
 
-    </main>
+  // --- STATE ---
+  var RAW_DB = {};
+  var ALL_KEYS = [];
+  var GLOBAL_SEEN = []; 
+  var USED_IDS = []; 
+  var FILTERS = { gen:[], type:[], color:[] };
+  var SETTINGS = { mega:false, evolved:true, dupes:true };
+  var HISTORY = []; var HIST_PTR = -1;
+  var AMT_OPTS = [1,2,3,6,10,25,50]; var AMT_IDX = 3;
 
-    <script>
-        // --- State ---
-        let allPokemon = [];
-        let currentPool = [];
-        let filterMode = 'gen'; // 'gen', 'type', 'color'
-        let currentPokemon = null; // The one currently displayed
+  initDropdowns();
+  document.addEventListener('click', function(e){ if(!e.target.closest('.dd-wrapper')) closeAllDD(); });
 
-        // Type Colors for badges
-        const typeColors = {
-            normal: '#A8A77A', fire: '#EE8130', water: '#6390F0', electric: '#F7D02C',
-            grass: '#7AC74C', ice: '#96D9D6', fighting: '#C22E28', poison: '#A33EA1',
-            ground: '#E2BF65', flying: '#A98FF3', psychic: '#F95587', bug: '#A6B91A',
-            rock: '#B6A136', ghost: '#735797', dragon: '#6F35FC', steel: '#B7B7CE',
-            dark: '#705746', fairy: '#D685AD'
-        };
+  // --- FIX: DRAG & DROP RETURN LISTENER ---
+  document.body.addEventListener('dragover', function(e) { e.preventDefault(); });
+  document.body.addEventListener('drop', function(e) {
+      e.preventDefault();
+      window.parent.postMessage({ type: 'GENERATOR_DROP' }, '*');
+  });
 
-        // --- Initialization ---
-        window.onload = async () => {
-            await fetchPokemonData();
-            // Setup Listeners for real-time Sync would go here
-        };
+  fetch("https://play.pokemonshowdown.com/data/pokedex.json").then(res => res.json()).then(data => {
+      RAW_DB = data;
+      ALL_KEYS = Object.keys(data).filter(k => data[k].num > 0);
+      document.getElementById('gen-overlay').style.display = 'none';
+      startSync();
+  }).catch(e => { document.getElementById('gen-msg').innerText = "DATA ERROR"; });
 
-        // Fetch Data from PokeAPI (Gen 1-9 approx limit 1010)
-        async function fetchPokemonData() {
-            try {
-                // Fetching a smaller subset for speed in this demo, usually you'd fetch all or cache
-                // For a full app, fetch from https://pokeapi.co/api/v2/pokemon?limit=1000
-                const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=151'); 
-                const data = await res.json();
-                
-                // Map basic data
-                allPokemon = data.results.map((p, index) => ({
-                    name: p.name,
-                    url: p.url,
-                    id: index + 1
-                }));
-                
-                currentPool = [...allPokemon];
-                console.log("Pokemon Loaded:", allPokemon.length);
-            } catch (e) {
-                console.error("Error loading pokemon:", e);
-                document.getElementById('display-area').innerHTML = '<div class="status-msg">ERROR LOADING DATA</div>';
-            }
+  window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'THEME_UPDATE') {
+          document.documentElement.style.setProperty('--accent', event.data.color);
+      }
+      if (event.data && event.data.type === 'markUsed') {
+          markUsedLocal(event.data.id);
+      }
+      if (event.data && event.data.type === 'freePokemon') {
+          freePokemonLocal(event.data.id);
+      }
+  });
+  if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
+
+  function startSync() {
+      // 1. SYNC GENERATED TEAM
+      db.ref('gen/team').on('value', snap => {
+          if(document.getElementById('search-input').value.trim() !== '') return;
+          var team = snap.val() || [];
+          showFinal(team, false); 
+      });
+
+      // 2. SYNC USED POKEMON
+      db.ref('gen/used').on('value', snap => {
+          var map = snap.val() || {};
+          USED_IDS = Object.keys(map);
+          updateUsedVisuals();
+      });
+
+      // 3. SYNC FILTERS (NEW)
+      db.ref('gen/filters').on('value', snap => {
+          var val = snap.val();
+          if(!val) val = { gen:[], type:[], color:[] };
+          FILTERS = val;
+          // Ensure arrays exist to prevent errors
+          if(!FILTERS.gen) FILTERS.gen = [];
+          if(!FILTERS.type) FILTERS.type = [];
+          if(!FILTERS.color) FILTERS.color = [];
+          
+          renderTags(); // Update chips
+          updateDropdownVisuals(); // Update dropdown checkmarks
+      });
+
+      // 4. SYNC SETTINGS (NEW)
+      db.ref('gen/settings').on('value', snap => {
+          var val = snap.val();
+          if(val) {
+              SETTINGS = val;
+              updateSettingVisuals();
+          }
+      });
+
+      // 5. SYNC AMOUNT (NEW)
+      db.ref('gen/amount').on('value', snap => {
+          var val = snap.val();
+          if(val !== null && val !== undefined) {
+              AMT_IDX = val;
+              document.getElementById('amt-display').innerText = AMT_OPTS[AMT_IDX];
+          }
+      });
+  }
+
+  // --- LOGIC ---
+  function runGen() {
+    document.getElementById('search-input').value = "";
+    
+    var amount = AMT_OPTS[AMT_IDX];
+    if(ALL_KEYS.length===0) return;
+
+    var pool = [];
+    var activeColors = FILTERS.color.map(c => c.toLowerCase());
+    var allowedForms = ["alola","galar","hisui","paldea"];
+
+    for(var i=0; i<ALL_KEYS.length; i++){
+      var key = ALL_KEYS[i];
+      var p = RAW_DB[key];
+      if(key.includes('totem') || key.includes('eternamax') || key.includes('starter') || key.includes('gmax')) continue;
+
+      var root = p.baseSpecies || p.name;
+      
+      if(SETTINGS.dupes) {
+          if(GLOBAL_SEEN.includes(root)) continue;
+          if(USED_IDS.includes(key)) continue; 
+      }
+
+      var forme = (p.forme || "").toLowerCase();
+      var isMega = forme.includes("mega");
+
+      if(SETTINGS.mega && !isMega) continue;
+      if(!SETTINGS.mega && isMega) continue;
+
+      if(FILTERS.gen.length > 0) {
+         var effectiveGen = p.gen || getGenByNum(p.num || p.id);
+         if(forme.includes('alola')) effectiveGen = 7;
+         else if(forme.includes('galar')) effectiveGen = 8;
+         else if(forme.includes('hisui')) effectiveGen = 8;
+         else if(forme.includes('paldea')) effectiveGen = 9;
+         if(!FILTERS.gen.includes(effectiveGen.toString())) continue;
+      }
+      
+      if(!SETTINGS.mega) {
+         var isRegional = allowedForms.includes(forme);
+         var isBase = !p.forme; 
+         if(!isBase && !isRegional) continue; 
+      }
+
+      if(SETTINGS.evolved && p.evos) continue;
+
+      if(FILTERS.type.length > 0) {
+         var tMatch = false;
+         for(var t=0; t<p.types.length; t++) { if(FILTERS.type.indexOf(p.types[t].toLowerCase()) > -1) tMatch=true; }
+         if(!tMatch) continue;
+      }
+
+      var shiny = false;
+      if(activeColors.length > 0) {
+         var colorMatch = false;
+         var pColor = (p.color || "").toLowerCase();
+         if(pColor === 'gray') { if(activeColors.includes('black') || activeColors.includes('white')) colorMatch = true; } 
+         else if(activeColors.includes(pColor)) colorMatch = true;
+         if(COLOR_OVERRIDE[key] && COLOR_OVERRIDE[key].some(c => activeColors.includes(c))) colorMatch = true;
+         var baseKey = key;
+         for(var k in SHINY_MAP) { if(baseKey.includes(k) && activeColors.includes(SHINY_MAP[k])) { colorMatch=true; shiny=true; } }
+         if(!colorMatch) continue;
+      }
+      pool.push({ key: key, data: p, shiny: shiny });
+    }
+
+    if(pool.length === 0) { 
+        document.getElementById('gen-grid').innerHTML = '<div class="empty-msg" onclick="doReset()">POOL EMPTY - RESET MEMORY</div>'; 
+        return; 
+    }
+
+    var picked = [];
+    var batchSpecies = []; 
+    
+    for(var k=0; k<amount; k++) {
+       if(pool.length===0) break;
+       var r = Math.floor(Math.random() * pool.length);
+       var candidate = pool[r];
+       var root = candidate.data.baseSpecies || candidate.data.name;
+       
+       if(SETTINGS.dupes) {
+           if(batchSpecies.includes(root)) { pool.splice(r,1); k--; continue; }
+           batchSpecies.push(root);
+           GLOBAL_SEEN.push(root); 
+       }
+       picked.push(candidate);
+       if(!SETTINGS.dupes) pool.splice(r,1); 
+    }
+    
+    db.ref('gen/team').set(picked);
+    showFinal(picked, true); 
+  }
+
+  // --- SEARCH LOGIC ---
+  function handleSearch(term) {
+      term = term.trim().toLowerCase();
+      var g = document.getElementById('gen-grid'); 
+      
+      if(term === "") {
+          g.innerHTML = "";
+          db.ref('gen/team').once('value', snap => {
+              showFinal(snap.val() || [], false);
+          });
+          return;
+      }
+
+      var results = [];
+      var limit = 50; 
+      
+      for(var i=0; i<ALL_KEYS.length; i++) {
+          if(results.length >= limit) break;
+          var key = ALL_KEYS[i];
+          var p = RAW_DB[key];
+          
+          if(key.includes('totem') || key.includes('starter') || key.includes('gmax')) continue;
+          
+          var nameLow = p.name.toLowerCase();
+          
+          if(nameLow.includes(term) || key.includes(term)) {
+              results.push({ key: key, data: p, shiny: false });
+          }
+      }
+      
+      renderGrid(results);
+  }
+
+  function getGenByNum(num) {
+    if(!num) return 0;
+    var n = parseInt(num);
+    if(isNaN(n)) return 0; 
+    if(n <= 151) return 1; if(n <= 251) return 2; if(n <= 386) return 3; if(n <= 493) return 4;
+    if(n <= 649) return 5; if(n <= 721) return 6; if(n <= 809) return 7; if(n <= 905) return 8;
+    return 9;
+  }
+
+  function showFinal(team, pushHist) {
+    if(!team) team = []; 
+    
+    if(pushHist && team.length > 0) {
+        if(HIST_PTR < HISTORY.length - 1) {
+            HISTORY = HISTORY.slice(0, HIST_PTR + 1);
         }
+        HISTORY.push(team); 
+        HIST_PTR = HISTORY.length - 1;
+    }
+    renderGrid(team);
+  }
 
-        // --- Filtering Logic ---
-        function setFilterMode(mode) {
-            filterMode = mode;
-            // Update UI buttons
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`btn-${mode}`).classList.add('active');
-            
-            // Visual feedback only
-            console.log("Filter Mode set to:", mode);
-        }
+  function renderGrid(team) {
+    var g = document.getElementById('gen-grid'); 
+    g.innerHTML=''; 
+    if(!team || team.length === 0) return; 
 
-        async function generatePokemon() {
-            const display = document.getElementById('display-area');
-            
-            // 1. Animation State
-            display.innerHTML = '<div class="status-msg" style="animation: blink 0.5s infinite;">...</div>';
+    team.forEach(function(item) {
+       var p = item.data;
+       var shiny = item.shiny;
+       if(shiny === undefined || shiny === false) {
+           if(activeColorsLength() === 0 && Math.random() < 0.01) shiny = true;
+       }
+       
+       var displayName = p.name.replace(/-/g, ' '); 
+       var types = p.types; 
+       var rawBase = p.baseSpecies || p.name;
+       var cleanName = rawBase.toLowerCase().replace('♀','f').replace('♂','m').replace(/[^a-z0-9]/g, '');
+       var spriteName = cleanName;
 
-            // 2. Logic: Pick random from currentPool (currently full pool, logic for filters can be added)
-            if (!currentPool || currentPool.length === 0) {
-                 display.innerHTML = '<div class="status-msg">POOL EMPTY<br>RESET</div>';
-                 return;
-            }
+       var folder = shiny ? 'ani-shiny' : 'ani';
+       var backupFolder = shiny ? 'gen5-shiny' : 'gen5';
+       var mainImg = "https://play.pokemonshowdown.com/sprites/" + folder + "/" + spriteName + ".gif";
+       var backupImg = "https://play.pokemonshowdown.com/sprites/" + backupFolder + "/" + spriteName + ".png";
 
-            const randomIndex = Math.floor(Math.random() * currentPool.length);
-            const basicData = currentPool[randomIndex];
+       var typeHtml = types.map(function(t) { 
+            var found = TYPES.find(obj => obj.v === t.toLowerCase());
+            return found ? found.t : t;
+       }).join(' / ');
 
-            try {
-                // 3. Fetch details for the specific pokemon (Type, Sprite)
-                const res = await fetch(basicData.url);
-                const details = await res.json();
+       var d=document.createElement('div'); d.className='poke-card';
+       d.draggable=true; 
+       d.id = 'pk-'+spriteName; 
+       
+       if(USED_IDS.includes(spriteName)) d.classList.add('used');
 
-                currentPokemon = {
-                    name: details.name,
-                    id: details.id,
-                    types: details.types.map(t => t.type.name),
-                    sprite: details.sprites.front_default || details.sprites.other['official-artwork'].front_default
-                };
+       var payload = {id: spriteName, name: displayName, img: mainImg};
+       var jsonStr = JSON.stringify(payload);
+       d.setAttribute('data-json', jsonStr);
+       
+       var html = '<img class="poke-img" src="'+mainImg+'" onerror="this.src=\''+backupImg+'\'"><div class="poke-name">'+displayName+'</div><div class="poke-type">'+typeHtml+'</div>';
+       if(shiny) html += '<div class="shiny-star">&#10022;</div>';
+       d.innerHTML = html;
 
-                renderCard(currentPokemon);
+       d.addEventListener('dragstart', function(e){ 
+          if(window.parent) window.parent.GEN_DRAG_PAYLOAD = payload;
+          e.dataTransfer.setData("text/plain", jsonStr);
+          e.dataTransfer.effectAllowed = "copy";
+          e.dataTransfer.setDragImage(d, 75, 75);
+       });
+       
+       g.appendChild(d);
+    });
+  }
 
-            } catch (e) {
-                console.error(e);
-                display.innerHTML = '<div class="status-msg">ERROR</div>';
-            }
-        }
+  function markUsedLocal(id) {
+      if(!USED_IDS.includes(id)) {
+          USED_IDS.push(id);
+          db.ref('gen/used/' + id).set(true);
+          
+          var p = RAW_DB[id];
+          if(p) {
+              var root = p.baseSpecies || p.name;
+              if(!GLOBAL_SEEN.includes(root)) GLOBAL_SEEN.push(root);
+          }
+      }
+      updateUsedVisuals();
+  }
 
-        function renderCard(pokemon) {
-            const display = document.getElementById('display-area');
-            
-            // Generate Type Badges
-            const typeHtml = pokemon.types.map(t => 
-                `<span class="type-badge" style="background-color: ${typeColors[t] || '#777'}">${t}</span>`
-            ).join('');
+  function freePokemonLocal(id) {
+      var idx = USED_IDS.indexOf(id);
+      if(idx > -1) {
+          USED_IDS.splice(idx, 1);
+          db.ref('gen/used/' + id).remove();
+      }
+      updateUsedVisuals();
+  }
 
-            display.innerHTML = `
-                <div class="generated-card" draggable="true" ondragstart="drag(event)" id="gen-card">
-                    <img src="${pokemon.sprite}" alt="${pokemon.name}" draggable="false">
-                    <div class="generated-name">#${pokemon.id} ${pokemon.name}</div>
-                    <div class="generated-types">
-                        ${typeHtml}
-                    </div>
-                </div>
-            `;
-        }
+  function updateUsedVisuals() {
+      var cards = document.getElementsByClassName('poke-card');
+      for(var i=0; i<cards.length; i++) {
+          var id = cards[i].id.replace('pk-', '');
+          if(USED_IDS.includes(id)) cards[i].classList.add('used');
+          else cards[i].classList.remove('used');
+      }
+  }
+  
+  function activeColorsLength() { return FILTERS.color.length; }
 
-        function resetGen() {
-            currentPokemon = null;
-            // Simply clear the display to show readiness
-            document.getElementById('display-area').innerHTML = ''; 
-        }
+  // --- ACTIONS (SYNCED) ---
+  function initDropdowns() {
+    buildDD('dd-gen', GENS, 'gen', function(v){ return v.t; }, true);
+    buildDD('dd-type', TYPES, 'type', function(v){ return v.t; }, true);
+    buildDD('dd-color', COLORS, 'color', function(v){ return v; });
+  }
+  function buildDD(id, list, cat, lblFn, isObj){
+    var h='';
+    for(var i=0;i<list.length;i++){
+      var val = isObj?list[i].v:list[i];
+      var lbl = isObj?list[i].t:lblFn(val);
+      // Added data-val for easier sync updates
+      h+='<div class="dd-item" data-val="'+val+'" onclick="toggleTag(\''+cat+'\',\''+val+'\',this)"><div class="dd-box"></div>'+lbl+'</div>';
+    }
+    document.getElementById(id).innerHTML = h;
+  }
+  function toggleDD(cat){ var el=document.getElementById('dd-'+cat); var s=el.classList.contains('show'); closeAllDD(); if(!s)el.classList.add('show'); } 
+  function closeAllDD(){ var els=document.querySelectorAll('.dd-menu'); for(var i=0;i<els.length;i++) els[i].classList.remove('show'); }
+  
+  // SYNC ACTION 1: TOGGLE FILTER
+  function toggleTag(cat, val, el){
+    var idx = FILTERS[cat].indexOf(val);
+    if(idx===-1){ FILTERS[cat].push(val); }
+    else { FILTERS[cat].splice(idx,1); }
+    
+    // Sync to DB immediately
+    db.ref('gen/filters').set(FILTERS);
+  }
 
-        // --- Drag and Drop Logic ---
+  // SYNC ACTION 2: REMOVE FILTER TAG
+  function removeTag(cat, val){
+    var idx = FILTERS[cat].indexOf(val);
+    if(idx>-1) FILTERS[cat].splice(idx,1);
+    
+    // Sync to DB immediately
+    db.ref('gen/filters').set(FILTERS);
+  }
 
-        function allowDrop(ev) {
-            ev.preventDefault();
-            // Add highlight class if needed
-        }
+  // VISUAL SYNC HELPERS
+  function renderTags(){
+    var c=document.getElementById('active-tags'); c.innerHTML='';
+    var cats=['gen','type','color'];
+    for(var i=0;i<cats.length;i++){
+      var cat=cats[i];
+      var vals=FILTERS[cat];
+      for(var j=0;j<vals.length;j++){
+        var val=vals[j];
+        var txt=val;
+        if(cat==='gen') txt=GENS.find(function(x){return x.v===val}).t.split(' - ')[0];
+        if(cat==='type') txt=TYPES.find(function(x){return x.v===val}).t; 
+        if(cat==='color') txt=val;
+        var d=document.createElement('div'); d.className='tag';
+        d.innerHTML='<span>'+txt+'</span><span class="tag-x" onclick="removeTag(\''+cat+'\',\''+val+'\')"></span>';
+        c.appendChild(d);
+      }
+    }
+  }
 
-        function drag(ev) {
-            // We are dragging the generated card
-            if (currentPokemon) {
-                ev.dataTransfer.setData("text/plain", JSON.stringify(currentPokemon));
-                ev.target.classList.add('dragging');
-            }
-        }
+  function updateDropdownVisuals() {
+      // Loop through all dropdown items and check if they are in FILTERS
+      var menus = document.querySelectorAll('.dd-menu');
+      menus.forEach(menu => {
+          var cat = menu.id.replace('dd-', '');
+          var items = menu.children;
+          for (var i = 0; i < items.length; i++) {
+              var val = items[i].getAttribute('data-val');
+              if (FILTERS[cat] && FILTERS[cat].includes(val)) {
+                  items[i].classList.add('selected');
+              } else {
+                  items[i].classList.remove('selected');
+              }
+          }
+      });
+  }
 
-        function drop(ev, player) {
-            ev.preventDefault();
-            const data = ev.dataTransfer.getData("text/plain");
-            const card = document.getElementById('gen-card');
-            if(card) card.classList.remove('dragging');
+  // SYNC ACTION 3: AMOUNT
+  function modAmt(n){ 
+      AMT_IDX+=n; 
+      if(AMT_IDX<0)AMT_IDX=AMT_OPTS.length-1; 
+      if(AMT_IDX>=AMT_OPTS.length)AMT_IDX=0; 
+      // Sync to DB
+      db.ref('gen/amount').set(AMT_IDX);
+  }
 
-            if (data) {
-                const pokemon = JSON.parse(data);
-                addPokemonToColumn(player, pokemon);
-            }
-        }
+  // SYNC ACTION 4: SETTINGS
+  function toggleSetting(k){ 
+      SETTINGS[k]=!SETTINGS[k]; 
+      // Sync to DB
+      db.ref('gen/settings').set(SETTINGS);
+  }
 
-        function addPokemonToColumn(player, pokemon) {
-            const listId = player === 'p1' ? 'p1-list' : 'p2-list';
-            const list = document.getElementById(listId);
-
-            const slot = document.createElement('div');
-            slot.className = 'pokemon-slot';
-            slot.innerHTML = `
-                <img src="${pokemon.sprite}">
-                <div class="pokemon-info">
-                    <span class="pokemon-name">${pokemon.name}</span>
-                    <div class="pokemon-types">${pokemon.types.join('/')}</div>
-                </div>
-                <button class="delete-btn" onclick="this.parentElement.remove()">&times;</button>
-            `;
-
-            list.appendChild(slot);
-            
-            // Scroll to bottom
-            list.scrollTop = list.scrollHeight;
-        }
-
-    </script>
+  function updateSettingVisuals() {
+      for (var k in SETTINGS) {
+          var b = document.getElementById('btn-' + k);
+          if (b) {
+              if (SETTINGS[k]) b.classList.add('active'); 
+              else b.classList.remove('active');
+          }
+      }
+  }
+  
+  // HISTORY
+  function goHistory(d){ 
+      var n = HIST_PTR + d; 
+      if(n >= 0 && n < HISTORY.length){ 
+          HIST_PTR = n; 
+          renderGrid(HISTORY[n]); 
+      } 
+  }
+  
+  // CLEAR ACTIONS (Immediate Visual Clear + DB Clear)
+  function doClear(){ 
+      FILTERS = { gen:[], type:[], color:[] };
+      // Sync Filters Clear
+      db.ref('gen/filters').set(FILTERS);
+      
+      document.getElementById('gen-grid').innerHTML = '';
+      db.ref('gen/team').set(null); 
+      document.getElementById('search-input').value = ""; 
+      window.parent.postMessage({ type: 'requestClearCols' }, '*');
+  }
+  
+  function doReset(){ 
+      GLOBAL_SEEN = []; 
+      document.getElementById('gen-grid').innerHTML = ''; 
+      db.ref('gen/team').set(null); 
+      db.ref('gen/used').set(null); 
+      window.parent.postMessage({ type: 'requestClearCols' }, '*');
+  }
+</script>
 </body>
 </html>
