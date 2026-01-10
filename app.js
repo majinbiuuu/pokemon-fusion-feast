@@ -1,7 +1,7 @@
 window.GEN_DRAG_PAYLOAD = null;
 var lastTopVol = 100;
 window.returningIndex = -1;
-window.SMOGON_CACHE = null; 
+window.SETDEX_CACHE = null; // Renamed from SMOGON_CACHE
 
 // --- SETTINGS LOGIC ---
 window.toggleSettings = function() {
@@ -124,8 +124,7 @@ window.dropHandler = function(ev) {
     }
 }
 
-// --- PRESENCE LOGIC (FIXED: Uses LocalStorage for user persistence) ---
-// Using localStorage instead of sessionStorage prevents new ID on tab refresh
+// --- PRESENCE LOGIC ---
 var myId = localStorage.getItem('presenceId');
 if (!myId) {
     myId = Date.now().toString() + Math.random().toString().slice(2,5);
@@ -146,7 +145,6 @@ connectedRef.on('value', function(snap) {
 presenceRef.on('value', function(snap) {
     var val = snap.val() || {};
     var count = Object.keys(val).length;
-    // Update the count in the shared bubble
     document.getElementById('presence-count').innerHTML = `<i class="fas fa-users" style="font-size: 11px;"></i> ${count}`;
 });
 
@@ -323,7 +321,7 @@ window.clearCol = function(p) {
     setTimeout(() => window.syncLock = false, 1000);
 };
 
-// --- EXPORT WITH SMOGON CHAOS DATA ---
+// --- EXPORT WITH SETDEX DATA (Showdown Calc) ---
 window.exportTeam = async function(side) {
     var btn = document.getElementById('export-' + side);
     var originalIcon = '<i class="fas fa-file-export"></i> Export Team';
@@ -339,7 +337,11 @@ window.exportTeam = async function(side) {
     for(var i=0; i<kids.length; i++) {
         var txt = kids[i].querySelector('.slot-txt');
         if(txt && txt.dataset.id) {
-            monsToFetch.push({ name: txt.innerText.trim(), id: txt.dataset.id });
+            // Trim and clean name for better matching
+            monsToFetch.push({ 
+                name: txt.innerText.trim(), 
+                id: txt.dataset.id 
+            });
         }
     }
     
@@ -349,53 +351,80 @@ window.exportTeam = async function(side) {
         return; 
     }
 
-    // 1. Fetch Smogon Data if not cached
-    if (!window.SMOGON_CACHE) {
+    // 1. Fetch SETDEX Data if not cached
+    if (!window.SETDEX_CACHE) {
         try {
+            // Fetch from official calc source via CORS proxy
             const proxyUrl = "https://corsproxy.io/?";
-            const smogonUrl = "https://www.smogon.com/stats/2024-11/chaos/gen9ou-1695.json"; 
-            const res = await fetch(proxyUrl + smogonUrl);
+            const calcUrl = "https://calc.pokemonshowdown.com/data/sets/gen9.js"; 
+            const res = await fetch(proxyUrl + calcUrl);
             if(res.ok) {
-                const json = await res.json();
-                window.SMOGON_CACHE = json.data; 
+                let text = await res.text();
+                // Format is: var SETDEX_SV = { ... };
+                // We strip the variable declaration to parse pure JSON
+                let start = text.indexOf('{');
+                let end = text.lastIndexOf('}');
+                if (start !== -1 && end !== -1) {
+                    let jsonStr = text.substring(start, end + 1);
+                    window.SETDEX_CACHE = JSON.parse(jsonStr);
+                }
             }
         } catch(e) {
-            console.warn("Smogon fetch failed, using fallback mode.");
+            console.warn("Setdex fetch failed, using fallback mode.", e);
         }
     }
 
     for (let mon of monsToFetch) {
-        let smogonData = null;
-        if (window.SMOGON_CACHE) {
-            smogonData = window.SMOGON_CACHE[mon.name];
-            if (!smogonData) {
-                let key = Object.keys(window.SMOGON_CACHE).find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '') === mon.id.replace(/[^a-z0-9]/g, ''));
-                if(key) smogonData = window.SMOGON_CACHE[key];
+        let setData = null;
+        let set = null;
+
+        // --- STRATEGY A: LOOKUP IN SETDEX ---
+        if (window.SETDEX_CACHE) {
+            // Direct match
+            setData = window.SETDEX_CACHE[mon.name];
+            
+            // If direct match failed, try fuzzy match on ID (e.g. Iron Bundle vs ironbundle)
+            if (!setData) {
+                let cleanId = mon.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+                let foundKey = Object.keys(window.SETDEX_CACHE).find(k => 
+                    k.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanId
+                );
+                if(foundKey) setData = window.SETDEX_CACHE[foundKey];
+            }
+
+            // If we found the pokemon, pick the first available set (usually the standard meta set)
+            if (setData) {
+                let firstSetName = Object.keys(setData)[0];
+                set = setData[firstSetName];
             }
         }
 
-        if (smogonData) {
-            // --- SMOGON MODE ---
-            exportText += `${mon.name} @ ${getTopKey(smogonData.Items) || 'Leftovers'}\n`;
-            exportText += `Ability: ${getTopKey(smogonData.Abilities)}\n`;
+        if (set) {
+            // --- BUILD EXPORT FROM SETDEX ---
+            exportText += `${mon.name} @ ${set.item || 'Leftovers'}\n`;
+            if(set.ability) exportText += `Ability: ${set.ability}\n`;
+            if(set.level && set.level != 100) exportText += `Level: ${set.level}\n`;
+            if(set.teraType) exportText += `Tera Type: ${set.teraType}\n`;
             
-            let topSpread = getTopKey(smogonData.Spreads); 
-            if(topSpread) {
-                let parts = topSpread.split(':');
-                let nature = parts[0];
-                let evs = parts[1].split('/');
-                exportText += `${nature} Nature\n`;
-                exportText += `EVs: ${evs[0]} HP / ${evs[1]} Atk / ${evs[2]} Def / ${evs[3]} SpA / ${evs[4]} SpD / ${evs[5]} Spe\n`;
-            } else {
-                exportText += `Serious Nature\n`;
+            // EVs
+            if(set.evs) {
+                let evList = [];
+                for (const [stat, val] of Object.entries(set.evs)) {
+                    if(val > 0) evList.push(`${val} ${stat.replace('spa','SpA').replace('spd','SpD').replace('spe','Spe').replace('atk','Atk').replace('def','Def').replace('hp','HP')}`);
+                }
+                if(evList.length > 0) exportText += `EVs: ${evList.join(' / ')}\n`;
             }
 
-            let moves = getTopKeys(smogonData.Moves, 4);
-            moves.forEach(m => exportText += `- ${m}\n`);
+            if(set.nature) exportText += `${set.nature} Nature\n`;
+            
+            // Moves
+            if(set.moves) {
+                set.moves.forEach(m => exportText += `- ${m}\n`);
+            }
             exportText += `\n`;
 
         } else {
-            // --- FALLBACK (PokéAPI) ---
+            // --- STRATEGY B: FALLBACK (PokéAPI) ---
             try {
                 let query = mon.id.toLowerCase().replace(/[^a-z0-9]/g, '');
                 let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${query}`);
@@ -436,17 +465,6 @@ window.exportTeam = async function(side) {
         btn.innerHTML = '<i class="fas fa-check" style="color:#0f0"></i> Copied!';
         setTimeout(() => { btn.innerHTML = originalIcon; }, 2000);
     });
-}
-
-// Helper to find key with highest value in Smogon object
-function getTopKey(obj) {
-    if(!obj) return null;
-    return Object.keys(obj).reduce((a, b) => obj[a] > obj[b] ? a : b);
-}
-
-function getTopKeys(obj, n) {
-    if(!obj) return [];
-    return Object.keys(obj).sort((a,b) => obj[b] - obj[a]).slice(0, n);
 }
 
 function saveColumnState(side) {
