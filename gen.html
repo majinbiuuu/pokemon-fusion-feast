@@ -118,7 +118,7 @@
       
       <div class="search-wrapper">
           <span class="search-icon"><i class="fas fa-search"></i></span>
-          <input type="text" class="search-input" id="search-input" placeholder="Search..." oninput="handleSearch(this.value)">
+          <input type="text" class="search-input" id="search-input" placeholder="Search..." oninput="pushSearch(this.value)">
       </div>
     </div>
 
@@ -191,21 +191,42 @@
   if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
 
   function startSync() {
+      // Sync Team View
       db.ref('gen/team').on('value', snap => {
           if(document.getElementById('search-input').value.trim() !== '') return;
           var team = snap.val() || [];
           showFinal(team, false); 
       });
+      // Sync Used Pokemon
       db.ref('gen/used').on('value', snap => {
           var map = snap.val() || {};
           USED_IDS = Object.keys(map);
           updateUsedVisuals();
       });
+      // NEW: Sync Filters and Settings
+      db.ref('gen/filters').on('value', snap => {
+          FILTERS = snap.val() || { gen:[], type:[], color:[] };
+          renderTags();
+          updateDropdownCheckmarks();
+      });
+      db.ref('gen/settings').on('value', snap => {
+          SETTINGS = snap.val() || { mega:false, evolved:true, dupes:true };
+          updateToggleVisuals();
+      });
+      // NEW: Sync Search Input
+      db.ref('gen/search').on('value', snap => {
+          var term = snap.val() || "";
+          var input = document.getElementById('search-input');
+          if(input.value !== term) {
+              input.value = term;
+              handleSearch(term);
+          }
+      });
   }
 
   // --- LOGIC ---
   function runGen() {
-    document.getElementById('search-input').value = "";
+    db.ref('gen/search').set(""); // Clear search for everyone
     
     var amount = AMT_OPTS[AMT_IDX];
     if(ALL_KEYS.length===0) return;
@@ -280,7 +301,7 @@
     for(var k=0; k<amount; k++) {
        if(pool.length===0) break;
        var r = Math.floor(Math.random() * pool.length);
-       var candidate = pool[r];
+       var candidate = JSON.parse(JSON.stringify(pool[r])); // Clone to safely add shiny flag
        var root = candidate.data.baseSpecies || candidate.data.name;
        
        if(SETTINGS.dupes) {
@@ -288,6 +309,12 @@
            batchSpecies.push(root);
            GLOBAL_SEEN.push(root); 
        }
+
+       // SYNC SHINY LOGIC: Randomize shiny flag before sending to DB so everyone sees the same one
+       if(candidate.shiny === false) {
+           if(activeColorsLength() === 0 && Math.random() < 0.01) candidate.shiny = true;
+       }
+
        picked.push(candidate);
        if(!SETTINGS.dupes) pool.splice(r,1); 
     }
@@ -297,6 +324,10 @@
   }
 
   // --- SEARCH LOGIC ---
+  function pushSearch(val) {
+      db.ref('gen/search').set(val);
+  }
+
   function handleSearch(term) {
       term = term.trim().toLowerCase();
       var g = document.getElementById('gen-grid'); 
@@ -358,10 +389,7 @@
 
     team.forEach(function(item) {
        var p = item.data;
-       var shiny = item.shiny;
-       if(shiny === undefined || shiny === false) {
-           if(activeColorsLength() === 0 && Math.random() < 0.01) shiny = true;
-       }
+       var shiny = item.shiny; // Use pre-synced shiny flag
        
        var displayName = p.name.replace(/-/g, ' '); 
        var types = p.types; 
@@ -449,18 +477,32 @@
     for(var i=0;i<list.length;i++){
       var val = isObj?list[i].v:list[i];
       var lbl = isObj?list[i].t:lblFn(val);
-      h+='<div class="dd-item" onclick="toggleTag(\''+cat+'\',\''+val+'\',this)"><div class="dd-box"></div>'+lbl+'</div>';
+      h+='<div class="dd-item" data-val="'+val+'" onclick="toggleTag(\''+cat+'\',\''+val+'\',this)"><div class="dd-box"></div>'+lbl+'</div>';
     }
     document.getElementById(id).innerHTML = h;
   }
   function toggleDD(cat){ var el=document.getElementById('dd-'+cat); var s=el.classList.contains('show'); closeAllDD(); if(!s)el.classList.add('show'); } 
   function closeAllDD(){ var els=document.querySelectorAll('.dd-menu'); for(var i=0;i<els.length;i++) els[i].classList.remove('show'); }
+  
   function toggleTag(cat, val, el){
     var idx = FILTERS[cat].indexOf(val);
-    if(idx===-1){ FILTERS[cat].push(val); el.classList.add('selected'); }
-    else { FILTERS[cat].splice(idx,1); el.classList.remove('selected'); }
-    renderTags();
+    if(idx===-1){ FILTERS[cat].push(val); }
+    else { FILTERS[cat].splice(idx,1); }
+    db.ref('gen/filters').set(FILTERS);
   }
+
+  function updateDropdownCheckmarks() {
+    ['gen','type','color'].forEach(cat => {
+      var menu = document.getElementById('dd-'+cat);
+      var items = menu.querySelectorAll('.dd-item');
+      items.forEach(item => {
+        var val = item.getAttribute('data-val');
+        if(FILTERS[cat].indexOf(val) > -1) item.classList.add('selected');
+        else item.classList.remove('selected');
+      });
+    });
+  }
+
   function renderTags(){
     var c=document.getElementById('active-tags'); c.innerHTML='';
     var cats=['gen','type','color'];
@@ -479,20 +521,27 @@
       }
     }
   }
+
   function removeTag(cat, val){
     var idx = FILTERS[cat].indexOf(val);
     if(idx>-1) FILTERS[cat].splice(idx,1);
-    var menu=document.getElementById('dd-'+cat);
-    var items=menu.children;
-    var opts = (cat==='type'?TYPES:(cat==='gen'?GENS:COLORS));
-    for(var j=0;j<items.length;j++) {
-       var oval = (cat==='color'?opts[j]:opts[j].v);
-       if(oval===val) items[j].classList.remove('selected');
-    }
-    renderTags();
+    db.ref('gen/filters').set(FILTERS);
   }
+
   function modAmt(n){ AMT_IDX+=n; if(AMT_IDX<0)AMT_IDX=AMT_OPTS.length-1; if(AMT_IDX>=AMT_OPTS.length)AMT_IDX=0; document.getElementById('amt-display').innerText=AMT_OPTS[AMT_IDX]; }
-  function toggleSetting(k){ SETTINGS[k]=!SETTINGS[k]; var b=document.getElementById('btn-'+k); if(SETTINGS[k])b.classList.add('active'); else b.classList.remove('active'); }
+  
+  function toggleSetting(k){ 
+    SETTINGS[k]=!SETTINGS[k]; 
+    db.ref('gen/settings').set(SETTINGS);
+  }
+
+  function updateToggleVisuals() {
+    ['mega','dupes','evolved'].forEach(k => {
+      var b=document.getElementById('btn-'+k);
+      if(SETTINGS[k]) b.classList.add('active'); 
+      else b.classList.remove('active');
+    });
+  }
   
   // HISTORY
   function goHistory(d){ 
@@ -505,10 +554,8 @@
   
   // CLEAR ACTIONS (Immediate Visual Clear + DB Clear)
   function doClear(){ 
-      FILTERS = { gen:[], type:[], color:[] };
-      renderTags();
-      closeAllDD();
-      var els=document.querySelectorAll('.dd-item'); for(var i=0;i<els.length;i++) els[i].classList.remove('selected');
+      db.ref('gen/filters').set({ gen:[], type:[], color:[] });
+      db.ref('gen/search').set("");
       
       // Force Visual Clear Immediately
       document.getElementById('gen-grid').innerHTML = '';
