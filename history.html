@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Match History</title>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="style-global.css" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<style>
+  :root {
+    --theme-green: var(--accent);
+    --glass-bg: rgba(20, 20, 20, 0.95);
+    --border-color: rgba(255, 255, 255, 0.15);
+    --text-dim: #888;
+  }
+
+  body { 
+    font-family: 'Segoe UI', sans-serif; 
+    color: #eee; 
+    margin: 0; 
+    padding: 20px; 
+    background: transparent; 
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  /* --- TOP ACTIONS --- */
+  .header-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+  }
+  .btn-add {
+    background: #111;
+    border: 1px solid #444;
+    color: var(--theme-green);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-add:hover { background: var(--theme-green); color: #000; box-shadow: 0 0 15px var(--theme-green); }
+
+  /* --- HISTORY LIST --- */
+  #hist-list { display: flex; flex-direction: column; gap: 15px; padding-bottom: 50px; }
+
+  .match-block {
+    background: var(--glass-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    animation: slideIn 0.3s ease-out;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Date Header */
+  .match-date-row {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 8px 25px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .chal-badge {
+    background: #6e00ff;
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 900;
+    text-transform: uppercase;
+    box-shadow: 0 0 10px rgba(110, 0, 255, 0.4);
+    letter-spacing: 0.5px;
+  }
+
+  /* GRID SYSTEM - REFINED SPACING */
+  .grid-layout {
+    display: grid;
+    /* Adjusted columns: Mode/Side get flex space, Fixed widths for small data */
+    grid-template-columns: minmax(150px, 1.5fr) minmax(150px, 1.5fr) 70px 50px 120px 80px 1fr 100px;
+    gap: 20px;
+    align-items: center;
+  }
+
+  /* Data Headers */
+  .match-headers {
+    padding: 12px 25px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: 900;
+    color: #555;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  /* Data Row */
+  .match-data {
+    padding: 16px 25px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  .match-data:hover { background: rgba(255,255,255,0.02); }
+
+  .col-winner { font-weight: 900; font-size: 1rem; }
+  .win-ALB { color: #ff4444; text-shadow: 0 0 8px rgba(255,68,68,0.3); }
+  .win-BIU { color: #4488ff; text-shadow: 0 0 8px rgba(68,136,255,0.3); }
+
+  .col-links { display: flex; gap: 6px; flex-wrap: wrap; }
+  .link-chip {
+    background: #222; border: 1px solid #444; color: #ccc;
+    font-size: 0.7rem; padding: 4px 10px; border-radius: 4px;
+    text-decoration: none; transition: 0.2s; font-weight: 700;
+  }
+  .link-chip:hover { border-color: var(--theme-green); color: #fff; background: #333; }
+
+  /* Actions */
+  .col-actions { display: flex; gap: 15px; justify-content: flex-end; align-items: center; }
+  .act-btn {
+    background: transparent; border: none; color: #555; cursor: pointer;
+    font-size: 1rem; transition: 0.2s; padding: 0; width: 20px; text-align: center;
+  }
+  .act-btn:hover { color: #fff; transform: scale(1.15); }
+  .act-del:hover { color: #ff4444; text-shadow: 0 0 8px #ff4444; } 
+  
+  /* EXPAND BUTTON */
+  .exp-btn {
+      color: var(--theme-green); opacity: 0.8; transform: rotate(0deg); transition: 0.3s;
+  }
+  .exp-btn:hover { opacity: 1; text-shadow: 0 0 8px var(--theme-green); }
+  .exp-btn.open { transform: rotate(180deg); }
+
+  /* EXPANDED DETAILS SECTION */
+  .detail-row {
+      display: none;
+      background: rgba(0,0,0,0.4);
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding: 20px 25px;
+      animation: fadeIn 0.3s;
+  }
+  .detail-row.show { display: block; }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+  .det-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 15px;
+  }
+  .det-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex; flex-direction: column; gap: 4px;
+  }
+  .det-head { font-size: 0.75rem; color: var(--theme-green); font-weight: 900; margin-bottom: 5px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 5px; letter-spacing: 1px; }
+  .det-val { font-size: 0.85rem; color: #ddd; }
+  .det-label { color: #666; font-size: 0.7rem; font-weight: 700; margin-right: 5px; text-transform: uppercase; }
+
+  /* --- MODAL --- */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); z-index: 2000;
+    display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(5px);
+  }
+  .modal-box {
+    background: #111; border: 1px solid #333; border-radius: 12px;
+    width: 400px; padding: 20px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.8);
+  }
+  .modal-title { font-size: 1.2rem; font-weight: 900; margin-bottom: 15px; color: var(--theme-green); text-transform: uppercase; }
+  
+  .form-group { margin-bottom: 12px; }
+  .form-lbl { font-size: 0.75rem; color: #888; margin-bottom: 4px; display: block; font-weight: 700; }
+  .form-in { 
+    width: 100%; background: #000; border: 1px solid #333; color: #fff; 
+    padding: 8px; border-radius: 4px; box-sizing: border-box; font-family: inherit; 
+  }
+  .form-in:focus { outline: none; border-color: var(--theme-green); }
+
+  .modal-btns { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+  .m-btn { padding: 8px 20px; border-radius: 6px; font-weight: 800; cursor: pointer; border: none; }
+  .m-cancel { background: #333; color: #ccc; }
+  .m-save { background: var(--theme-green); color: #000; }
+
+  .empty-state { text-align: center; color: #555; font-weight: 800; margin-top: 50px; font-size: 1.2rem; }
+</style>
+</head>
+<body>
+
+  <div class="header-actions">
+    <button class="btn-add" onclick="openModal()">
+      <i class="fas fa-plus"></i> Manual Add
+    </button>
+  </div>
+
+  <div id="hist-list">
+    <div class="empty-state">Loading matches...</div>
+  </div>
+
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal-box">
+      <div class="modal-title" id="modal-title">Add Match</div>
+      <input type="hidden" id="edit-id">
+      
+      <div class="form-group">
+        <label class="form-lbl">Game Mode</label>
+        <input class="form-in" id="in-mode" placeholder="e.g. This or That">
+      </div>
+      <div class="form-group">
+        <label class="form-lbl">Side Quest</label>
+        <input class="form-in" id="in-side" placeholder="e.g. MegaMind">
+      </div>
+      <div class="form-group" style="display:flex; gap:10px">
+        <div style="flex:1">
+            <label class="form-lbl">Points</label>
+            <input class="form-in" id="in-points" placeholder="1 Point">
+        </div>
+        <div style="flex:1">
+            <label class="form-lbl">SP</label>
+            <input class="form-in" id="in-sp" placeholder="3">
+        </div>
+      </div>
+      <div class="form-group" style="display:flex; gap:10px">
+        <div style="flex:1">
+            <label class="form-lbl">Winner</label>
+            <select class="form-in" id="in-winner">
+                <option value="ALB">ALB</option>
+                <option value="BIU">BIU</option>
+            </select>
+        </div>
+        <div style="flex:1">
+            <label class="form-lbl">Record (e.g. A-B-A)</label>
+            <input class="form-in" id="in-record" placeholder="A-B-A">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-lbl">Replay Links (Comma separated)</label>
+        <textarea class="form-in" id="in-links" rows="3" placeholder="https://replay... , https://replay..."></textarea>
+      </div>
+
+      <div class="modal-btns">
+        <button class="m-btn m-cancel" onclick="closeModal()">Cancel</button>
+        <button class="m-btn m-save" onclick="saveData()">Save</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // --- 1. FIREBASE SETUP ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyDz82Dp56EISYqk3hza3upJ2pAjsStgMKo",
+    authDomain: "pokemon-masters-d153a.firebaseapp.com",
+    databaseURL: "https://pokemon-masters-d153a-default-rtdb.firebaseio.com",
+    projectId: "pokemon-masters-d153a",
+    storageBucket: "pokemon-masters-d153a.firebasestorage.app",
+    messagingSenderId: "67655442054",
+    appId: "1:67655442054:web:705baa26ffda58b5d3fb07",
+    measurementId: "G-LGW9RJZDP3"
+  };
+
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // --- THEME SYNC ---
+  window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'THEME_UPDATE') {
+          document.documentElement.style.setProperty('--theme-green', event.data.color);
+      }
+  });
+  if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
+
+  // --- 2. RENDER LOGIC ---
+  db.ref('history').limitToLast(50).on('value', snap => {
+      const container = document.getElementById('hist-list');
+      container.innerHTML = "";
+      const raw = snap.val();
+      
+      if(!raw) {
+          container.innerHTML = '<div class="empty-state">No matches found.</div>';
+          return;
+      }
+
+      // Sort Newest First
+      const entries = Object.entries(raw).sort((a,b) => b[1].timestamp - a[1].timestamp);
+
+      entries.forEach(([key, data]) => {
+          renderMatchBlock(key, data, container);
+      });
+  });
+
+  function renderMatchBlock(key, data, container) {
+      // 1. Determine Display Data
+      let dateStr = new Date(data.timestamp).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' });
+      
+      // LOGIC FIX: Check for Challenge flag OR if rich record data exists (e.g. modes per game)
+      let isChallenge = (data.settings && data.settings.mode === 'Challenge');
+      let hasRichData = Array.isArray(data.record) && data.record.some(r => r.mode || r.side);
+      let showDetails = isChallenge || hasRichData;
+      
+      let mode = data.dashSnapshot ? data.dashSnapshot.mode : (data.mode || "Mixed");
+      let side = data.dashSnapshot ? data.dashSnapshot.side : (data.side || "Mixed");
+      let points = data.dashSnapshot ? data.dashSnapshot.points : (data.points || "-");
+      let sp = data.dashSnapshot ? data.dashSnapshot.sp : (data.sp || "4"); 
+
+      // If Challenge mode, mode/side are "Various" in the main summary
+      if(showDetails) { mode = "Various"; side = "Various"; }
+
+      // Calculate Record String
+      let recordStr = "???";
+      if(Array.isArray(data.record)) {
+          recordStr = data.record.map(r => r.result).join(' - ');
+      } else if(typeof data.record === 'string') {
+          recordStr = data.record; 
+      }
+
+      // Calculate Links
+      let linkHtml = "";
+      if(Array.isArray(data.links)) {
+         data.links.forEach((l, idx) => {
+             let urlMatch = l.match(/(https?:\/\/[^\s]+)/g);
+             let url = urlMatch ? urlMatch[0] : '#';
+             linkHtml += `<a href="${url}" target="_blank" class="link-chip">G${idx+1}</a>`;
+         });
+      } else if (typeof data.links === 'string' && data.links.length > 0) {
+          let urls = data.links.split(',');
+          urls.forEach((u, idx) => {
+              if(u.trim()) linkHtml += `<a href="${u.trim()}" target="_blank" class="link-chip">G${idx+1}</a>`;
+          });
+      }
+
+      // Build Details HTML (For Challenge Mode)
+      let detailsHtml = "";
+      let expandBtn = "";
+      
+      if(showDetails && Array.isArray(data.record)) {
+          let cards = "";
+          data.record.forEach((game, i) => {
+             let gMode = game.mode || "-";
+             let gSide = game.side || "-";
+             cards += `
+             <div class="det-card">
+                <div class="det-head">Game ${i+1}</div>
+                <div class="det-val"><span class="det-label">Mode:</span> ${gMode}</div>
+                <div class="det-val"><span class="det-label">Side:</span> ${gSide}</div>
+                <div class="det-val" style="margin-top:auto; color:${game.result==='A'?'var(--red)':'var(--blue)'}; font-weight:bold">${game.result} Win</div>
+             </div>`;
+          });
+          
+          detailsHtml = `<div class="detail-row" id="det-${key}"><div class="det-grid">${cards}</div></div>`;
+          expandBtn = `<button class="act-btn exp-btn" id="btn-${key}" onclick="toggleDetails('${key}')"><i class="fas fa-chevron-down"></i></button>`;
+      }
+
+      // 2. Build Block HTML
+      let html = `
+      <div class="match-block">
+        <div class="match-date-row">
+            <span>${dateStr}</span>
+            ${showDetails ? '<span class="chal-badge">CHALLENGE MODE</span>' : ''}
+        </div>
+        
+        <div class="match-headers grid-layout">
+            <div>Game Mode</div>
+            <div>Side Quest</div>
+            <div>Points</div>
+            <div>SP</div>
+            <div>Record</div>
+            <div>Winner</div>
+            <div>Replay</div>
+            <div style="text-align:right">Actions</div>
+        </div>
+
+        <div class="match-data grid-layout">
+            <div style="color:#fff; font-weight:700">${mode}</div>
+            <div style="color:#fff">${side}</div>
+            <div>${points}</div>
+            <div>${sp}</div>
+            <div style="font-family:monospace; font-size:1rem; letter-spacing:1px">${recordStr}</div>
+            <div class="col-winner win-${data.winner}">${data.winner}</div>
+            <div class="col-links">${linkHtml}</div>
+            <div class="col-actions">
+                ${expandBtn}
+                <button class="act-btn" onclick="editEntry('${key}')"><i class="fas fa-pen"></i></button>
+                <button class="act-btn act-del" onclick="deleteEntry('${key}')"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+        ${detailsHtml}
+      </div>
+      `;
+      container.innerHTML += html;
+  }
+
+  // --- ACTIONS ---
+
+  function toggleDetails(key) {
+      let row = document.getElementById('det-' + key);
+      let btn = document.getElementById('btn-' + key);
+      if(row) {
+          let isVis = row.classList.contains('show');
+          if(isVis) {
+              row.classList.remove('show');
+              btn.classList.remove('open');
+          } else {
+              row.classList.add('show');
+              btn.classList.add('open');
+          }
+      }
+  }
+
+  function deleteEntry(key) {
+      if(confirm("Are you sure you want to delete this match? This cannot be undone.")) {
+          db.ref('history/' + key).remove();
+      }
+  }
+
+  // --- 4. MANUAL ADD / EDIT ---
+  
+  function openModal() {
+      document.getElementById('edit-modal').style.display = 'flex';
+      document.getElementById('modal-title').innerText = "Add Manual Match";
+      document.getElementById('edit-id').value = "";
+      clearInputs();
+  }
+
+  function editEntry(key) {
+      db.ref('history/' + key).once('value').then(snap => {
+          const d = snap.val();
+          document.getElementById('edit-modal').style.display = 'flex';
+          document.getElementById('modal-title').innerText = "Edit Match";
+          document.getElementById('edit-id').value = key;
+          
+          let mode = d.dashSnapshot ? d.dashSnapshot.mode : (d.mode || "");
+          let side = d.dashSnapshot ? d.dashSnapshot.side : (d.side || "");
+          let points = d.dashSnapshot ? d.dashSnapshot.points : (d.points || "");
+          let sp = d.dashSnapshot ? d.dashSnapshot.sp : (d.sp || "");
+          
+          let recStr = Array.isArray(d.record) ? d.record.map(r => r.result).join('-') : (d.record || "");
+          let linkStr = Array.isArray(d.links) ? d.links.join(',') : (d.links || "");
+
+          document.getElementById('in-mode').value = mode;
+          document.getElementById('in-side').value = side;
+          document.getElementById('in-points').value = points;
+          document.getElementById('in-sp').value = sp;
+          document.getElementById('in-winner').value = d.winner;
+          document.getElementById('in-record').value = recStr;
+          document.getElementById('in-links').value = linkStr;
+      });
+  }
+
+  function closeModal() {
+      document.getElementById('edit-modal').style.display = 'none';
+  }
+
+  function clearInputs() {
+      document.getElementById('in-mode').value = "";
+      document.getElementById('in-side').value = "";
+      document.getElementById('in-points').value = "";
+      document.getElementById('in-sp').value = "";
+      document.getElementById('in-record').value = "";
+      document.getElementById('in-links').value = "";
+  }
+
+  function saveData() {
+      const id = document.getElementById('edit-id').value;
+      
+      const payload = {
+          mode: document.getElementById('in-mode').value,
+          side: document.getElementById('in-side').value,
+          points: document.getElementById('in-points').value,
+          sp: document.getElementById('in-sp').value,
+          winner: document.getElementById('in-winner').value,
+          record: document.getElementById('in-record').value,
+          links: document.getElementById('in-links').value,
+          timestamp: id ? undefined : Date.now() 
+      };
+
+      if(!id) payload.timestamp = Date.now();
+      if(id) delete payload.timestamp; 
+
+      if(id) {
+          db.ref('history/' + id).update(payload);
+      } else {
+          db.ref('history').push(payload);
+      }
+      closeModal();
+  }
+</script>
+</body>
+</html>

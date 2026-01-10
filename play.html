@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Pokemon Masters Dashboard</title>
+<link href="style-global.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<style>
+  /* --- LOCAL OVERRIDES --- */
+  :root {
+    --theme-green: var(--accent);
+    --glass-bg: rgba(20, 20, 20, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --card-dark: rgba(0, 0, 0, 0.85); 
+    --text-main: #eee;
+    --text-dim: #888;
+  }
+
+  html { box-sizing: border-box; }
+  *, *:before, *:after { box-sizing: inherit; }
+
+  body { 
+    font-family: 'Segoe UI', sans-serif; 
+    color: var(--text-main); 
+    margin: 0; 
+    padding: 20px; 
+    background: transparent;
+    user-select: none;
+    height: 100vh; 
+    overflow-y: auto; 
+    width: 100%;
+  }
+
+  .glass-box {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    position: relative;
+  }
+
+  .play-header { display: flex; gap: 15px; margin-bottom: 20px; height: 55px; }
+  
+  .btn-big {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-dim);
+    font-weight: 900;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    transition: 0.2s;
+    text-transform: uppercase;
+  }
+  
+  .btn-accent {
+    background: var(--theme-green) !important;
+    color: #000;
+    border: none;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); 
+  }
+  .btn-accent:hover {
+    background: var(--theme-green);
+    filter: brightness(1.2);
+    box-shadow: 0 0 25px var(--theme-green); 
+  }
+  .btn-big:hover:not(.btn-accent) { color: #fff; background: rgba(255,255,255,0.1); }
+
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+  .p-card {
+    background: var(--card-dark);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .c-lbl { font-size: 0.75rem; color: var(--text-dim); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;}
+  .c-val { font-size: 1.6rem; font-weight: 900; color: #fff; line-height: 1.1; }
+  .c-note { font-size: 0.85rem; color: var(--theme-green); font-style: italic; margin-top: 5px; }
+
+  /* --- QUICK GEN --- */
+  .qg-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .qg-row { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
+  
+  .qg-btn {
+    flex: 1;
+    padding: 10px 5px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #222;
+    border: 1px solid #333;
+    color: #ccc;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+    white-space: nowrap;
+  }
+  .qg-btn:hover { border-color: var(--theme-green); color: #fff; }
+  .btn-shit { border-color: #5d4037; color: #a1887f; }
+  .btn-shit:hover { background: #5d4037; color: #fff; border-color: #8d6e63; }
+
+  .x3-switch-container {
+    display: flex; align-items: center; gap: 8px; margin-left: 10px; padding: 5px 10px;
+    background: #111; border-radius: 6px; border: 1px solid #333; cursor: pointer; transition: 0.2s;
+  }
+  .x3-switch-container.active {
+    border-color: var(--theme-green);
+    box-shadow: 0 0 10px var(--theme-green);
+  }
+  .x3-lbl { font-weight: 800; font-size: 0.9rem; color: #888; }
+  .x3-switch-container.active .x3-lbl { color: var(--theme-green); }
+  
+  .qg-display { display: flex; gap: 15px; margin-top: 15px;}
+  .qg-box { 
+    flex: 1; background: #080808; border: 1px solid #333; border-radius: 8px; position: relative;
+    display: flex; align-items: center; justify-content: center; padding: 10px 15px; min-height: 60px; 
+  }
+  .qg-box-label { 
+    position: absolute; top: 6px; font-size: 0.65rem; font-weight: 900; 
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .qg-box-val { font-size: 1.1rem; font-weight: 700; color: #fff; line-height: 1.2; text-align: center; margin-top: 10px;}
+
+  .reroll { 
+    width: 40px; background: #222; border: 1px solid #333; color: #fff; border-radius: 8px; 
+    cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+  }
+  .reroll:hover { color: var(--theme-green); border-color: var(--theme-green); }
+
+  /* --- RECORD SECTION --- */
+  .rec-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; height: 32px; }
+  
+  .rec-toggle {
+      font-size: 0.75rem; font-weight: 800; color: #666; cursor: pointer; padding: 6px 12px;
+      border: 1px solid #333; border-radius: 4px; background: #111; transition: 0.2s; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: center;
+  }
+  .rec-toggle:hover { color: #fff; border-color: #555; }
+  .rec-toggle.active { color: var(--theme-green); border-color: var(--theme-green); background: rgba(255,255,255,0.05); }
+
+  .rec-points-input {
+      display: none;
+      width: 60px;
+      background: #000;
+      border: 1px solid var(--theme-green);
+      color: #fff;
+      font-weight: 900;
+      text-align: center;
+      padding: 6px;
+      border-radius: 4px;
+      margin-left: 10px;
+      font-size: 0.9rem;
+  }
+  .rec-points-input:focus { outline: none; box-shadow: 0 0 10px var(--theme-green); }
+
+  .rec-info-display { flex: 1; text-align: center; font-size: 0.8rem; color: #888; font-style: italic; padding: 0 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .rec-wrapper { display: flex; gap: 20px; align-items: stretch; }
+  .rec-games { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  
+  .rec-winner-box { 
+      width: 140px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 10px; 
+  }
+
+  .rec-winner-box .g-dot { height: 100% !important; min-height: 80px; }
+
+  .g-col { display: flex; flex-direction: column; gap: 8px; text-align: center; transition: 0.3s; }
+  .g-col.disabled { opacity: 0.2; pointer-events: none; }
+  .g-head { font-size: 0.75rem; font-weight: 900; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+  
+  .g-select {
+      background: #111; border: 1px solid #333; color: #aaa; font-size: 0.7rem; width: 100%;
+      height: 24px; border-radius: 4px; margin-bottom: 2px;
+  }
+  .g-select:focus { border-color: var(--theme-green); outline: none; color: #fff; }
+
+  .g-dot { 
+    height: 80px; 
+    background: rgba(0,0,0,0.3); border: 2px solid #333; border-radius: 6px; 
+    cursor: pointer; display: flex; align-items: center; justify-content: center; 
+    font-weight: 900; font-size: 2rem; transition: 0.1s; 
+  }
+  .g-dot.A { border-color: #ff4444; color: #ff4444; background: rgba(255,68,68,0.1); }
+  .g-dot.B { border-color: #4488ff; color: #4488ff; background: rgba(68,136,255,0.1); }
+  
+  .g-input { 
+    background: #111; border: 1px solid #333; color: #aaa; border-radius: 4px; padding: 8px; 
+    text-align: center; font-size: 0.75rem; width: 100%; box-sizing: border-box; 
+  }
+  .g-input:focus { border-color: var(--theme-green); outline: none; }
+
+  .save-btn { 
+    height: 40px; background: #222; color: #fff; border: 1px solid #444; font-weight: 900; 
+    cursor: pointer; border-radius: 6px; letter-spacing: 1px; font-size: 0.9rem; margin-top: auto;
+  }
+  .save-btn:hover { background: var(--theme-green); color: #000; border-color: var(--theme-green); }
+
+  /* --- TOKEN CENTER (Updated & Smaller) --- */
+  .token-center {
+    display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px;
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    border-radius: 12px; padding: 10px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative;
+    max-width: 400px; margin-left: auto; margin-right: auto;
+  }
+  
+  .claw-header { 
+      font-size: 0.8rem; font-weight: 900; color: var(--theme-green); 
+      text-transform: uppercase; letter-spacing: 2px; opacity: 0.8;
+  }
+  
+  .token-row { display: flex; justify-content: center; align-items: center; gap: 30px; width: 100%; }
+  
+  .token-player { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .token-name { font-weight: 800; font-size: 0.7rem; letter-spacing: 1px; opacity: 0.7; }
+  
+  .token-ctrls { 
+      display: flex; align-items: center; gap: 8px; 
+      background: rgba(0,0,0,0.4); padding: 4px 10px; 
+      border-radius: 20px; border: 1px solid #333; 
+  }
+  
+  .tk-btn { 
+      background: none; border: none; color: #666; font-weight: 900; 
+      font-size: 1rem; cursor: pointer; transition: 0.2s; padding: 0; line-height: 1;
+  }
+  .tk-btn:hover { color: var(--theme-green); }
+  
+  .tk-val { font-size: 1.1rem; font-weight: 900; color: #fff; min-width: 20px; text-align: center; }
+
+  .machine-display {
+    width: 60px; height: 60px; /* Smaller */
+    background: radial-gradient(circle, #222, #050505);
+    border: 2px solid var(--theme-green); 
+    border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; cursor: pointer; transition: 0.3s; position: relative;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  }
+  .machine-display:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--theme-green); }
+  .machine-display:active { transform: scale(0.95); }
+  
+  .token-icon { font-size: 1.8rem; filter: drop-shadow(0 0 2px var(--theme-green)); }
+  
+  .token-result-popup { 
+      position: absolute; top: -35px; background: var(--theme-green); color: #000; font-weight: 900;
+      padding: 4px 12px; border-radius: 4px; font-size: 0.8rem; white-space: nowrap;
+      animation: popBounce 2s forwards; display: none; z-index: 10;
+      box-shadow: 0 0 10px var(--theme-green);
+  }
+  @keyframes popBounce { 
+      0% { transform: translateY(10px) scale(0); opacity:0; } 
+      20% { transform: translateY(-5px) scale(1.1); opacity:1; } 
+      80% { transform: translateY(-5px) scale(1.1); opacity:1; } 
+      100% { transform: translateY(-20px) scale(1); opacity:0; } 
+  }
+
+  .anim-click:active { transform: scale(0.95) !important; filter: brightness(0.8); }
+  .anim-hover:hover { transform: translateY(-2px); border-color: var(--theme-green); }
+</style>
+</head>
+<body>
+
+  <div class="play-header">
+    <button class="btn-big btn-accent anim-click" onclick="safeCall('rollAll')">PLAY</button>
+    <button class="btn-big anim-click" onclick="safeCall('clearBoard')">CLEAR</button>
+  </div>
+
+  <div class="glass-box">
+    <div class="card-grid">
+      <div class="p-card anim-hover anim-click" onclick="safeCall('roll', 'mode', 'gameModes', 'modeNote')">
+        <div class="c-lbl">Game Mode</div>
+        <div class="c-val" id="val-mode">-</div>
+        <div class="c-note" id="note-mode"></div>
+      </div>
+      
+      <div class="p-card anim-hover anim-click" onclick="safeCall('roll', 'side', 'sides', 'sideNote')">
+        <div class="c-lbl">Side Quest</div>
+        <div class="c-val" id="val-side">-</div>
+        <div class="c-note" id="note-side"></div>
+      </div>
+      
+      <div class="p-card anim-hover anim-click" onclick="safeCall('roll', 'points', 'points', 'pointsNote')" style="min-height:80px">
+        <div class="c-lbl">Points</div>
+        <div class="c-val" id="val-points">-</div>
+        <div class="c-note" id="note-points"></div>
+      </div>
+      
+      <div class="p-card anim-hover anim-click" onclick="safeCall('roll', 'sp', 'sp', 'spNote')" style="min-height:80px">
+        <div class="c-lbl">SP</div>
+        <div class="c-val" id="val-sp">-</div>
+        <div class="c-note" id="note-sp"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass-box">
+    <div class="qg-controls">
+      <div class="qg-row">
+        <button class="qg-btn anim-click" onclick="safeCall('runQGen', 'Type')">Type</button>
+        <button class="qg-btn anim-click" onclick="safeCall('runQGen', 'Legendary Trio')">Legendary Trio</button>
+        <button class="qg-btn anim-click" onclick="safeCall('runQGen', 'Colour')">Colour</button>
+        <button class="qg-btn anim-click" onclick="safeCall('runQGen', 'RNG (1-9)')">RNG (1-9)</button>
+        <button class="qg-btn btn-shit anim-click" onclick="safeCall('runShitWheel')">SHIT WHEEL 💩</button>
+      </div>
+      
+      <div class="x3-switch-container anim-click" id="x3-btn" onclick="safeCall('toggleX3')">
+        <span class="x3-lbl">x3</span>
+      </div>
+    </div>
+
+    <div class="qg-display">
+      <div style="flex:1; display:flex; gap:5px;">
+        <button class="reroll anim-click" onclick="safeCall('localReroll', 'alb')">↻</button>
+        <div class="qg-box">
+          <div class="qg-box-label" style="left:10px; color:#ff4444" id="lbl-qg-a">ALB</div>
+          <div class="qg-box-val" id="qg-alb">-</div>
+        </div>
+      </div>
+      
+      <div style="flex:1; display:flex; gap:5px;">
+        <div class="qg-box">
+          <div class="qg-box-label" style="right:10px; color:#4488ff" id="lbl-qg-b">BIU</div>
+          <div class="qg-box-val" id="qg-biu">-</div>
+        </div>
+        <button class="reroll anim-click" onclick="safeCall('localReroll', 'biu')">↻</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass-box" style="margin-bottom: 10px;">
+    <div class="rec-header-row">
+        <div style="display:flex; align-items:center;">
+            <div class="rec-toggle" id="tog-mode" onclick="safeCall('setRecMode')">Regular</div>
+            <input id="chal-points-input" class="rec-points-input" placeholder="Pts" oninput="safeCall('setChalPoints', this.value)">
+        </div>
+        
+        <div id="reg-mode-display" class="rec-info-display"></div>
+        <div class="rec-toggle" id="tog-fmt" onclick="safeCall('setRecFormat')">BO3</div>
+    </div>
+
+    <div class="rec-wrapper" id="rec-wrapper">
+      <div class="rec-games">
+        <script>
+          for(let i=0; i<5; i++) {
+             document.write(`
+             <div class="g-col" id="col-${i}">
+                 <div id="top-chal-${i}" style="display:none">
+                    <select class="g-select" id="sel-m-${i}" onchange="safeCall('updateGameDetail', ${i}, 'mode')"></select>
+                    <select class="g-select" id="sel-s-${i}" onchange="safeCall('updateGameDetail', ${i}, 'side')"></select>
+                 </div>
+                 <div class="g-head">G${i+1}</div>
+                 <div class="g-dot anim-click" id="dot-${i}" onclick="safeCall('togDot', ${i})"></div>
+                 <input class="g-input" id="lnk-${i}" placeholder="Link" onchange="safeCall('broadcastRec')">
+             </div>`);
+          }
+        </script>
+      </div>
+
+      <div class="rec-winner-box">
+         <div class="g-head" style="text-align:center">WINNER</div>
+         <div class="g-dot" id="win-res" style="cursor:default">-</div>
+         <button class="save-btn anim-click" onclick="safeCall('saveMatch')">SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="token-center">
+      <div class="claw-header">Token Center</div>
+      <div class="token-row">
+          <div class="token-player">
+              <div class="token-name" style="color:#ff4444">ALB</div>
+              <div class="token-ctrls">
+                  <button class="tk-btn" onclick="safeCall('modToken', 'alb', -1)">-</button>
+                  <div class="tk-val" id="tk-alb">0</div>
+                  <button class="tk-btn" onclick="safeCall('modToken', 'alb', 1)">+</button>
+              </div>
+          </div>
+
+          <div class="machine-display" onclick="safeCall('rollToken')">
+              <div class="token-icon">🪙</div>
+              <div class="token-result-popup" id="token-pop">Result!</div>
+          </div>
+
+          <div class="token-player">
+              <div class="token-name" style="color:#4488ff">BIU</div>
+              <div class="token-ctrls">
+                  <button class="tk-btn" onclick="safeCall('modToken', 'biu', -1)">-</button>
+                  <div class="tk-val" id="tk-biu">0</div>
+                  <button class="tk-btn" onclick="safeCall('modToken', 'biu', 1)">+</button>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDz82Dp56EISYqk3hza3upJ2pAjsStgMKo",
+      authDomain: "pokemon-masters-d153a.firebaseapp.com",
+      databaseURL: "https://pokemon-masters-d153a-default-rtdb.firebaseio.com",
+      projectId: "pokemon-masters-d153a",
+      storageBucket: "pokemon-masters-d153a.firebasestorage.app",
+      messagingSenderId: "67655442054",
+      appId: "1:67655442054:web:705baa26ffda58b5d3fb07",
+      measurementId: "G-LGW9RJZDP3"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    
+    var appData = {};
+
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'THEME_UPDATE') {
+            document.documentElement.style.setProperty('--accent', event.data.color);
+            document.documentElement.style.setProperty('--theme-green', event.data.color);
+        }
+    });
+
+    if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
+
+    window.safeCall = function(fnName, ...args) {
+        if (typeof window[fnName] === 'function') window[fnName](...args);
+    };
+
+    const TYPES = [
+      "🔥 Fire", "💧 Water", "🍃 Grass", "⚡ Electric", "🔮 Psychic", "❄️ Ice", 
+      "🐉 Dragon", "🌑 Dark", "🎀 Fairy", "🙂 Normal", "🥊 Fighting", "🌪️ Flying", 
+      "💀 Poison", "🌎 Ground", "🏔️ Rock", "👻 Ghost", "⚙️ Steel", "🦗 Bug"
+    ];
+    const COLORS = ["Black", "Blue", "Brown", "Green", "Pink", "Purple", "Red", "White", "Yellow"];
+
+    // Changed to .on() for live updates
+    db.ref('library').on('value', snap => {
+        window.appData = snap.val() || {};
+        populateDropdowns();
+    });
+
+    db.ref('dashboard').on('value', snap => {
+        window.dashState = snap.val() || {}; 
+        const s = window.dashState;
+        ['mode','side','points','sp'].forEach(k => {
+            if(document.getElementById('val-'+k)) document.getElementById('val-'+k).innerText = s[k] || '-';
+            if(document.getElementById('note-'+k)) document.getElementById('note-'+k).innerText = s[k+'Note'] || '';
+        });
+        if(s.points) {
+            let ptsInput = document.getElementById('chal-points-input');
+            if(ptsInput && document.activeElement !== ptsInput) ptsInput.value = s.points;
+        }
+        updateRegInfoText();
+    });
+
+    db.ref('gen').on('value', snap => {
+        const g = snap.val() || {};
+        document.getElementById('qg-alb').innerText = g.a || '-';
+        document.getElementById('qg-biu').innerText = g.b || '-';
+        
+        let lblA = document.getElementById('lbl-qg-a');
+        let lblB = document.getElementById('lbl-qg-b');
+        if(g.t === 'ShitWheel') {
+            lblA.innerText = "WHEEL 💩 →";
+            lblB.innerText = "RNG";
+        } else {
+            lblA.innerText = "ALB";
+            lblB.innerText = "BIU";
+        }
+
+        window.lastQType = g.t || "";
+        window.isX3 = g.x3 || false;
+        const x3Btn = document.getElementById('x3-btn');
+        if(window.isX3) x3Btn.classList.add('active'); else x3Btn.classList.remove('active');
+    });
+
+    db.ref('tokens').on('value', snap => {
+        const t = snap.val() || { alb:0, biu:0 };
+        document.getElementById('tk-alb').innerText = t.alb || 0;
+        document.getElementById('tk-biu').innerText = t.biu || 0;
+    });
+
+    db.ref('record').on('value', snap => {
+        const r = snap.val() || {};
+        window.recState = r; 
+        updateToggleUI(r.settings || {});
+        const dots = r.dots || {};
+        const links = r.links || {};
+        const details = r.details || {}; 
+
+        for(let i=0; i<5; i++) {
+            let d = document.getElementById('dot-'+i);
+            if(d) {
+                let val = dots[i] || '';
+                d.className = 'g-dot anim-click ' + val;
+                d.innerText = val;
+            }
+            let l = document.getElementById('lnk-'+i);
+            if(l && document.activeElement !== l) l.value = links[i] || '';
+            
+            if(r.settings && r.settings.mode === 'Challenge') {
+                let mSel = document.getElementById('sel-m-'+i);
+                let sSel = document.getElementById('sel-s-'+i);
+                if(mSel && document.activeElement !== mSel) mSel.value = (details[i] && details[i].mode) ? details[i].mode : "";
+                if(sSel && document.activeElement !== sSel) sSel.value = (details[i] && details[i].side) ? details[i].side : "";
+            }
+        }
+        calculateWinner(dots, r.settings ? r.settings.format : 'BO3');
+    });
+
+    window.roll = function(key, listKey, noteKey) {
+        const lib = window.appData || {};
+        if(!lib[listKey]) return;
+        const list = lib[listKey];
+        const pick = list[Math.floor(Math.random() * list.length)];
+        let updates = {};
+        updates['dashboard/'+key] = pick.text;
+        if(noteKey) updates['dashboard/'+noteKey] = pick.note || "";
+        db.ref().update(updates);
+    };
+
+    window.rollAll = function() {
+        window.roll('mode', 'gameModes', 'modeNote');
+        window.roll('side', 'sides', 'sideNote');
+        window.roll('points', 'points', 'pointsNote');
+        window.roll('sp', 'sp', 'spNote');
+    };
+
+    window.clearBoard = function() {
+        db.ref().update({
+            'dashboard/mode': "-", 'dashboard/modeNote': "",
+            'dashboard/side': "-", 'dashboard/sideNote': "",
+            'dashboard/points': "-", 'dashboard/pointsNote': "",
+            'dashboard/sp': "-", 'dashboard/spNote': "",
+            'gen/a': "-", 'gen/b': "-", 'gen/t': "", 'gen/x3': false,
+            'record': null
+        });
+    };
+
+    window.toggleX3 = function() { db.ref('gen/x3').set(!window.isX3); };
+
+    function generateSet(type, count, excludeItems = []) {
+        let pool = [];
+        const lib = window.appData || {};
+        if(type === 'Type') pool = [...TYPES];
+        else if(type === 'Colour') pool = [...COLORS];
+        else if(type === 'RNG (1-9)') pool = [1,2,3,4,5,6,7,8,9];
+        else if(type === 'Legendary Trio') pool = lib.trio ? lib.trio.map(t => t.text) : ["Err"];
+        else return ["-"];
+
+        pool = pool.filter(item => !excludeItems.includes(item));
+        let result = [];
+        for(let i=0; i<count; i++) {
+            if(pool.length === 0) break;
+            let idx = Math.floor(Math.random() * pool.length);
+            result.push(pool[idx]);
+            pool.splice(idx, 1);
+        }
+        return result.join(" / ");
+    }
+
+    window.runQGen = function(type) {
+        let count = window.isX3 ? 3 : 1;
+        let valA = generateSet(type, count, []);
+        let valB = generateSet(type, count, valA.split(' / ').map(s => isNaN(s) ? s : parseInt(s)));
+        db.ref('gen').update({ a:valA, b:valB, t:type });
+    };
+
+    // --- UPDATED SHITWHEEL LOGIC ---
+    window.runShitWheel = function() {
+        const lib = window.appData || {};
+        // Try strict name, then lowercase, then fallback
+        let raw = lib.ShitWheelList || lib.shitWheelList || lib.shitWheel;
+        
+        if(!raw) {
+             const keys = Object.keys(lib).join(", ");
+             return alert(`Error: 'ShitWheelList' not found in Library.\n\nItems currently in your database:\n${keys}`);
+        }
+        
+        const list = Object.values(raw);
+        if(list.length === 0) return alert("Wheel List is empty!");
+        
+        const rand = list[Math.floor(Math.random() * list.length)];
+        const pick = (typeof rand === 'object' && rand.text) ? rand.text : rand;
+        
+        db.ref('gen').update({ a: "WHEEL 💩 →", b: pick, t: "ShitWheel" });
+    };
+
+    window.localReroll = function(who) {
+        if(!window.lastQType) return;
+        if(window.lastQType === "ShitWheel") return window.runShitWheel();
+        let count = window.isX3 ? 3 : 1;
+        let otherWho = (who === 'alb') ? 'biu' : 'alb';
+        let otherValRaw = document.getElementById('qg-' + otherWho).innerText;
+        let exclude = otherValRaw.split(' / ').map(s => isNaN(s) ? s : parseInt(s));
+        let newVal = generateSet(window.lastQType, count, exclude);
+        db.ref('gen/' + (who === 'alb' ? 'a' : 'b')).set(newVal);
+    };
+
+    window.modToken = function(p, val) {
+        db.ref('tokens/' + p).transaction(curr => (curr || 0) + val);
+    };
+
+    // --- UPDATED TOKEN LOGIC ---
+    window.rollToken = function() {
+        const lib = window.appData || {};
+        // Try strict name, then lowercase, then fallback
+        let raw = lib.TokenList || lib.tokenList || lib.tokens;
+        
+        if(!raw) {
+             const keys = Object.keys(lib).join(", ");
+             return alert(`Error: 'TokenList' not found in Library.\n\nItems currently in your database:\n${keys}`);
+        }
+        
+        const list = Object.values(raw);
+        if(list.length === 0) return alert("Token List is empty!");
+        
+        const rand = list[Math.floor(Math.random() * list.length)];
+        const pick = (typeof rand === 'object' && rand.text) ? rand.text : rand;
+        
+        const pop = document.getElementById('token-pop');
+        pop.innerText = pick;
+        pop.style.display = 'block';
+        setTimeout(() => { pop.style.display = 'none'; }, 2000);
+    };
+
+    window.setRecMode = function() {
+        let curr = window.recState?.settings?.mode || 'Regular';
+        let next = curr === 'Regular' ? 'Challenge' : 'Regular';
+        db.ref('record/settings/mode').set(next);
+        if(next === 'Challenge') db.ref('dashboard/sp').set('4');
+    };
+
+    window.setRecFormat = function() {
+        let curr = window.recState?.settings?.format || 'BO3';
+        let next = curr === 'BO3' ? 'BO5' : 'BO3';
+        db.ref('record/settings/format').set(next);
+    };
+
+    window.setChalPoints = function(val) { db.ref('dashboard/points').set(val); };
+
+    function updateToggleUI(settings) {
+        let mode = settings.mode || 'Regular';
+        let fmt = settings.format || 'BO3';
+        let mTog = document.getElementById('tog-mode');
+        if(mTog) {
+            mTog.innerText = mode;
+            if(mode === 'Challenge') mTog.classList.add('active'); else mTog.classList.remove('active');
+        }
+        let fTog = document.getElementById('tog-fmt');
+        if(fTog) {
+            fTog.innerText = fmt;
+            if(fmt === 'BO5') fTog.classList.add('active'); else fTog.classList.remove('active');
+        }
+        document.getElementById('chal-points-input').style.display = (mode === 'Challenge') ? 'block' : 'none';
+        document.getElementById('reg-mode-display').style.display = (mode === 'Regular') ? 'block' : 'none';
+        for(let i=0; i<5; i++) {
+            let col = document.getElementById('col-'+i);
+            if(col) col.classList.toggle('disabled', fmt === 'BO3' && i >= 3);
+            let chalDiv = document.getElementById('top-chal-'+i);
+            if(chalDiv) chalDiv.style.display = (mode === 'Challenge') ? 'block' : 'none';
+        }
+    }
+
+    function updateRegInfoText() {
+        if(!window.dashState) return;
+        let txt = `${window.dashState.mode || '-'} / ${window.dashState.side || '-'} / ${window.dashState.points || '-'} / ${window.dashState.sp || '-'}`;
+        if(document.getElementById('reg-mode-display')) document.getElementById('reg-mode-display').innerText = txt;
+    }
+
+    function populateDropdowns() {
+        const lib = window.appData || {};
+        for(let i=0; i<5; i++) {
+            let mSel = document.getElementById('sel-m-'+i);
+            let sSel = document.getElementById('sel-s-'+i);
+            if(mSel && sSel && mSel.innerHTML === "") { 
+                mSel.innerHTML = "<option value=''>Game Mode</option>";
+                sSel.innerHTML = "<option value=''>Side Quest</option>";
+                (lib.gameModes || []).forEach(m => { let op = document.createElement('option'); op.value = m.text; op.innerText = m.text; mSel.appendChild(op); });
+                (lib.sides || []).forEach(s => { let op = document.createElement('option'); op.value = s.text; op.innerText = s.text; sSel.appendChild(op); });
+            }
+        }
+    }
+
+    window.updateGameDetail = function(idx, type) {
+        let val = document.getElementById(`sel-${type==='mode'?'m':'s'}-${idx}`).value;
+        db.ref(`record/details/${idx}/${type}`).set(val);
+        const match = (window.appData[type==='mode'?'gameModes':'sides'] || []).find(x => x.text === val);
+        db.ref('dashboard').update({ [type]: val, [`${type}Note`]: match?.note || "" });
+    };
+
+    window.togDot = function(i) {
+        let curr = document.getElementById('dot-'+i).innerText;
+        db.ref(`record/dots/${i}`).set(curr === 'A' ? 'B' : (curr === 'B' ? '' : 'A'));
+    };
+
+    function calculateWinner(dots, format) {
+        let a = 0; let b = 0;
+        let max = format === 'BO3' ? 3 : 5;
+        for(let i=0; i<max; i++) { if(dots[i] === 'A') a++; if(dots[i] === 'B') b++; }
+        let winner = (a >= (format === 'BO3' ? 2 : 3)) ? "ALB" : ((b >= (format === 'BO3' ? 2 : 3)) ? "BIU" : "-");
+        let wEl = document.getElementById('win-res');
+        if(wEl) { wEl.innerText = winner; wEl.className = 'g-dot ' + (winner === 'ALB' ? 'A' : (winner === 'BIU' ? 'B' : '')); }
+    }
+
+    window.broadcastRec = function() {
+        for(let i=0; i<5; i++) {
+            let l = document.getElementById('lnk-'+i);
+            if(l) db.ref(`record/links/${i}`).set(l.value);
+        }
+    };
+
+    window.saveMatch = function() {
+        let winner = document.getElementById('win-res').innerText;
+        if(winner === '-' || winner === '') return alert("No winner yet.");
+        let settings = window.recState?.settings || { mode: 'Regular', format: 'BO3' };
+        let payload = { timestamp: Date.now(), winner, settings, record: [], links: [] };
+        let count = settings.format === 'BO3' ? 3 : 5;
+        for(let i=0; i<count; i++) {
+            let dVal = document.getElementById('dot-'+i).innerText || '-';
+            let lVal = document.getElementById('lnk-'+i).value || '';
+            let gameInfo = { result: dVal };
+            if(settings.mode === 'Challenge') {
+                gameInfo.mode = document.getElementById('sel-m-'+i).value;
+                gameInfo.side = document.getElementById('sel-s-'+i).value;
+                gameInfo.sp = "4";
+            } else payload.dashSnapshot = window.dashState;
+            payload.record.push(gameInfo);
+            if(lVal) payload.links.push(`G${i+1}: ${lVal}`);
+        }
+        db.ref('history').push(payload);
+        alert("Match Saved!");
+        db.ref('record').update({ dots:null, links:null, details:null });
+    };
+  </script>
+</body>
+</html>
