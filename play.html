@@ -464,6 +464,10 @@
         if(s.points) {
             let ptsInput = document.getElementById('chal-points-input');
             if(ptsInput && document.activeElement !== ptsInput) ptsInput.value = s.points;
+        } else {
+            // Fix: ensure blank if empty in DB
+            let ptsInput = document.getElementById('chal-points-input');
+            if(ptsInput && document.activeElement !== ptsInput) ptsInput.value = "";
         }
         updateRegInfoText();
     });
@@ -639,11 +643,17 @@
         setTimeout(() => { pop.style.display = 'none'; }, 2000);
     };
 
+    // --- REFACTORED: Challenge Mode Sync Logic ---
     window.setRecMode = function() {
         let curr = window.recState?.settings?.mode || 'Regular';
         let next = curr === 'Regular' ? 'Challenge' : 'Regular';
-        db.ref('record/settings/mode').set(next);
-        if(next === 'Challenge') db.ref('dashboard/sp').set('4');
+        let updates = { 'record/settings/mode': next };
+        if(next === 'Challenge') {
+            updates['dashboard/sp'] = '4';
+            updates['dashboard/points'] = ""; // Ensure blank on start
+            updates['dashboard/pointsNote'] = "Challenge Mode";
+        }
+        db.ref().update(updates);
     };
 
     window.setRecFormat = function() {
@@ -652,7 +662,13 @@
         db.ref('record/settings/format').set(next);
     };
 
-    window.setChalPoints = function(val) { db.ref('dashboard/points').set(val); };
+    // --- REFACTORED: Update Card + Note when typing ---
+    window.setChalPoints = function(val) { 
+        db.ref().update({
+            'dashboard/points': val,
+            'dashboard/pointsNote': "Challenge Mode"
+        }); 
+    };
 
     function updateToggleUI(settings) {
         let mode = settings.mode || 'Regular';
@@ -739,6 +755,8 @@
                 gameInfo.mode = document.getElementById('sel-m-'+i).value;
                 gameInfo.side = document.getElementById('sel-s-'+i).value;
                 gameInfo.sp = "4";
+                // --- REFACTORED: Add Points to History ---
+                gameInfo.points = window.dashState.points; 
             } else payload.dashSnapshot = window.dashState;
             payload.record.push(gameInfo);
             if(lVal) payload.links.push(`G${i+1}: ${lVal}`);
