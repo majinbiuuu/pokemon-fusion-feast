@@ -100,7 +100,7 @@
   
   <div id="export-overlay">
       <div class="loading-spin"></div>
-      <div class="export-msg">GENERATING STRATEGY...</div>
+      <div class="export-msg">LOADING SMOGON DATA...</div>
   </div>
 
   <div class="top-bar">
@@ -174,6 +174,7 @@
     window.GEN_DRAG_PAYLOAD = null;
     var lastTopVol = 100;
     window.returningIndex = -1;
+    window.SMOGON_CACHE = null; // Store fetched data here
     
     // --- PRESENCE LOGIC (COUNT ONLY) ---
     var myId = Date.now().toString() + Math.random().toString().slice(2,5);
@@ -184,14 +185,12 @@
         if (snap.val() === true) {
             var userRef = presenceRef.child(myId);
             userRef.onDisconnect().remove();
-            // Just saving "true" is enough to count keys
             userRef.set(true);
         }
     });
     
     presenceRef.on('value', function(snap) {
         var val = snap.val() || {};
-        // Just count the number of keys in the object
         var count = Object.keys(val).length;
         document.getElementById('presence-list').innerHTML = `<i class="fas fa-users" style="font-size: 9px;"></i> ${count} Online`;
     });
@@ -369,7 +368,7 @@
         setTimeout(() => window.syncLock = false, 1000);
     };
     
-    // --- EXPORT WITH API STATS ---
+    // --- EXPORT WITH SMOGON CHAOS DATA ---
     window.exportTeam = async function(side) {
         var container = document.getElementById('slots-' + side);
         var kids = container.getElementsByClassName('slot');
@@ -386,50 +385,115 @@
         if(monsToFetch.length === 0) { alert("Column is empty!"); return; }
 
         document.getElementById('export-overlay').style.display = 'flex';
+        var loadingMsg = document.querySelector('.export-msg');
+
+        // 1. Fetch Smogon Data if not cached
+        if (!window.SMOGON_CACHE) {
+            loadingMsg.innerText = "FETCHING SMOGON DATA...";
+            try {
+                // Using corsproxy.io to bypass CORS on Smogon's JSON
+                const proxyUrl = "https://corsproxy.io/?";
+                const smogonUrl = "https://www.smogon.com/stats/2024-11/chaos/gen9ou-1695.json"; 
+                const res = await fetch(proxyUrl + smogonUrl);
+                if(res.ok) {
+                    const json = await res.json();
+                    window.SMOGON_CACHE = json.data; // The chaos object
+                }
+            } catch(e) {
+                console.warn("Smogon fetch failed, using fallback mode.");
+            }
+        }
+
+        loadingMsg.innerText = "BUILDING SETS...";
 
         for (let mon of monsToFetch) {
-            try {
-                let query = mon.id.toLowerCase().replace(/[^a-z0-9]/g, '');
-                let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${query}`);
-                if(!res.ok) throw new Error("Not found");
-                let data = await res.json();
-                
-                let stats = data.stats; 
-                let sortedStats = [...stats].sort((a,b) => b.base_stat - a.base_stat);
-                let best1 = sortedStats[0].stat.name;
-                let best2 = sortedStats[1].stat.name;
-                
-                const statMap = { 'hp':'HP', 'attack':'Atk', 'defense':'Def', 'special-attack':'SpA', 'special-defense':'SpD', 'speed':'Spe' };
-                let natureStat = best1 === 'hp' ? best2 : best1;
-                let natureMap = { 'attack':'Adamant', 'defense':'Impish', 'special-attack':'Modest', 'special-defense':'Calm', 'speed':'Jolly' };
-                let nature = natureMap[natureStat] || 'Serious';
-
-                let levelMoves = data.moves.filter(m => m.version_group_details.some(d => d.move_learn_method.name === 'level-up'));
-                let moves = levelMoves.slice(-4).map(m => m.move.name);
-                moves = moves.map(m => m.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
-
-                exportText += `${mon.name} @ Leftovers\n`;
-                exportText += `Ability: ${data.abilities[0].ability.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}\n`;
-                exportText += `${nature} Nature\n`;
-                exportText += `EVs: 252 ${statMap[best1]} / 252 ${statMap[best2]} / 4 HP\n`;
-                
-                if(moves.length > 0) {
-                    moves.forEach(m => exportText += `- ${m}\n`);
-                } else {
-                    exportText += `- Tackle\n`;
+            // Attempt Smogon lookup
+            let smogonData = null;
+            if (window.SMOGON_CACHE) {
+                // Try exact name match or fuzzy
+                smogonData = window.SMOGON_CACHE[mon.name];
+                if (!smogonData) {
+                    // Try formatting name to standard Key format (e.g. Iron Bundle)
+                    // Our ID is usually 'ironbundle', we might need to search keys
+                    let key = Object.keys(window.SMOGON_CACHE).find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '') === mon.id.replace(/[^a-z0-9]/g, ''));
+                    if(key) smogonData = window.SMOGON_CACHE[key];
                 }
+            }
+
+            if (smogonData) {
+                // --- SMOGON MODE ---
+                exportText += `${mon.name} @ ${getTopKey(smogonData.Items) || 'Leftovers'}\n`;
+                exportText += `Ability: ${getTopKey(smogonData.Abilities)}\n`;
+                
+                // Parse Spreads (Nature:HP/Atk/Def/SpA/SpD/Spe)
+                let topSpread = getTopKey(smogonData.Spreads); // e.g. "Timid:0/0/0/252/4/252"
+                if(topSpread) {
+                    let parts = topSpread.split(':');
+                    let nature = parts[0];
+                    let evs = parts[1].split('/');
+                    exportText += `${nature} Nature\n`;
+                    exportText += `EVs: ${evs[0]} HP / ${evs[1]} Atk / ${evs[2]} Def / ${evs[3]} SpA / ${evs[4]} SpD / ${evs[5]} Spe\n`;
+                } else {
+                    exportText += `Serious Nature\n`;
+                }
+
+                // Moves
+                let moves = getTopKeys(smogonData.Moves, 4);
+                moves.forEach(m => exportText += `- ${m}\n`);
                 exportText += `\n`;
 
-            } catch(e) {
-                console.log("Export fallback for", mon.name);
-                exportText += `${mon.name}\n\n`;
+            } else {
+                // --- FALLBACK (PokéAPI) ---
+                try {
+                    let query = mon.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${query}`);
+                    if(!res.ok) throw new Error("Not found");
+                    let data = await res.json();
+                    
+                    let stats = data.stats; 
+                    let sortedStats = [...stats].sort((a,b) => b.base_stat - a.base_stat);
+                    let best1 = sortedStats[0].stat.name;
+                    let best2 = sortedStats[1].stat.name;
+                    
+                    const statMap = { 'hp':'HP', 'attack':'Atk', 'defense':'Def', 'special-attack':'SpA', 'special-defense':'SpD', 'speed':'Spe' };
+                    let natureStat = best1 === 'hp' ? best2 : best1;
+                    let natureMap = { 'attack':'Adamant', 'defense':'Impish', 'special-attack':'Modest', 'special-defense':'Calm', 'speed':'Jolly' };
+                    let nature = natureMap[natureStat] || 'Serious';
+
+                    let levelMoves = data.moves.filter(m => m.version_group_details.some(d => d.move_learn_method.name === 'level-up'));
+                    let moves = levelMoves.slice(-4).map(m => m.move.name);
+                    moves = moves.map(m => m.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
+
+                    exportText += `${mon.name} @ Leftovers\n`;
+                    exportText += `Ability: ${data.abilities[0].ability.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}\n`;
+                    exportText += `${nature} Nature\n`;
+                    exportText += `EVs: 252 ${statMap[best1]} / 252 ${statMap[best2]} / 4 HP\n`;
+                    if(moves.length > 0) moves.forEach(m => exportText += `- ${m}\n`);
+                    else exportText += `- Tackle\n`;
+                    exportText += `\n`;
+
+                } catch(e) {
+                    console.log("Export fallback failed for", mon.name);
+                    exportText += `${mon.name}\n\n`;
+                }
             }
         }
 
         document.getElementById('export-overlay').style.display = 'none';
         navigator.clipboard.writeText(exportText).then(function() {
-            alert(side.toUpperCase() + "'s team (with Stats/Moves) copied to clipboard!");
+            alert(side.toUpperCase() + "'s team copied to clipboard!");
         });
+    }
+
+    // Helper to find key with highest value in Smogon object
+    function getTopKey(obj) {
+        if(!obj) return null;
+        return Object.keys(obj).reduce((a, b) => obj[a] > obj[b] ? a : b);
+    }
+
+    function getTopKeys(obj, n) {
+        if(!obj) return [];
+        return Object.keys(obj).sort((a,b) => obj[b] - obj[a]).slice(0, n);
     }
 
     function saveColumnState(side) {
