@@ -1,534 +1,363 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>PokéGen - Sync</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Season 3 - Fusion Feast</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  
+  <link href="style-global.css" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="global.js"></script>
+
+  <style>
+    /* SHELL LAYOUT */
+    html, body { 
+      background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; 
+      height: 100vh; overflow: hidden; display: flex; flex-direction: column; margin: 0; padding: 0; font-size: 14px; 
+    }
+
+    /* TOP BAR */
+    .top-bar { height: 60px; display: flex; align-items: center; padding: 0 25px; background: rgba(10,10,10,0.8); backdrop-filter: var(--glass-blur); border-bottom: var(--border); z-index: 1000; justify-content: space-between; }
+    .top-left { display: flex; align-items: center; gap: 15px; flex: 1; }
+    .status-badge { display: flex; align-items: center; gap: 8px; font-weight: bold; color: #888; font-size: 0.8rem; background: rgba(0,0,0,0.4); padding: 6px 14px; border-radius: 20px; border: var(--border); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #444; transition: 0.3s; }
+    .status-dot.active { background: #00ff9d; box-shadow: 0 0 10px #00ff9d; }
     
-    <style>
-        :root {
-            --bg-color: #1a1a1a;
-            --text-color: #f0f0f0;
-            --accent-color: #ffcb05; /* Pokémon Yellow */
-            --secondary-accent: #3b4cca; /* Pokémon Blue */
-            --panel-bg: #2b2b2b;
-            --border-color: #444;
-            --success-color: #4caf50;
-            --danger-color: #f44336;
-        }
+    /* NOW PLAYING WIDGET - NARROWER & WIDER THUMB */
+    .np-widget { flex: 0 1 auto; width: 420px; height: 42px; background: rgba(0,0,0,0.6); border: var(--border); border-radius: 8px; display: flex; align-items: center; overflow: hidden; margin: 0 20px; padding-right: 10px; }
+    
+    /* Wider Thumbnail (16:9 approx) */
+    .np-thumb-mini { width: 75px; height: 100%; background: #111; object-fit: cover; border-right: 1px solid #333; }
+    
+    .np-info { flex: 1; overflow: hidden; padding: 0 12px; white-space: nowrap; mask-image: linear-gradient(90deg, transparent, #fff 5%, #fff 95%, transparent); }
+    .np-text { font-size: 0.85rem; font-weight: 700; display: inline-block; color: var(--accent); }
+    
+    .np-controls { display: flex; align-items: center; gap: 5px; margin-right: 8px; border-right: 1px solid #333; padding-right: 8px; }
+    .media-tiny-btn { width: 28px; height: 28px; border-radius: 4px; border: none; background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .media-tiny-btn:hover { background: rgba(255,255,255,0.15); color: var(--accent); }
+    .media-tiny-btn .material-icons { font-size: 18px; }
 
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
+    /* VOLUME CONTROL (TOP BAR) */
+    .top-vol { display: flex; align-items: center; gap: 6px; }
+    .top-vol-slider { -webkit-appearance: none; width: 60px; height: 3px; background: #444; border-radius: 2px; outline: none; }
+    .top-vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 8px; height: 8px; background: #ccc; border-radius: 50%; cursor: pointer; }
+    .top-vol-slider::-webkit-slider-thumb:hover { background: var(--accent); }
 
-        /* --- Navigation Bar --- */
-        nav {
-            width: 80px;
-            background-color: #000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 20px;
-            border-right: 2px solid var(--border-color);
-            z-index: 100;
-        }
+    .top-right { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-end; }
+    .theme-btn-group { display: flex; gap: 10px; }
+    .theme-color-btn, .theme-party-btn { width: 32px; height: 32px; border-radius: 50%; background: #222; border: 1px solid #444; color: #888; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+    .theme-color-btn:hover, .theme-party-btn:hover { color: #fff; border-color: var(--accent); background: rgba(255,255,255,0.1); }
 
-        nav a {
-            color: #666;
-            font-size: 24px;
-            margin-bottom: 30px;
-            transition: color 0.3s, transform 0.2s;
-            text-decoration: none;
-        }
-
-        nav a:hover, nav a.active {
-            color: var(--accent-color);
-            transform: scale(1.1);
-        }
-
-        /* --- Main Layout --- */
-        main {
-            flex: 1;
-            display: flex;
-            position: relative;
-        }
-
-        /* --- Left Column (Player 1) --- */
-        .player-column {
-            flex: 1;
-            background-color: #222;
-            border-right: 1px solid var(--border-color);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-        }
-
-        .player-header {
-            font-family: 'Press Start 2P', cursive;
-            color: var(--accent-color);
-            margin-bottom: 20px;
-            font-size: 1.2rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .pokemon-list {
-            width: 100%;
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding-right: 5px;
-        }
-
-        .pokemon-slot {
-            background-color: var(--panel-bg);
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            padding: 0 15px;
-            transition: all 0.2s;
-            cursor: grab;
-            position: relative;
-        }
-        
-        .pokemon-slot:hover {
-            border-color: var(--accent-color);
-            transform: translateY(-2px);
-        }
-
-        .pokemon-slot img {
-            width: 60px;
-            height: 60px;
-            margin-right: 15px;
-            image-rendering: pixelated;
-        }
-
-        .pokemon-info {
-            flex: 1;
-        }
-
-        .pokemon-name {
-            font-weight: bold;
-            font-size: 1.1rem;
-            display: block;
-        }
-
-        .pokemon-types {
-            font-size: 0.8rem;
-            color: #aaa;
-            margin-top: 4px;
-        }
-        
-        .delete-btn {
-            background: none;
-            border: none;
-            color: var(--danger-color);
-            cursor: pointer;
-            font-size: 1.2rem;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .pokemon-slot:hover .delete-btn {
-            opacity: 1;
-        }
-
-        /* --- Center (Generator) --- */
-        .generator-column {
-            flex: 1.5;
-            background-color: var(--bg-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            position: relative;
-            border-right: 1px solid var(--border-color);
-        }
-
-        .gen-controls {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            background: var(--panel-bg);
-            padding: 10px 20px;
-            border-radius: 30px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-
-        .filter-btn {
-            background: none;
-            border: none;
-            color: #888;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 0.7rem;
-            cursor: pointer;
-            padding: 8px 12px;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-
-        .filter-btn:hover {
-            color: #fff;
-        }
-
-        .filter-btn.active {
-            color: var(--accent-color);
-            text-shadow: 0 0 5px rgba(255, 203, 5, 0.5);
-        }
-
-        .display-area {
-            flex: 1;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-
-        /* The big generated card */
-        .generated-card {
-            background: linear-gradient(145deg, #2b2b2b, #1e1e1e);
-            border: 4px solid var(--border-color);
-            border-radius: 20px;
-            width: 300px;
-            height: 400px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            transition: transform 0.3s;
-            position: relative;
-            cursor: grab;
-        }
-
-        .generated-card:hover {
-            transform: scale(1.02);
-            border-color: var(--accent-color);
-        }
-
-        .generated-card img {
-            width: 180px;
-            height: 180px;
-            image-rendering: pixelated;
-            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
-        }
-
-        .generated-name {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 1.2rem;
-            margin-top: 20px;
-            color: var(--accent-color);
-            text-align: center;
-            line-height: 1.5;
-        }
-        
-        .generated-types {
-            margin-top: 10px;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .type-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: white;
-            text-shadow: 1px 1px 2px black;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .main-btn {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 0.9rem;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.1s;
-            box-shadow: 0 4px 0 #000;
-        }
-
-        .main-btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 0 0 #000;
-        }
-
-        #generate-btn {
-            background-color: var(--success-color);
-            color: white;
-        }
-
-        #reset-btn {
-            background-color: var(--danger-color);
-            color: white;
-        }
-
-        /* --- Scrollbar --- */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1a1a1a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #444;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-
-        /* --- Dragging Visuals --- */
-        .dragging {
-            opacity: 0.5;
-            border: 2px dashed var(--accent-color) !important;
-        }
-
-        .drop-target {
-            background-color: rgba(255, 203, 5, 0.1) !important;
-            border: 2px dashed var(--accent-color) !important;
-        }
-        
-        /* Loading/Error States */
-        .status-msg {
-            font-family: 'Press Start 2P', cursive;
-            color: #666;
-            text-align: center;
-            line-height: 2;
-        }
-
-    </style>
+    /* MAIN STAGE */
+    .stage { flex: 1; display: grid; grid-template-columns: 240px 1fr 240px; gap: 20px; padding: 20px 25px 25px 25px; height: calc(100vh - 60px); box-sizing: border-box; }
+    .col-p { background: #000; border: 1px solid #333; border-radius: 16px; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    .p-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding-bottom: 12px; margin-bottom: 5px; }
+    .p-name { font-size: 2rem; font-weight: 900; letter-spacing: -1px; }
+    .p-score { font-size: 3rem; font-weight: 900; line-height: 1; transition: color 0.2s; }
+    .p-ctrls { display: flex; flex-direction: column; gap: 4px; }
+    .tiny-btn { width: 28px; height: 28px; background: #1a1a1a; border: 1px solid #444; color: #888; cursor: pointer; border-radius: 6px; font-weight: 900; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .tiny-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .slot-list { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .slot { flex: 1; min-height: 65px; background: #080808; border: 1px dashed #333; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s; position: relative; overflow: hidden; }
+    .slot:hover { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .slot.drag-over { border-color: var(--accent) !important; background: rgba(255,255,255, 0.05) !important; box-shadow: 0 0 15px var(--accent); transform: scale(1.02); }
+    .slot.filled { border-style: solid; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); background: #111; }
+    @keyframes snapIn { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+    .slot img { height: 90%; width: auto; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); z-index: 2; pointer-events: none; animation: snapIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .slot-txt { display: none; }
+    .col-btn { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #666; font-weight: 800; cursor: pointer; border-radius: 8px; font-size: 0.75rem; letter-spacing: 1px; transition: 0.2s; }
+    .col-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .col-c { display: flex; flex-direction: column; background: rgba(15,15,15,0.4); backdrop-filter: var(--glass-blur); border: var(--border); border-radius: 16px; overflow: hidden; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    .tab-bar { display: flex; height: 55px; padding: 0 20px; align-items: center; gap: 20px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; justify-content: center; }
+    .tab { position: relative; padding: 10px 20px; font-weight: 800; color: #666; cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85rem; }
+    .tab:hover { color: #ccc; }
+    .tab.active { color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.3); }
+    .tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 3px; background: var(--accent); border-radius: 2px; box-shadow: 0 -2px 10px var(--accent); }
+    .tab-content { flex: 1; overflow: hidden; display: none; height: 100%; width: 100%; position:relative; }
+    .tab-content.active { display: block; }
+  </style>
 </head>
 <body>
 
-    <nav>
-        <a href="index.html" class="active" title="Generator"><i class="fas fa-random"></i></a>
-        <a href="play.html" title="Play"><i class="fas fa-gamepad"></i></a>
-        <a href="history.html" title="History"><i class="fas fa-history"></i></a>
-        <a href="music.html" title="Music"><i class="fas fa-music"></i></a>
-    </nav>
-
-    <main>
+  <div class="top-bar">
+    <div class="top-left">
+      <div class="status-badge"><div id="status-dot" class="status-dot active"></div> Live</div>
+      
+      <div class="np-widget">
+        <img id="np-img-top" class="np-thumb-mini" src="">
+        <div class="np-info"><div class="np-text" id="np-title-top">System Ready</div></div>
         
-        <div class="player-column" id="p1-column" ondrop="drop(event, 'p1')" ondragover="allowDrop(event)">
-            <div class="player-header">ALB</div>
-            <div class="pokemon-list" id="p1-list">
-                </div>
+        <div class="np-controls">
+            <button class="media-tiny-btn" onclick="mediaAction('prev')"><span class="material-icons">skip_previous</span></button>
+            <button class="media-tiny-btn" onclick="mediaAction('play')" id="top-play-btn"><span class="material-icons">play_arrow</span></button>
+            <button class="media-tiny-btn" onclick="mediaAction('next')"><span class="material-icons">skip_next</span></button>
         </div>
 
-        <div class="generator-column">
-            
-            <div class="gen-controls">
-                <button class="filter-btn active" id="btn-gen" onclick="setFilterMode('gen')">GEN</button>
-                <button class="filter-btn" id="btn-type" onclick="setFilterMode('type')">TYPE</button>
-                <button class="filter-btn" id="btn-color" onclick="setFilterMode('color')">COLOR</button>
-            </div>
-
-            <div class="display-area" id="display-area">
-                <div class="status-msg">READY<br>PRESS GENERATE</div>
-            </div>
-
-            <div class="action-buttons">
-                <button class="main-btn" id="generate-btn" onclick="generatePokemon()">GENERATE</button>
-                <button class="main-btn" id="reset-btn" onclick="resetGen()">CLEAR</button>
-            </div>
-
+        <div class="top-vol">
+            <button class="media-tiny-btn" onclick="toggleTopMute()" style="width:24px;"><span class="material-icons" id="top-vol-icon" style="font-size:16px;">volume_up</span></button>
+            <input type="range" class="top-vol-slider" id="top-vol-slider" min="0" max="100" value="100" oninput="sendVolume(this.value)">
         </div>
+      </div>
+    </div>
 
-        <div class="player-column" id="p2-column" ondrop="drop(event, 'p2')" ondragover="allowDrop(event)">
-            <div class="player-header">BIU</div>
-            <div class="pokemon-list" id="p2-list">
-                </div>
-        </div>
+    <div class="top-right">
+      <div class="theme-btn-group">
+        <div class="theme-color-btn" onclick="window.changeTheme()" title="Change Theme"><i class="fas fa-palette"></i></div>
+        <div class="theme-party-btn" onclick="window.toggleParty()" title="Party Mode"><i class="fas fa-infinity"></i></div>
+      </div>
+    </div>
+  </div>
 
-    </main>
+  <div class="stage">
+    <div class="col-p">
+      <div class="p-header"><div class="p-name" style="color:var(--red)">ALB</div><div class="p-score" id="score-alb">0</div><div class="p-ctrls"><div class="tiny-btn" onclick="modScore('alb', 'add')">+</div><div class="tiny-btn" onclick="modScore('alb', 'sub')">-</div></div></div>
+      <div class="slot-list" id="slots-alb"></div>
+      <button class="col-btn" onclick="clearCol('alb')">Clear</button>
+    </div>
 
-    <script>
-        // --- State ---
-        let allPokemon = [];
-        let currentPool = [];
-        let filterMode = 'gen'; // 'gen', 'type', 'color'
-        let currentPokemon = null; // The one currently displayed
+    <div class="col-c">
+      <div class="tab-bar">
+        <div class="tab active" onclick="switchTab('play', this)">Play</div>
+        <div class="tab" onclick="switchTab('gen', this)">Generator</div>
+        <div class="tab" onclick="switchTab('music', this)">Music</div>
+        <div class="tab" onclick="switchTab('hist', this)">History</div>
+      </div>
+      <div id="view-play" class="tab-content active"><iframe id="frame-play" src="play.html" style="width:100%;height:100%;border:none;"></iframe></div>
+      <div id="view-gen" class="tab-content" ondragover="allowReturnDrop(event)" ondrop="returnDrop(event)">
+        <iframe id="frame-gen" src="gen.html" style="width:100%;height:100%;border:none; pointer-events:all;"></iframe>
+      </div>
+      <div id="view-music" class="tab-content"><iframe id="frame-music" src="music.html" style="width:100%;height:100%;border:none;"></iframe></div>
+      <div id="view-hist" class="tab-content"><iframe id="frame-hist" src="history.html" style="width:100%;height:100%;border:none;"></iframe></div>
+    </div>
 
-        // Type Colors for badges
-        const typeColors = {
-            normal: '#A8A77A', fire: '#EE8130', water: '#6390F0', electric: '#F7D02C',
-            grass: '#7AC74C', ice: '#96D9D6', fighting: '#C22E28', poison: '#A33EA1',
-            ground: '#E2BF65', flying: '#A98FF3', psychic: '#F95587', bug: '#A6B91A',
-            rock: '#B6A136', ghost: '#735797', dragon: '#6F35FC', steel: '#B7B7CE',
-            dark: '#705746', fairy: '#D685AD'
-        };
+    <div class="col-p">
+      <div class="p-header"><div class="p-name" style="color:var(--blue)">BIU</div><div class="p-score" id="score-biu">0</div><div class="p-ctrls"><div class="tiny-btn" onclick="modScore('biu', 'add')">+</div><div class="tiny-btn" onclick="modScore('biu', 'sub')">-</div></div></div>
+      <div class="slot-list" id="slots-biu"></div>
+      <button class="col-btn" onclick="clearCol('biu')">Clear</button>
+    </div>
+  </div>
 
-        // --- Initialization ---
-        window.onload = async () => {
-            await fetchPokemonData();
-            // Setup Listeners for real-time Sync would go here
-        };
+  <script>
+    window.GEN_DRAG_PAYLOAD = null;
+    var lastTopVol = 100;
 
-        // Fetch Data from PokeAPI (Gen 1-9 approx limit 1010)
-        async function fetchPokemonData() {
-            try {
-                // Fetching a smaller subset for speed in this demo, usually you'd fetch all or cache
-                // For a full app, fetch from https://pokeapi.co/api/v2/pokemon?limit=1000
-                const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=151'); 
-                const data = await res.json();
-                
-                // Map basic data
-                allPokemon = data.results.map((p, index) => ({
-                    name: p.name,
-                    url: p.url,
-                    id: index + 1
-                }));
-                
-                currentPool = [...allPokemon];
-                console.log("Pokemon Loaded:", allPokemon.length);
-            } catch (e) {
-                console.error("Error loading pokemon:", e);
-                document.getElementById('display-area').innerHTML = '<div class="status-msg">ERROR LOADING DATA</div>';
+    db.ref('dashboard').on('value', snap => {
+        if(window.syncLock) return; 
+        const s = snap.val() || {};
+        window.scores.alb = s.scoreAlb || 0; window.scores.biu = s.scoreBiu || 0;
+        document.getElementById('score-alb').innerText = window.scores.alb;
+        document.getElementById('score-biu').innerText = window.scores.biu;
+        if(s.slotsAlb) renderColumn('alb', s.slotsAlb);
+        if(s.slotsBiu) renderColumn('biu', s.slotsBiu);
+    });
+
+    // SYNC TOP BAR WITH MUSIC STATUS
+    db.ref('music/status').on('value', snap => {
+        const m = snap.val() || {};
+        const titleEl = document.getElementById('np-title-top');
+        if(titleEl) titleEl.innerText = m.currentTitle || "System Ready";
+
+        const imgEl = document.getElementById('np-img-top');
+        if(imgEl) {
+            imgEl.src = m.currentId ? `https://img.youtube.com/vi/${m.currentId}/mqdefault.jpg` : "";
+            imgEl.style.display = m.currentId ? 'block' : 'none';
+        }
+
+        const playBtn = document.getElementById('top-play-btn');
+        if(playBtn) {
+            let isPlaying = (m.state === 'PLAYING');
+            playBtn.innerHTML = isPlaying ? '<span class="material-icons">pause</span>' : '<span class="material-icons">play_arrow</span>';
+        }
+    });
+
+    window.mediaAction = function(action) {
+        if(action === 'play') {
+            db.ref('music/status/state').once('value', snap => {
+                let current = snap.val() || 'PAUSED'; 
+                let next = (current === 'PLAYING') ? 'PAUSED' : 'PLAYING';
+                db.ref('music/status/state').set(next);
+            });
+        } 
+        else {
+             // music.html now listens to this!
+             db.ref('music/cmd').set({ action: action, time: Date.now() });
+        }
+    };
+
+    // --- VOLUME CONTROL (SEND TO IFRAME) ---
+    window.sendVolume = function(val) {
+        let frame = document.getElementById('frame-music');
+        if(frame && frame.contentWindow) {
+            frame.contentWindow.postMessage({ type: 'setVolume', value: val }, '*');
+        }
+        updateTopVolIcon(val);
+        if(val > 0) lastTopVol = val;
+    }
+
+    window.toggleTopMute = function() {
+        let slider = document.getElementById('top-vol-slider');
+        let current = slider.value;
+        if(current > 0) {
+            sendVolume(0);
+            slider.value = 0;
+        } else {
+            sendVolume(lastTopVol);
+            slider.value = lastTopVol;
+        }
+    }
+
+    function updateTopVolIcon(val) {
+        let icon = document.getElementById('top-vol-icon');
+        if(val == 0) icon.innerText = "volume_off";
+        else if(val < 50) icon.innerText = "volume_down";
+        else icon.innerText = "volume_up";
+    }
+
+    // --- EXISTING DASHBOARD LOGIC (Drag/Score/etc) ---
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'requestClearCols') {
+            clearCol('alb'); clearCol('biu');
+        }
+        // FIX: Handle Drop Message from Gen Iframe
+        if (event.data && event.data.type === 'GENERATOR_DROP') {
+            handleReturnLogic();
+        }
+    });
+
+    function handleReturnLogic() {
+        if(window.returningId) {
+             let frame = document.getElementById('frame-gen');
+             if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
+             if(window.returningElement) {
+                 window.returningElement.innerHTML = "";
+                 window.returningElement.classList.remove('filled');
+                 window.returningElement.draggable = false;
+                 var parentId = window.returningElement.parentElement.id;
+                 var side = parentId.split('-')[1]; 
+                 saveColumnState(side);
+             }
+             window.returningId = null; window.returningElement = null;
+        }
+    }
+
+    window.modScore = function(p, op) {
+        window.syncLock = true;
+        if(op==='add') window.scores[p]++; else window.scores[p] = Math.max(0, window.scores[p]-1);
+        document.getElementById('score-'+p).innerText = window.scores[p];
+        db.ref('dashboard/score' + (p==='alb'?'Alb':'Biu')).set(window.scores[p]);
+        setTimeout(() => window.syncLock = false, 500);
+    };
+
+    window.initSlots = function(id) { 
+        var h = ''; 
+        for(var i=0; i<6; i++) h += `<div class="slot" data-idx="${i}" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event)"></div>`; 
+        document.getElementById(id).innerHTML = h; 
+    };
+    
+    window.allowDrop = function(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); ev.dataTransfer.dropEffect = "copy"; };
+    window.leaveDrop = function(ev) { ev.currentTarget.classList.remove('drag-over'); };
+    
+    window.drop = function(ev) { 
+        ev.preventDefault(); 
+        ev.currentTarget.classList.remove('drag-over'); 
+        var data = window.GEN_DRAG_PAYLOAD;
+        if(!data) { try { data = JSON.parse(ev.dataTransfer.getData("text/plain")); } catch(e){} }
+        if(data) { 
+            window.syncLock = true;
+            ev.currentTarget.innerHTML = `<img src="${data.img}"><div class="slot-txt" data-id="${data.id}">${data.name}</div>`; 
+            ev.currentTarget.classList.add('filled'); 
+            ev.currentTarget.draggable = true;
+            ev.currentTarget.ondragstart = function(e) { slotDragStart(e, data.id); };
+            var parentId = ev.currentTarget.parentElement.id;
+            var side = parentId.split('-')[1]; 
+            saveColumnState(side);
+            let frame = document.getElementById('frame-gen');
+            if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'markUsed', id: data.id }, '*');
+            window.GEN_DRAG_PAYLOAD = null;
+            setTimeout(() => window.syncLock = false, 1000);
+        } 
+    };
+    
+    function slotDragStart(e, id) {
+        e.dataTransfer.setData("text/return", id);
+        e.dataTransfer.effectAllowed = "move";
+        window.returningId = id; window.returningElement = e.target;
+    }
+
+    window.allowReturnDrop = function(ev) { if(window.returningId) ev.preventDefault(); };
+
+    window.returnDrop = function(ev) {
+        ev.preventDefault();
+        handleReturnLogic();
+    };
+
+    window.clearCol = function(p) { 
+        window.syncLock = true;
+        var container = document.getElementById('slots-'+p);
+        var kids = container.getElementsByClassName('slot');
+        let frame = document.getElementById('frame-gen');
+        for(var i=0; i<kids.length; i++) {
+           var txt = kids[i].querySelector('.slot-txt');
+           if(txt && txt.dataset.id && frame && frame.contentWindow) {
+               frame.contentWindow.postMessage({ type: 'freePokemon', id: txt.dataset.id }, '*');
+           }
+        }
+        window.initSlots('slots-'+p); 
+        saveColumnState(p);
+        setTimeout(() => window.syncLock = false, 1000);
+    };
+
+    function saveColumnState(side) {
+        var slots = [];
+        var container = document.getElementById('slots-'+side);
+        var kids = container.getElementsByClassName('slot');
+        for(var i=0; i<kids.length; i++) {
+            var img = kids[i].querySelector('img');
+            var txt = kids[i].querySelector('.slot-txt');
+            if(img && txt) slots.push({ img: img.src, name: txt.innerText, id: txt.dataset.id });
+            else slots.push(null);
+        }
+        db.ref('dashboard/slots' + (side==='alb'?'Alb':'Biu')).set(slots);
+    }
+
+    function renderColumn(side, data) {
+        if(!data) return;
+        var container = document.getElementById('slots-'+side);
+        var kids = container.getElementsByClassName('slot');
+        for(var i=0; i<kids.length; i++) {
+            if(data[i]) {
+                if(!kids[i].classList.contains('filled') || kids[i].innerText !== data[i].name) {
+                    kids[i].innerHTML = `<img src="${data[i].img}"><div class="slot-txt" data-id="${data[i].id}">${data[i].name}</div>`;
+                    kids[i].classList.add('filled');
+                    kids[i].draggable = true;
+                    let pid = data[i].id; 
+                    kids[i].ondragstart = function(e) { slotDragStart(e, pid); };
+                }
+            } else {
+                if(kids[i].classList.contains('filled')) {
+                    kids[i].innerHTML = "";
+                    kids[i].classList.remove('filled');
+                    kids[i].draggable = false;
+                }
             }
         }
+    }
 
-        // --- Filtering Logic ---
-        function setFilterMode(mode) {
-            filterMode = mode;
-            // Update UI buttons
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`btn-${mode}`).classList.add('active');
-            
-            // Visual feedback only
-            console.log("Filter Mode set to:", mode);
-        }
+    window.switchTab = function(viewId, btn) { 
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); 
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); 
+        document.getElementById('view-'+viewId).classList.add('active'); 
+        btn.classList.add('active'); 
+    };
 
-        async function generatePokemon() {
-            const display = document.getElementById('display-area');
-            
-            // 1. Animation State
-            display.innerHTML = '<div class="status-msg" style="animation: blink 0.5s infinite;">...</div>';
-
-            // 2. Logic: Pick random from currentPool (currently full pool, logic for filters can be added)
-            if (!currentPool || currentPool.length === 0) {
-                 display.innerHTML = '<div class="status-msg">POOL EMPTY<br>RESET</div>';
-                 return;
-            }
-
-            const randomIndex = Math.floor(Math.random() * currentPool.length);
-            const basicData = currentPool[randomIndex];
-
-            try {
-                // 3. Fetch details for the specific pokemon (Type, Sprite)
-                const res = await fetch(basicData.url);
-                const details = await res.json();
-
-                currentPokemon = {
-                    name: details.name,
-                    id: details.id,
-                    types: details.types.map(t => t.type.name),
-                    sprite: details.sprites.front_default || details.sprites.other['official-artwork'].front_default
-                };
-
-                renderCard(currentPokemon);
-
-            } catch (e) {
-                console.error(e);
-                display.innerHTML = '<div class="status-msg">ERROR</div>';
-            }
-        }
-
-        function renderCard(pokemon) {
-            const display = document.getElementById('display-area');
-            
-            // Generate Type Badges
-            const typeHtml = pokemon.types.map(t => 
-                `<span class="type-badge" style="background-color: ${typeColors[t] || '#777'}">${t}</span>`
-            ).join('');
-
-            display.innerHTML = `
-                <div class="generated-card" draggable="true" ondragstart="drag(event)" id="gen-card">
-                    <img src="${pokemon.sprite}" alt="${pokemon.name}" draggable="false">
-                    <div class="generated-name">#${pokemon.id} ${pokemon.name}</div>
-                    <div class="generated-types">
-                        ${typeHtml}
-                    </div>
-                </div>
-            `;
-        }
-
-        function resetGen() {
-            currentPokemon = null;
-            // Simply clear the display to show readiness
-            document.getElementById('display-area').innerHTML = ''; 
-        }
-
-        // --- Drag and Drop Logic ---
-
-        function allowDrop(ev) {
-            ev.preventDefault();
-            // Add highlight class if needed
-        }
-
-        function drag(ev) {
-            // We are dragging the generated card
-            if (currentPokemon) {
-                ev.dataTransfer.setData("text/plain", JSON.stringify(currentPokemon));
-                ev.target.classList.add('dragging');
-            }
-        }
-
-        function drop(ev, player) {
-            ev.preventDefault();
-            const data = ev.dataTransfer.getData("text/plain");
-            const card = document.getElementById('gen-card');
-            if(card) card.classList.remove('dragging');
-
-            if (data) {
-                const pokemon = JSON.parse(data);
-                addPokemonToColumn(player, pokemon);
-            }
-        }
-
-        function addPokemonToColumn(player, pokemon) {
-            const listId = player === 'p1' ? 'p1-list' : 'p2-list';
-            const list = document.getElementById(listId);
-
-            const slot = document.createElement('div');
-            slot.className = 'pokemon-slot';
-            slot.innerHTML = `
-                <img src="${pokemon.sprite}">
-                <div class="pokemon-info">
-                    <span class="pokemon-name">${pokemon.name}</span>
-                    <div class="pokemon-types">${pokemon.types.join('/')}</div>
-                </div>
-                <button class="delete-btn" onclick="this.parentElement.remove()">&times;</button>
-            `;
-
-            list.appendChild(slot);
-            
-            // Scroll to bottom
-            list.scrollTop = list.scrollHeight;
-        }
-
-    </script>
+    document.addEventListener('DOMContentLoaded', function() {
+        window.initSlots('slots-alb'); window.initSlots('slots-biu'); 
+    });
+  </script>
 </body>
 </html>
