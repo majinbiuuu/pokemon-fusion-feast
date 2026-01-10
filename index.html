@@ -34,45 +34,57 @@
     }
 
     /* TOP BAR */
-    .top-bar { height: 60px; display: flex; align-items: center; padding: 0 25px; background: rgba(10,10,10,0.6); backdrop-filter: blur(6px); border-bottom: var(--border); z-index: 1000; justify-content: space-between; }
-    .top-left { display: flex; align-items: center; gap: 15px; flex: 1; }
-    .status-badge { display: flex; align-items: center; gap: 8px; font-weight: bold; color: #888; font-size: 0.8rem; background: rgba(0,0,0,0.4); padding: 6px 14px; border-radius: 20px; border: var(--border); }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #444; transition: 0.3s; }
-    .status-dot.active { background: #00ff9d; box-shadow: 0 0 10px #00ff9d; }
+    .top-bar { height: 75px; display: flex; align-items: center; padding: 0 25px; background: rgba(10,10,10,0.6); backdrop-filter: blur(6px); border-bottom: var(--border); z-index: 1000; justify-content: space-between; }
+    .top-left { display: flex; align-items: center; gap: 20px; flex: 1; }
     
-    .presence-text { font-size: 10px; color: var(--accent); font-weight: 700; margin-left: 8px; opacity: 0.8; letter-spacing: 0.5px; display: flex; gap: 5px; }
+    /* Combined Status Badge */
+    .status-badge { 
+        display: flex; align-items: center; gap: 10px; 
+        font-weight: bold; color: #fff; font-size: 0.9rem; 
+        background: rgba(0,0,0,0.6); padding: 8px 16px; 
+        border-radius: 30px; border: 1px solid #444; 
+        text-transform: uppercase; letter-spacing: 1px;
+    }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #444; transition: 0.3s; }
+    .status-dot.active { background: #ff0044; box-shadow: 0 0 10px #ff0044; }
+    .online-count { font-size: 0.8rem; color: #aaa; border-left: 1px solid #555; padding-left: 10px; display: flex; align-items: center; gap: 5px; }
     
-    /* NOW PLAYING WIDGET */
-    .np-widget { flex: 0 1 auto; width: 420px; height: 42px; background: rgba(0,0,0,0.4); border: var(--border); border-radius: 8px; display: flex; align-items: center; overflow: hidden; margin: 0 20px; padding-right: 10px; }
-    .np-thumb-mini { width: 75px; height: 100%; background: #111; object-fit: cover; border-right: 1px solid #333; }
-    .np-info { flex: 1; overflow: hidden; padding: 0 12px; white-space: nowrap; mask-image: linear-gradient(90deg, transparent, #fff 5%, #fff 95%, transparent); }
-    .np-text { font-size: 0.85rem; font-weight: 700; display: inline-block; color: var(--accent); }
-    .np-controls { display: flex; align-items: center; gap: 5px; margin-right: 8px; border-right: 1px solid #333; padding-right: 8px; }
-    .media-tiny-btn { width: 28px; height: 28px; border-radius: 4px; border: none; background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    /* NOW PLAYING WIDGET (BIGGER) */
+    .np-widget { 
+        flex: 0 1 auto; width: 500px; height: 60px; /* Increased Size */
+        background: rgba(0,0,0,0.4); border: var(--border); border-radius: 12px; 
+        display: flex; align-items: center; overflow: hidden; margin: 0 10px; padding-right: 15px; 
+    }
+    .np-thumb-mini { width: 90px; height: 100%; background: #111; object-fit: cover; border-right: 1px solid #333; }
+    .np-info { flex: 1; overflow: hidden; padding: 0 15px; white-space: nowrap; mask-image: linear-gradient(90deg, transparent, #fff 5%, #fff 95%, transparent); }
+    .np-text { font-size: 1.1rem; font-weight: 700; display: inline-block; color: var(--accent); }
+    
+    .np-controls { display: flex; align-items: center; gap: 8px; margin-right: 12px; border-right: 1px solid #333; padding-right: 12px; }
+    .media-tiny-btn { width: 32px; height: 32px; border-radius: 6px; border: none; background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
     .media-tiny-btn:hover { background: rgba(255,255,255,0.15); color: var(--accent); }
-    .media-tiny-btn .material-icons { font-size: 18px; }
+    .media-tiny-btn .material-icons { font-size: 20px; }
 
     /* VOLUME CONTROL */
-    .top-vol { display: flex; align-items: center; gap: 6px; }
-    .top-vol-slider { -webkit-appearance: none; width: 60px; height: 3px; background: #444; border-radius: 2px; outline: none; }
-    .top-vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 8px; height: 8px; background: #ccc; border-radius: 50%; cursor: pointer; }
+    .top-vol { display: flex; align-items: center; gap: 8px; }
+    .top-vol-slider { -webkit-appearance: none; width: 80px; height: 4px; background: #444; border-radius: 2px; outline: none; }
+    .top-vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; background: #ccc; border-radius: 50%; cursor: pointer; }
     .top-vol-slider::-webkit-slider-thumb:hover { background: var(--accent); }
 
     .top-right { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-end; }
     .theme-btn-group { display: flex; gap: 10px; }
-    .theme-color-btn, .theme-party-btn, .theme-gear-btn { width: 32px; height: 32px; border-radius: 50%; background: #222; border: 1px solid #444; color: #888; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+    .theme-color-btn, .theme-party-btn, .theme-gear-btn { width: 36px; height: 36px; border-radius: 50%; background: #222; border: 1px solid #444; color: #888; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; font-size: 1rem; }
     .theme-color-btn:hover, .theme-party-btn:hover, .theme-gear-btn:hover { color: #fff; border-color: var(--accent); background: rgba(255,255,255,0.1); }
 
     /* MAIN STAGE */
-    .stage { flex: 1; display: grid; grid-template-columns: 240px 1fr 240px; gap: 20px; padding: 20px 25px 25px 25px; height: calc(100vh - 60px); box-sizing: border-box; }
+    .stage { flex: 1; display: grid; grid-template-columns: 260px 1fr 260px; gap: 25px; padding: 25px 30px 30px 30px; height: calc(100vh - 75px); box-sizing: border-box; }
     
     /* GLASS: Less Dark, Less Blur */
-    .col-p { background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); border: 1px solid #333; border-radius: 16px; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    .col-p { background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); border: 1px solid #333; border-radius: 16px; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
     
     .p-header { display: flex; flex-direction: column; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 5px; position: relative; }
-    .p-top-row { display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 10px; }
+    .p-top-row { display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 5px; }
     .p-name { font-size: 2rem; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; }
-    .p-score { font-size: 3rem; font-weight: 900; line-height: 1; transition: color 0.2s; }
+    .p-score { font-size: 3.5rem; font-weight: 900; line-height: 1; transition: color 0.2s; }
     .p-ctrls { display: flex; flex-direction: column; gap: 4px; }
     .tiny-btn { width: 28px; height: 28px; background: #1a1a1a; border: 1px solid #444; color: #888; cursor: pointer; border-radius: 6px; font-weight: 900; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
     .tiny-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
@@ -86,15 +98,16 @@
     .slot img { height: 90%; width: auto; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); z-index: 2; pointer-events: none; animation: snapIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     .slot-txt { display: none; }
     
-    /* MOVED EXPORT BUTTON */
+    /* EXPORT BUTTON - MOVED */
     .col-btn.export { 
-        width: 50%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid #444; 
-        color: #888; font-weight: 800; cursor: pointer; border-radius: 20px; font-size: 1.2rem; 
-        transition: 0.2s; display: flex; align-items: center; justify-content: center;
-        margin-bottom: 5px;
+        width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid #444; 
+        color: #888; font-weight: 800; cursor: pointer; border-radius: 8px; font-size: 0.9rem; 
+        transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+        text-transform: uppercase; letter-spacing: 1px;
     }
     .col-btn.export:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
-    .col-btn.clear-btn { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #666; font-weight: 800; cursor: pointer; border-radius: 8px; font-size: 0.75rem; letter-spacing: 1px; transition: 0.2s; margin-top: 10px;}
+    
+    .col-btn.clear-btn { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #666; font-weight: 800; cursor: pointer; border-radius: 8px; font-size: 0.75rem; letter-spacing: 1px; transition: 0.2s; margin-top: 5px;}
     .col-btn.clear-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
 
     .col-c { display: flex; flex-direction: column; background: rgba(15,15,15,0.5); backdrop-filter: blur(6px); border: var(--border); border-radius: 16px; overflow: hidden; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
@@ -243,9 +256,10 @@
 
   <div class="top-bar">
     <div class="top-left">
-      <div class="live-status-container">
-        <div class="status-badge"><div id="status-dot" class="status-dot active"></div> Live</div>
-        <div id="presence-list" class="presence-text"><i class="fas fa-users" style="font-size: 9px;"></i> 0 Online</div>
+      <div class="status-badge">
+        <div id="status-dot" class="status-dot active"></div> 
+        <span>Live</span>
+        <div id="presence-count" class="online-count"><i class="fas fa-users" style="font-size: 11px;"></i> 0</div>
       </div>
       
       <div class="np-widget">
@@ -259,7 +273,7 @@
         </div>
 
         <div class="top-vol">
-            <button class="media-tiny-btn" onclick="toggleTopMute()" style="width:24px;"><span class="material-icons" id="top-vol-icon" style="font-size:16px;">volume_up</span></button>
+            <button class="media-tiny-btn" onclick="toggleTopMute()" style="width:24px;"><span class="material-icons" id="top-vol-icon" style="font-size:18px;">volume_up</span></button>
             <input type="range" class="top-vol-slider" id="top-vol-slider" min="0" max="100" value="100" oninput="sendVolume(this.value)">
         </div>
       </div>
@@ -282,8 +296,12 @@
               <div class="p-ctrls"><div class="tiny-btn" onclick="modScore('alb', 'add')">+</div><div class="tiny-btn" onclick="modScore('alb', 'sub')">-</div></div>
           </div>
           <div class="p-score" id="score-alb">0</div>
-          <button class="col-btn export" id="export-alb" onclick="exportTeam('alb')" title="Export to Showdown"><i class="fas fa-file-export"></i></button>
       </div>
+      
+      <button class="col-btn export" id="export-alb" onclick="exportTeam('alb')" title="Export to Showdown">
+          <i class="fas fa-file-export"></i> Export Team
+      </button>
+
       <div class="slot-list" id="slots-alb"></div>
       <button class="col-btn clear-btn" onclick="clearCol('alb')">Clear</button>
     </div>
@@ -310,8 +328,12 @@
               <div class="p-ctrls"><div class="tiny-btn" onclick="modScore('biu', 'add')">+</div><div class="tiny-btn" onclick="modScore('biu', 'sub')">-</div></div>
           </div>
           <div class="p-score" id="score-biu">0</div>
-          <button class="col-btn export" id="export-biu" onclick="exportTeam('biu')" title="Export to Showdown"><i class="fas fa-file-export"></i></button>
       </div>
+
+      <button class="col-btn export" id="export-biu" onclick="exportTeam('biu')" title="Export to Showdown">
+          <i class="fas fa-file-export"></i> Export Team
+      </button>
+
       <div class="slot-list" id="slots-biu"></div>
       <button class="col-btn clear-btn" onclick="clearCol('biu')">Clear</button>
     </div>
@@ -444,11 +466,12 @@
         }
     }
 
-    // --- PRESENCE LOGIC (FIXED) ---
-    var myId = sessionStorage.getItem('presenceId');
+    // --- PRESENCE LOGIC (FIXED: Uses LocalStorage for user persistence) ---
+    // Using localStorage instead of sessionStorage prevents new ID on tab refresh
+    var myId = localStorage.getItem('presenceId');
     if (!myId) {
         myId = Date.now().toString() + Math.random().toString().slice(2,5);
-        sessionStorage.setItem('presenceId', myId);
+        localStorage.setItem('presenceId', myId);
     }
 
     var presenceRef = db.ref('presence');
@@ -465,7 +488,8 @@
     presenceRef.on('value', function(snap) {
         var val = snap.val() || {};
         var count = Object.keys(val).length;
-        document.getElementById('presence-list').innerHTML = `<i class="fas fa-users" style="font-size: 9px;"></i> ${count} Online`;
+        // Update the count in the shared bubble
+        document.getElementById('presence-count').innerHTML = `<i class="fas fa-users" style="font-size: 11px;"></i> ${count}`;
     });
 
 
@@ -644,10 +668,10 @@
     // --- EXPORT WITH SMOGON CHAOS DATA ---
     window.exportTeam = async function(side) {
         var btn = document.getElementById('export-' + side);
-        var originalIcon = '<i class="fas fa-file-export"></i>';
+        var originalIcon = '<i class="fas fa-file-export"></i> Export Team';
         
         // VISUAL LOADING
-        btn.innerHTML = '<i class="fas fa-spinner"></i>';
+        btn.innerHTML = '<i class="fas fa-spinner"></i> Exporting...';
         
         var container = document.getElementById('slots-' + side);
         var kids = container.getElementsByClassName('slot');
@@ -751,7 +775,7 @@
 
         // VISUAL DONE
         navigator.clipboard.writeText(exportText).then(function() {
-            btn.innerHTML = '<i class="fas fa-check" style="color:var(--accent)"></i>';
+            btn.innerHTML = '<i class="fas fa-check" style="color:#0f0"></i> Copied!';
             setTimeout(() => { btn.innerHTML = originalIcon; }, 2000);
         });
     }
