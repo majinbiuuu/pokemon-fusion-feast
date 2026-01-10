@@ -46,7 +46,8 @@ body::before {
 
 /* NOW PLAYING WIDGET */
 .np-widget { 
-    width: 500px; height: 60px; 
+    width: 650px; /* UPDATED: Made Wider (was 500px) */
+    height: 60px; 
     background: rgba(0,0,0,0.4); border: var(--border); border-radius: 12px; 
     display: flex; align-items: center; overflow: hidden; padding-right: 15px; 
 }
@@ -87,7 +88,14 @@ body::before {
 }
 
 .p-name { font-size: 1.5rem; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; }
-.p-score { font-size: 2.5rem; font-weight: 900; line-height: 1; transition: color 0.2s; }
+
+/* UPDATED: Score made bigger */
+.p-score { 
+    font-size: 4rem; /* Changed from 2.5rem */
+    font-weight: 900; 
+    line-height: 1; 
+    transition: color 0.2s; 
+}
 
 .p-ctrls { display: flex; gap: 5px; }
 .tiny-btn { width: 28px; height: 28px; background: #1a1a1a; border: 1px solid #444; color: #888; cursor: pointer; border-radius: 6px; font-weight: 900; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
@@ -102,9 +110,14 @@ body::before {
 .slot img { height: 90%; width: auto; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); z-index: 2; pointer-events: none; animation: snapIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 .slot-txt { display: none; }
 
+/* UPDATED: Export Button - Less wide, smaller, centered */
 .col-btn.export { 
-    width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid #444; 
-    color: #888; font-weight: 800; cursor: pointer; border-radius: 8px; font-size: 0.9rem; 
+    width: 60%; /* Less wide (was 100%) */
+    margin: 0 auto; /* Centered */
+    padding: 6px; /* Smaller padding */
+    font-size: 0.8rem; /* Smaller font */
+    background: rgba(255,255,255,0.05); border: 1px solid #444; 
+    color: #888; font-weight: 800; cursor: pointer; border-radius: 8px; 
     transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
     text-transform: uppercase; letter-spacing: 1px;
 }
