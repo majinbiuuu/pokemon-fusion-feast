@@ -65,7 +65,7 @@
   
   /* Dragging Styles */
   .match-block.dragging { opacity: 0.4; transform: scale(0.98); }
-  .match-block.drop-target { border-top: 4px solid var(--theme-green); margin-top: -3px; } /* Visual cue line */
+  .match-block.drop-target { border-top: 4px solid var(--theme-green); margin-top: -3px; }
 
   @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -106,11 +106,11 @@
     letter-spacing: 0.5px;
   }
 
-  /* GRID SYSTEM - REFINED SPACING */
+  /* GRID SYSTEM */
   .grid-layout {
     display: grid;
-    /* Adjusted columns: Mode/Side get flex space, Fixed widths for small data */
-    grid-template-columns: minmax(150px, 1.5fr) minmax(150px, 1.5fr) 70px 50px 120px 80px 1fr 100px;
+    /* Adjusted columns: Record column (5th) is wider now to fit boxes */
+    grid-template-columns: minmax(150px, 1.5fr) minmax(150px, 1.5fr) 70px 50px 140px 80px 1fr 100px;
     gap: 20px;
     align-items: center;
   }
@@ -128,7 +128,7 @@
 
   /* Data Row */
   .match-data {
-    padding: 16px 25px;
+    padding: 12px 25px; /* Reduced vertical padding */
     font-size: 0.9rem;
     font-weight: 600;
     transition: background 0.2s;
@@ -147,6 +147,17 @@
   }
   .link-chip:hover { border-color: var(--theme-green); color: #fff; background: #333; }
 
+  /* Record Boxes (New) */
+  .rec-container { display: flex; gap: 5px; align-items: center; }
+  .rec-badge {
+      width: 24px; height: 24px; 
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 4px; font-weight: 900; font-size: 0.8rem;
+      border: 1px solid rgba(255,255,255,0.1);
+  }
+  .rec-badge.res-A { background: rgba(255, 68, 68, 0.2); border-color: #ff4444; color: #ff4444; }
+  .rec-badge.res-B { background: rgba(68, 136, 255, 0.2); border-color: #4488ff; color: #4488ff; }
+
   /* Actions */
   .col-actions { display: flex; gap: 15px; justify-content: flex-end; align-items: center; }
   .act-btn {
@@ -163,32 +174,35 @@
   .exp-btn:hover { opacity: 1; text-shadow: 0 0 8px var(--theme-green); }
   .exp-btn.open { transform: rotate(180deg); }
 
-  /* EXPANDED DETAILS SECTION */
+  /* EXPANDED DETAILS SECTION (UPDATED FOR ROW LAYOUT) */
   .detail-row {
       display: none;
       background: rgba(0,0,0,0.4);
       border-top: 1px solid rgba(255,255,255,0.05);
-      padding: 20px 25px;
+      padding: 10px 25px; /* Reduced vertical padding */
       animation: fadeIn 0.3s;
   }
   .detail-row.show { display: block; }
   @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 
-  .det-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 15px;
+  .det-flex {
+      display: flex;
+      flex-direction: row; /* Horizontal */
+      gap: 10px;
+      overflow-x: auto;
   }
   .det-card {
       background: rgba(255,255,255,0.03);
       border: 1px solid #333;
-      border-radius: 8px;
-      padding: 12px;
-      display: flex; flex-direction: column; gap: 4px;
+      border-radius: 6px;
+      padding: 8px 12px; /* Tighter padding */
+      display: flex; flex-direction: column; gap: 2px;
+      min-width: 120px;
+      flex: 1;
   }
-  .det-head { font-size: 0.75rem; color: var(--theme-green); font-weight: 900; margin-bottom: 5px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 5px; letter-spacing: 1px; }
-  .det-val { font-size: 0.85rem; color: #ddd; }
-  .det-label { color: #666; font-size: 0.7rem; font-weight: 700; margin-right: 5px; text-transform: uppercase; }
+  .det-head { font-size: 0.7rem; color: var(--theme-green); font-weight: 900; margin-bottom: 3px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 3px; letter-spacing: 1px; }
+  .det-val { font-size: 0.8rem; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .det-label { color: #666; font-size: 0.65rem; font-weight: 700; margin-right: 5px; text-transform: uppercase; }
 
   /* --- MODAL --- */
   .modal-overlay {
@@ -338,12 +352,20 @@
 
       if(showDetails) { mode = "Various"; side = "Various"; }
 
-      let recordStr = "???";
+      // --- NEW RECORD RENDERING (BOXES) ---
+      let recordHtml = `<div class="rec-container">`;
       if(Array.isArray(data.record)) {
-          recordStr = data.record.map(r => r.result).join(' - ');
+          data.record.forEach(r => {
+              recordHtml += `<div class="rec-badge res-${r.result}">${r.result}</div>`;
+          });
       } else if(typeof data.record === 'string') {
-          recordStr = data.record; 
+          // Attempt to parse "A - B - A" strings into boxes
+          let parts = data.record.split(/[\s-]+/);
+          parts.forEach(p => {
+              if(p) recordHtml += `<div class="rec-badge res-${p}">${p}</div>`;
+          });
       }
+      recordHtml += `</div>`;
 
       let linkHtml = "";
       if(Array.isArray(data.links)) {
@@ -376,7 +398,7 @@
              </div>`;
           });
           
-          detailsHtml = `<div class="detail-row" id="det-${key}"><div class="det-grid">${cards}</div></div>`;
+          detailsHtml = `<div class="detail-row" id="det-${key}"><div class="det-flex">${cards}</div></div>`;
           expandBtn = `<button class="act-btn exp-btn" id="btn-${key}" onclick="toggleDetails('${key}')"><i class="fas fa-chevron-down"></i></button>`;
       }
 
@@ -415,7 +437,7 @@
             <div style="color:#fff">${side}</div>
             <div>${points}</div>
             <div>${sp}</div>
-            <div style="font-family:monospace; font-size:1rem; letter-spacing:1px">${recordStr}</div>
+            <div>${recordHtml}</div>
             <div class="col-winner win-${data.winner}">${data.winner}</div>
             <div class="col-links">${linkHtml}</div>
             <div class="col-actions">
@@ -461,21 +483,15 @@
       let targetTime = parseFloat(targetEl.getAttribute('data-ts'));
       
       // Find the element *before* the target in the DOM (Visually above it)
-      // Since list is Descending: Above = Newer (Higher TS), Below = Older (Lower TS)
       let prevEl = targetEl.previousElementSibling; 
       
       let newTime;
       
       if (prevEl) {
-          // Dropped between two items
           let prevTime = parseFloat(prevEl.getAttribute('data-ts'));
-          // Calculate average to sit between them
           newTime = (targetTime + prevTime) / 2;
       } else {
-          // Dropped at the very top (Newest)
-          // Add a buffer to the current top time
           newTime = targetTime + 100000; 
-          // Ideally use Date.now() if it's larger, but purely relative math is safer to force order
           if(newTime <= Date.now()) newTime = Date.now() + 1000;
       }
 
