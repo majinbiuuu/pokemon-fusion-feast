@@ -1,7 +1,7 @@
 window.GEN_DRAG_PAYLOAD = null;
 var lastTopVol = 100;
 window.returningIndex = -1;
-window.SETDEX_CACHE = null; // Renamed from SMOGON_CACHE
+window.SETDEX_CACHE = null; 
 
 // --- SETTINGS LOGIC ---
 window.toggleSettings = function() {
@@ -337,7 +337,6 @@ window.exportTeam = async function(side) {
     for(var i=0; i<kids.length; i++) {
         var txt = kids[i].querySelector('.slot-txt');
         if(txt && txt.dataset.id) {
-            // Trim and clean name for better matching
             monsToFetch.push({ 
                 name: txt.innerText.trim(), 
                 id: txt.dataset.id 
@@ -354,14 +353,12 @@ window.exportTeam = async function(side) {
     // 1. Fetch SETDEX Data if not cached
     if (!window.SETDEX_CACHE) {
         try {
-            // Fetch from official calc source via CORS proxy
             const proxyUrl = "https://corsproxy.io/?";
             const calcUrl = "https://calc.pokemonshowdown.com/data/sets/gen9.js"; 
             const res = await fetch(proxyUrl + calcUrl);
             if(res.ok) {
                 let text = await res.text();
                 // Format is: var SETDEX_SV = { ... };
-                // We strip the variable declaration to parse pure JSON
                 let start = text.indexOf('{');
                 let end = text.lastIndexOf('}');
                 if (start !== -1 && end !== -1) {
@@ -377,22 +374,46 @@ window.exportTeam = async function(side) {
     for (let mon of monsToFetch) {
         let setData = null;
         let set = null;
-
-        // --- STRATEGY A: LOOKUP IN SETDEX ---
-        if (window.SETDEX_CACHE) {
-            // Direct match
-            setData = window.SETDEX_CACHE[mon.name];
+        
+        // --- MEGA DETECTION ---
+        let baseName = mon.name;
+        let isMega = false;
+        let megaStone = "";
+        
+        // Check for Mega
+        if(baseName.includes("Mega")) {
+            isMega = true;
+            // Extract base name (e.g. "Lucario Mega" -> "Lucario")
+            // Also handle X/Y (e.g. "Charizard Mega X")
+            let parts = baseName.split(" Mega");
+            baseName = parts[0].trim();
+            let suffix = parts[1] ? parts[1].trim() : ""; // "X", "Y" or empty
             
-            // If direct match failed, try fuzzy match on ID (e.g. Iron Bundle vs ironbundle)
+            // Construct Stone Name (e.g. Lucarionite, Charizardite X)
+            megaStone = baseName + "ite" + (suffix ? " " + suffix : "");
+            
+            // Special Cases for weird stone names could go here (e.g. Alakazite is normal, but if needed)
+            if(baseName === "Kyogre" && suffix.includes("Primal")) megaStone = "Blue Orb";
+            if(baseName === "Groudon" && suffix.includes("Primal")) megaStone = "Red Orb";
+            if(baseName === "Rayquaza") megaStone = ""; // Rayquaza doesn't need a stone, needs Move
+        }
+
+        // --- LOOKUP IN SETDEX ---
+        if (window.SETDEX_CACHE) {
+            // Try explicit name first (with hyphens if needed)
+            setData = window.SETDEX_CACHE[baseName];
+            
+            // If direct match failed, try variations
             if (!setData) {
-                let cleanId = mon.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+                // Try fuzzy match on ID
+                let cleanId = baseName.toLowerCase().replace(/[^a-z0-9]/g, '');
                 let foundKey = Object.keys(window.SETDEX_CACHE).find(k => 
                     k.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanId
                 );
                 if(foundKey) setData = window.SETDEX_CACHE[foundKey];
             }
 
-            // If we found the pokemon, pick the first available set (usually the standard meta set)
+            // If we found the pokemon, pick the first available set
             if (setData) {
                 let firstSetName = Object.keys(setData)[0];
                 set = setData[firstSetName];
@@ -401,10 +422,12 @@ window.exportTeam = async function(side) {
 
         if (set) {
             // --- BUILD EXPORT FROM SETDEX ---
-            exportText += `${mon.name} @ ${set.item || 'Leftovers'}\n`;
+            // Use Base Name for export (Showdown handles the Mega transform automatically if Item is correct)
+            exportText += `${baseName} @ ${isMega && megaStone ? megaStone : (set.item || 'Leftovers')}\n`;
+            
             if(set.ability) exportText += `Ability: ${set.ability}\n`;
             if(set.level && set.level != 100) exportText += `Level: ${set.level}\n`;
-            if(set.teraType) exportText += `Tera Type: ${set.teraType}\n`;
+            if(set.teraType && !isMega) exportText += `Tera Type: ${set.teraType}\n`; // Megas usually don't Tera in NatDex, but safe to omit
             
             // EVs
             if(set.evs) {
@@ -424,9 +447,11 @@ window.exportTeam = async function(side) {
             exportText += `\n`;
 
         } else {
-            // --- STRATEGY B: FALLBACK (PokéAPI) ---
+            // --- FALLBACK (PokéAPI) ---
             try {
-                let query = mon.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+                // Fix: Replace spaces with hyphens for API lookup (e.g. "Ho Oh" -> "ho-oh")
+                let query = baseName.toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+                
                 let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${query}`);
                 if(!res.ok) throw new Error("Not found");
                 let data = await res.json();
@@ -445,17 +470,24 @@ window.exportTeam = async function(side) {
                 let moves = levelMoves.slice(-4).map(m => m.move.name);
                 moves = moves.map(m => m.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
 
-                exportText += `${mon.name} @ Leftovers\n`;
-                exportText += `Ability: ${data.abilities[0].ability.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}\n`;
+                // Use Mega Stone if applicable, otherwise Leftovers
+                exportText += `${baseName} @ ${isMega && megaStone ? megaStone : 'Leftovers'}\n`;
+                
+                // Ability
+                let abil = data.abilities[0].ability.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                exportText += `Ability: ${abil}\n`;
+                
                 exportText += `${nature} Nature\n`;
                 exportText += `EVs: 252 ${statMap[best1]} / 252 ${statMap[best2]} / 4 HP\n`;
+                
                 if(moves.length > 0) moves.forEach(m => exportText += `- ${m}\n`);
                 else exportText += `- Tackle\n`;
+                
                 exportText += `\n`;
 
             } catch(e) {
-                console.log("Export fallback failed for", mon.name);
-                exportText += `${mon.name}\n\n`;
+                console.log("Export fallback failed for", baseName);
+                exportText += `${baseName}\n\n`;
             }
         }
     }
