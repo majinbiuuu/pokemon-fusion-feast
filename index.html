@@ -88,11 +88,11 @@
     .tab-content { flex: 1; overflow: hidden; display: none; height: 100%; width: 100%; position:relative; }
     .tab-content.active { display: block; }
 
-    /* LOADING OVERLAY */
-    #export-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 5000; display: none; justify-content: center; align-items: center; flex-direction: column; gap: 15px; backdrop-filter: blur(5px); }
-    .loading-spin { width: 40px; height: 40px; border: 4px solid #333; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+    /* LOADING OVERLAY - SMALLER */
+    #export-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 5000; display: none; justify-content: center; align-items: center; flex-direction: column; gap: 8px; backdrop-filter: blur(5px); }
+    .loading-spin { width: 25px; height: 25px; border: 3px solid #333; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .export-msg { color: #fff; font-weight: 700; font-size: 1.2rem; }
+    .export-msg { color: #fff; font-weight: 700; font-size: 0.85rem; letter-spacing: 1px; }
 
   </style>
 </head>
@@ -174,9 +174,9 @@
     window.GEN_DRAG_PAYLOAD = null;
     var lastTopVol = 100;
     window.returningIndex = -1;
-    window.SMOGON_CACHE = null; // Store fetched data here
+    window.SMOGON_CACHE = null; 
     
-    // --- PRESENCE LOGIC (COUNT ONLY) ---
+    // --- PRESENCE LOGIC ---
     var myId = Date.now().toString() + Math.random().toString().slice(2,5);
     var presenceRef = db.ref('presence');
     var connectedRef = db.ref('.info/connected');
@@ -397,7 +397,7 @@
                 const res = await fetch(proxyUrl + smogonUrl);
                 if(res.ok) {
                     const json = await res.json();
-                    window.SMOGON_CACHE = json.data; // The chaos object
+                    window.SMOGON_CACHE = json.data; 
                 }
             } catch(e) {
                 console.warn("Smogon fetch failed, using fallback mode.");
@@ -407,14 +407,10 @@
         loadingMsg.innerText = "BUILDING SETS...";
 
         for (let mon of monsToFetch) {
-            // Attempt Smogon lookup
             let smogonData = null;
             if (window.SMOGON_CACHE) {
-                // Try exact name match or fuzzy
                 smogonData = window.SMOGON_CACHE[mon.name];
                 if (!smogonData) {
-                    // Try formatting name to standard Key format (e.g. Iron Bundle)
-                    // Our ID is usually 'ironbundle', we might need to search keys
                     let key = Object.keys(window.SMOGON_CACHE).find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '') === mon.id.replace(/[^a-z0-9]/g, ''));
                     if(key) smogonData = window.SMOGON_CACHE[key];
                 }
@@ -425,8 +421,7 @@
                 exportText += `${mon.name} @ ${getTopKey(smogonData.Items) || 'Leftovers'}\n`;
                 exportText += `Ability: ${getTopKey(smogonData.Abilities)}\n`;
                 
-                // Parse Spreads (Nature:HP/Atk/Def/SpA/SpD/Spe)
-                let topSpread = getTopKey(smogonData.Spreads); // e.g. "Timid:0/0/0/252/4/252"
+                let topSpread = getTopKey(smogonData.Spreads); 
                 if(topSpread) {
                     let parts = topSpread.split(':');
                     let nature = parts[0];
@@ -437,7 +432,6 @@
                     exportText += `Serious Nature\n`;
                 }
 
-                // Moves
                 let moves = getTopKeys(smogonData.Moves, 4);
                 moves.forEach(m => exportText += `- ${m}\n`);
                 exportText += `\n`;
