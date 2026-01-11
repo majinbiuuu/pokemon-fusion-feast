@@ -123,9 +123,16 @@
           </div>
       </div>
       
-      <button class="col-btn export" id="export-alb" onclick="exportTeam('alb')" title="Export to Showdown">
-          <i class="fas fa-file-export"></i> Export Team
-      </button>
+      <div class="ctrl-row">
+          <button class="col-btn collapse-btn" onclick="toggleCollapse()" title="Collapse/Expand">
+              <i class="fas fa-compress-alt"></i>
+          </button>
+          <button class="col-btn export" id="export-alb" onclick="exportTeam('alb')" title="Export to Showdown">
+              <i class="fas fa-file-export"></i> Export Team
+          </button>
+      </div>
+
+      <div class="mini-row" id="mini-alb"></div>
 
       <div class="slot-list" id="slots-alb"></div>
       <button class="col-btn clear-btn" onclick="clearCol('alb')">Clear</button>
@@ -187,9 +194,16 @@
           </div>
       </div>
 
-      <button class="col-btn export" id="export-biu" onclick="exportTeam('biu')" title="Export to Showdown">
-          <i class="fas fa-file-export"></i> Export Team
-      </button>
+      <div class="ctrl-row">
+          <button class="col-btn collapse-btn" onclick="toggleCollapse()" title="Collapse/Expand">
+              <i class="fas fa-compress-alt"></i>
+          </button>
+          <button class="col-btn export" id="export-biu" onclick="exportTeam('biu')" title="Export to Showdown">
+              <i class="fas fa-file-export"></i> Export Team
+          </button>
+      </div>
+
+      <div class="mini-row" id="mini-biu"></div>
 
       <div class="slot-list" id="slots-biu"></div>
       <button class="col-btn clear-btn" onclick="clearCol('biu')">Clear</button>
