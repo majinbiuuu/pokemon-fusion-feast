@@ -698,6 +698,13 @@ window.toggleCenterCollapse = function() {
         colC.classList.remove('minimized');
         if(icon) icon.className = "fas fa-compress-alt"; 
     }
+
+    // --- NEW: SYNC COLUMNS WITH CENTER ---
+    // If center is collapsed, ensure columns are collapsed.
+    // If center is expanded, ensure columns are expanded.
+    if (window.centerCollapsed !== window.isCollapsed) {
+        window.toggleCollapse();
+    }
 };
 
 window.switchTab = function(viewId, btn) { 
@@ -714,4 +721,16 @@ window.switchTab = function(viewId, btn) {
 
 document.addEventListener('DOMContentLoaded', function() {
     window.initSlots('slots-alb'); window.initSlots('slots-biu'); 
+    
+    // --- LIBRARY LOADER (DATA ONLY) ---
+    // This fetches data so other tabs like Generator/Play can use it
+    db.ref('library').once('value').then(snap => {
+        window.appData = snap.val() || {};
+        ['frame-play', 'frame-gen'].forEach(id => {
+            let el = document.getElementById(id);
+            if(el && el.contentWindow) {
+                try { el.contentWindow.appData = window.appData; } catch(e) {}
+            }
+        });
+    });
 });
