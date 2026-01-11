@@ -207,3 +207,199 @@ body::before {
     opacity: 0; transition: 0.2s;
 }
 .saved-thumb:hover .del-thumb { opacity: 1; }
+
+/* --- LIBRARY LAYOUT --- */
+.lib-container {
+    display: flex;
+    height: 100%;
+    gap: 0;
+}
+
+/* SIDEBAR */
+.lib-sidebar {
+    width: 200px;
+    background: rgba(0, 0, 0, 0.3);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+}
+
+.lib-sidebar h3 {
+    margin-top: 0;
+    color: var(--accent);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 10px;
+}
+
+.lib-sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+}
+
+.lib-cat-item {
+    padding: 10px 12px;
+    margin-bottom: 5px;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #aaa;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.lib-cat-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    padding-left: 15px;
+}
+
+.lib-cat-item.active {
+    background: rgba(255,255,255,0.1);
+    color: var(--accent);
+    border-left: 3px solid var(--accent);
+}
+
+/* EDITOR AREA */
+.lib-editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 30px;
+    background: rgba(0,0,0,0.1);
+}
+
+.lib-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lib-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #fff;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.lib-header-labels {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 0 10px;
+}
+
+.lib-header-labels span {
+    font-size: 11px;
+    font-weight: 800;
+    color: #666;
+    text-transform: uppercase;
+    flex: 1;
+}
+
+.lib-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* ITEM ROW */
+.lib-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    animation: fadeIn 0.3s ease;
+    background: rgba(255,255,255,0.02);
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+}
+.lib-row:hover {
+    border-color: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+}
+
+.lib-input {
+    flex: 1;
+    background: #111;
+    border: 1px solid #333;
+    padding: 8px 12px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+    transition: 0.2s;
+    font-family: inherit;
+}
+
+.lib-input:focus {
+    border-color: var(--accent);
+    background: #000;
+}
+
+.lib-btn {
+    padding: 8px 16px;
+    background: #222;
+    border: 1px solid #444;
+    color: #ccc;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: 0.2s;
+    text-transform: uppercase;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lib-btn:hover {
+    background: #333;
+    color: #fff;
+}
+
+.lib-btn.action {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.lib-btn.action:hover {
+    background: var(--accent);
+    color: #000;
+}
+
+.del-btn {
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+    color: #ff4444;
+    width: 36px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+}
+
+.del-btn:hover {
+    background: #ff4444;
+    color: #fff;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
