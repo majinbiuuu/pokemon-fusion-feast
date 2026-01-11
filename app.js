@@ -627,4 +627,167 @@ window.switchTab = function(viewId, btn) {
 
 document.addEventListener('DOMContentLoaded', function() {
     window.initSlots('slots-alb'); window.initSlots('slots-biu'); 
+    initLibrarySidebar(); // INIT LIBRARY
 });
+
+/* --- LIBRARY / CMS SYSTEM --- */
+
+// CONFIGURATION: Map friendly names to Firebase paths
+const LIBRARY_MAP = {
+    "Game Modes": "library/gameModes",
+    "Side Options": "library/sides",
+    "Points List": "library/points",
+    "SP List": "library/sp",
+    "Shit Wheel": "library/shitWheelList",
+    "Tokens": "library/tokenList"
+};
+
+let currentLibPath = null;
+let libListener = null;
+
+function initLibrarySidebar() {
+    const list = document.getElementById('lib-cat-list');
+    if(!list) return;
+    list.innerHTML = '';
+
+    Object.keys(LIBRARY_MAP).forEach((key, index) => {
+        let li = document.createElement('li');
+        li.className = 'lib-cat-item';
+        li.innerText = key;
+        li.onclick = () => loadLibraryCategory(key, li);
+        
+        // Auto-select first item
+        if(index === 0) loadLibraryCategory(key, li);
+        
+        list.appendChild(li);
+    });
+}
+
+function loadLibraryCategory(name, el) {
+    // UI Updates
+    document.querySelectorAll('.lib-cat-item').forEach(i => i.classList.remove('active'));
+    if(el) el.classList.add('active');
+    document.getElementById('lib-current-title').innerText = name;
+
+    // Database Logic
+    const dbPath = LIBRARY_MAP[name];
+    if(currentLibPath === dbPath) return; // Already here
+
+    // Detach old listener if exists
+    if(currentLibPath && libListener) {
+        db.ref(currentLibPath).off('value', libListener);
+    }
+
+    currentLibPath = dbPath;
+    const container = document.getElementById('lib-item-list');
+    container.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">Loading...</div>';
+
+    // Attach new listener
+    libListener = db.ref(currentLibPath).on('value', snap => {
+        renderLibraryItems(snap.val());
+    });
+}
+
+function renderLibraryItems(data) {
+    const container = document.getElementById('lib-item-list');
+    container.innerHTML = '';
+
+    if (!data) {
+        container.innerHTML = '<div style="padding:20px; text-align:center; color:#555;">List is empty. Add a new item.</div>';
+        return; 
+    }
+
+    // Standardize Data to Array of { key, text, note }
+    let items = [];
+    
+    if (Array.isArray(data)) {
+        data.forEach((val, idx) => {
+            if(val !== null) items.push({ key: idx, val: val });
+        });
+    } else if (typeof data === 'object') {
+        Object.keys(data).forEach(key => {
+            items.push({ key: key, val: data[key] });
+        });
+    } else {
+        items.push({ key: 'value', val: data });
+    }
+
+    items.forEach(item => {
+        // Extract Text and Note safely
+        let textVal = "";
+        let noteVal = "";
+
+        if (typeof item.val === 'object') {
+            textVal = item.val.text || "";
+            noteVal = item.val.note || "";
+        } else {
+            textVal = item.val;
+        }
+
+        const div = document.createElement('div');
+        div.className = 'lib-row';
+        div.innerHTML = `
+            <input type="text" class="lib-input" 
+                   value="${textVal}" 
+                   onchange="updateLibItem('${item.key}', 'text', this.value)"
+                   placeholder="Item Name">
+                   
+            <input type="text" class="lib-input" 
+                   value="${noteVal}" 
+                   onchange="updateLibItem('${item.key}', 'note', this.value)"
+                   placeholder="Note...">
+                   
+            <button class="del-btn" onclick="deleteLibItem('${item.key}')">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// --- CRUD ACTIONS ---
+
+// 1. ADD
+window.addItemToLibrary = function() {
+    if(!currentLibPath) return;
+    
+    // Check if we are in an array-like path (numeric keys) or object-like
+    // Simplest is to push new object
+    const newRef = db.ref(currentLibPath).push();
+    newRef.set({ text: "New Item", note: "" });
+};
+
+// 2. UPDATE (Real-time on change)
+window.updateLibItem = function(key, field, val) {
+    if(!currentLibPath) return;
+    
+    // We need to fetch the current object to ensure we don't overwrite the other field
+    // OR we can just do a patch update if it's an object.
+    // However, if the data was previously a simple string, we must convert it to an object first.
+    
+    db.ref(currentLibPath + '/' + key).once('value', snap => {
+        let current = snap.val();
+        let updatePayload = {};
+
+        if (typeof current === 'object') {
+            updatePayload = { ...current }; // clone
+            updatePayload[field] = val;
+        } else {
+            // It was a string, convert to object
+            updatePayload = { text: current, note: "" };
+            // If updating text, change text. If updating note, change note.
+            if(field === 'text') updatePayload.text = val;
+            if(field === 'note') updatePayload.note = val;
+        }
+        
+        db.ref(currentLibPath + '/' + key).set(updatePayload);
+    });
+};
+
+// 3. DELETE
+window.deleteLibItem = function(key) {
+    if(!currentLibPath) return;
+    if(confirm("Delete this item?")) {
+        db.ref(currentLibPath + '/' + key).set(null);
+    }
+};
