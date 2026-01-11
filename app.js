@@ -633,13 +633,14 @@ document.addEventListener('DOMContentLoaded', function() {
 /* --- LIBRARY / CMS SYSTEM --- */
 
 // CONFIGURATION: Map friendly names to Firebase paths
+// UPDATED: Used Capitalized Keys for ShitWheel and Tokens to match Sheets sync
 const LIBRARY_MAP = {
     "Game Modes": "library/gameModes",
     "Side Options": "library/sides",
     "Points List": "library/points",
     "SP List": "library/sp",
-    "Shit Wheel": "library/shitWheelList",
-    "Tokens": "library/tokenList"
+    "Shit Wheel": "library/ShitWheelList",
+    "Tokens": "library/TokenList"
 };
 
 let currentLibPath = null;
