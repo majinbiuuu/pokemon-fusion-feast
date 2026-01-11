@@ -719,44 +719,73 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /* --- LIBRARY / CMS SYSTEM --- */
 
-const LIBRARY_MAP = {
-    "Game Modes": "library/gameModes",
-    "Side Options": "library/sides",
-    "Points List": "library/points",
-    "SP List": "library/sp",
-    "Shit Wheel": "library/ShitWheelList",
-    "Tokens": "library/TokenList"
+// RESTRUCTURED LIBRARY MAP FOR SECTIONS & THEMING
+const LIBRARY_SECTIONS = {
+    "Global Effects": {
+        "Rewards": { path: "library/rewards", theme: "purple" },
+        "Rules": { path: "library/rules", theme: "red" }
+    },
+    "Lists": {
+        "Game Modes": { path: "library/gameModes" },
+        "Side Options": { path: "library/sides" },
+        "Points List": { path: "library/points" },
+        "SP List": { path: "library/sp" },
+        "Shit Wheel": { path: "library/ShitWheelList" },
+        "Tokens": { path: "library/TokenList" }
+    }
 };
 
 let currentLibPath = null;
 let libListener = null;
 
 function initLibrarySidebar() {
-    const list = document.getElementById('lib-cat-list');
-    if(!list) return;
-    list.innerHTML = '';
+    const listContainer = document.getElementById('lib-cat-list');
+    if(!listContainer) return;
+    listContainer.innerHTML = '';
 
-    Object.keys(LIBRARY_MAP).forEach((key, index) => {
-        let li = document.createElement('li');
-        li.className = 'lib-cat-item';
-        li.innerText = key;
-        li.onclick = () => loadLibraryCategory(key, li);
+    let firstItem = null;
+
+    // Iterate through sections (Global Effects, Lists)
+    for (const [sectionName, sectionItems] of Object.entries(LIBRARY_SECTIONS)) {
+        // Header
+        let header = document.createElement('h3');
+        header.innerText = sectionName;
+        listContainer.appendChild(header);
+
+        // List of Items
+        let ul = document.createElement('ul');
         
-        // Auto-select first item
-        if(index === 0) loadLibraryCategory(key, li);
-        
-        list.appendChild(li);
-    });
+        for (const [itemName, itemData] of Object.entries(sectionItems)) {
+            let li = document.createElement('li');
+            li.className = 'lib-cat-item';
+            li.innerText = itemName;
+            
+            // Pass theme if present
+            li.onclick = () => loadLibraryCategory(itemName, itemData.path, li, itemData.theme);
+            
+            if(!firstItem) firstItem = { name: itemName, path: itemData.path, el: li, theme: itemData.theme };
+            ul.appendChild(li);
+        }
+        listContainer.appendChild(ul);
+    }
+
+    // Auto-select first item
+    if(firstItem) loadLibraryCategory(firstItem.name, firstItem.path, firstItem.el, firstItem.theme);
 }
 
-function loadLibraryCategory(name, el) {
+function loadLibraryCategory(name, dbPath, el, theme) {
     // UI Updates
     document.querySelectorAll('.lib-cat-item').forEach(i => i.classList.remove('active'));
     if(el) el.classList.add('active');
     document.getElementById('lib-current-title').innerText = name;
 
+    // Apply Theme Data Attribute to Container
+    const libContainer = document.querySelector('.lib-container');
+    if(libContainer) {
+        libContainer.setAttribute('data-theme', theme || 'default');
+    }
+
     // Database Logic
-    const dbPath = LIBRARY_MAP[name];
     if(currentLibPath === dbPath) return; // Already here
 
     // Detach old listener if exists
