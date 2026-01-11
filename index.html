@@ -137,13 +137,44 @@
         <div class="tab" onclick="switchTab('gen', this)">Generator</div>
         <div class="tab" onclick="switchTab('music', this)">Music</div>
         <div class="tab" onclick="switchTab('hist', this)">History</div>
+        <div class="tab" onclick="switchTab('lib', this)">Library</div>
       </div>
+      
       <div id="view-play" class="tab-content active"><iframe id="frame-play" src="play.html" style="width:100%;height:100%;border:none;"></iframe></div>
+      
       <div id="view-gen" class="tab-content" ondragover="allowReturnDrop(event)" ondrop="returnDrop(event)">
         <iframe id="frame-gen" src="gen.html" style="width:100%;height:100%;border:none; pointer-events:all;"></iframe>
       </div>
+      
       <div id="view-music" class="tab-content"><iframe id="frame-music" src="music.html" style="width:100%;height:100%;border:none;"></iframe></div>
+      
       <div id="view-hist" class="tab-content"><iframe id="frame-hist" src="history.html" style="width:100%;height:100%;border:none;"></iframe></div>
+
+      <div id="view-lib" class="tab-content">
+          <div class="lib-container">
+              <div class="lib-sidebar">
+                  <h3>Lists</h3>
+                  <ul id="lib-cat-list">
+                      </ul>
+              </div>
+              
+              <div class="lib-editor">
+                  <div class="lib-header">
+                      <h2 id="lib-current-title">Select Category</h2>
+                      <button class="lib-btn action" onclick="addItemToLibrary()">
+                          <i class="fas fa-plus"></i> Add New
+                      </button>
+                  </div>
+                  <div class="lib-header-labels" id="lib-labels">
+                      <span>TEXT / VALUE</span>
+                      <span>NOTE (Optional)</span>
+                      <span style="width:40px"></span>
+                  </div>
+                  <div id="lib-item-list" class="lib-scroll-area">
+                      </div>
+              </div>
+          </div>
+      </div>
     </div>
 
     <div class="col-p">
