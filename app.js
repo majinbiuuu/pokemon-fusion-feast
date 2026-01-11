@@ -641,6 +641,8 @@ window.toggleCollapse = function() {
 
     // Handle Animation & Mini Row Generation for BOTH sides
     ['alb', 'biu'].forEach(side => {
+        // Target the container directly using the IDs added to index.html
+        const col = document.getElementById('col-' + side);
         const list = document.getElementById('slots-' + side);
         const miniRow = document.getElementById('mini-' + side);
         
@@ -648,13 +650,15 @@ window.toggleCollapse = function() {
             // 1. Generate Mini Icons from current slots
             generateMiniIcons(side);
             
-            // 2. Hide List, Show Mini
+            // 2. Hide List, Show Mini, Shrink Container
             list.classList.add('collapsed');
             miniRow.classList.add('active');
+            col.classList.add('collapsed-view'); // Shrinks the glass pane
         } else {
-            // 1. Show List, Hide Mini
+            // 1. Show List, Hide Mini, Expand Container
             list.classList.remove('collapsed');
             miniRow.classList.remove('active');
+            col.classList.remove('collapsed-view'); // Restores size
         }
     });
 };
