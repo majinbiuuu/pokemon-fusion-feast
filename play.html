@@ -233,14 +233,16 @@
       border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; width: 100%; text-align: center;
   }
   
-  .token-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; width: 100%; }
+  /* UPDATED: Aligns controls with center icon */
+  .token-row { display: flex; justify-content: space-between; align-items: center; gap: 20px; width: 100%; }
   
   .token-player { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
   .token-name { font-weight: 800; font-size: 0.8rem; letter-spacing: 1px; opacity: 0.7; }
   
+  /* UPDATED: Increased padding and removed fixed height to prevent clipping */
   .token-ctrls { 
       display: flex; align-items: center; gap: 10px; 
-      background: rgba(0,0,0,0.4); padding: 6px 15px; 
+      background: rgba(0,0,0,0.4); padding: 8px 15px; 
       border-radius: 20px; border: 1px solid #333; 
   }
   
@@ -250,7 +252,7 @@
   }
   .tk-btn:hover { color: var(--theme-green); }
   
-  .tk-val { font-size: 1.3rem; font-weight: 900; color: #fff; min-width: 25px; text-align: center; }
+  .tk-val { font-size: 1.3rem; font-weight: 900; color: #fff; min-width: 25px; text-align: center; line-height: 1.2; }
 
   /* New Middle Section for Coin & Output */
   .token-mid-section {
@@ -274,22 +276,25 @@
   
   .token-icon { font-size: 1.8rem; filter: drop-shadow(0 0 2px var(--theme-green)); }
   
-  /* Persistent Token Output */
+  /* UPDATED: Persistent Token Output with Wrapping */
   .token-output-wrapper {
       position: relative;
       width: 100%;
-      height: 34px;
+      height: auto; /* Allow growth */
+      min-height: 34px;
       display: flex; align-items: center;
   }
   
   .token-result-text {
-      width: 100%; height: 100%;
+      width: 100%; height: auto;
       background: #111; border: 1px solid #333;
       border-radius: 6px; color: #fff;
       font-size: 0.85rem; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
-      text-align: center; padding: 0 25px 0 10px; /* Right padding for clear btn */
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      text-align: center; padding: 6px 25px 6px 10px; /* Right padding for clear btn */
+      white-space: normal; /* Allow text to wrap */
+      word-break: break-word;
+      line-height: 1.3;
   }
 
   .token-clear-btn {
@@ -628,8 +633,8 @@
         let raw = lib.ShitWheelList || lib.shitWheelList || lib.shitWheel;
         
         if(!raw) {
-             const keys = Object.keys(lib).join(", ");
-             return alert(`Error: 'ShitWheelList' not found in Library.\n\nItems currently in your database:\n${keys}`);
+              const keys = Object.keys(lib).join(", ");
+              return alert(`Error: 'ShitWheelList' not found in Library.\n\nItems currently in your database:\n${keys}`);
         }
         
         const list = Object.values(raw);
@@ -664,8 +669,8 @@
         let raw = lib.TokenList || lib.tokenList || lib.tokens;
         
         if(!raw) {
-             const keys = Object.keys(lib).join(", ");
-             return alert(`Error: 'TokenList' not found in Library.\n\nItems currently in your database:\n${keys}`);
+              const keys = Object.keys(lib).join(", ");
+              return alert(`Error: 'TokenList' not found in Library.\n\nItems currently in your database:\n${keys}`);
         }
         
         const list = Object.values(raw);
