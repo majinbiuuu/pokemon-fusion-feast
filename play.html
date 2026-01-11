@@ -131,7 +131,6 @@
   
   .qg-box { 
     flex: 1; 
-    /* UPDATED: More transparent background */
     background: var(--card-dark); 
     border: 1px solid #333; border-radius: 8px; position: relative;
     display: flex; align-items: center; justify-content: center; padding: 10px 15px; min-height: 60px; 
@@ -219,45 +218,55 @@
   }
   .save-btn:hover { background: var(--theme-green); color: #000; border-color: var(--theme-green); }
 
-  /* --- TOKEN CENTER (Updated & Smaller) --- */
+  /* --- UPDATED: TOKEN CENTER --- */
   .token-center {
-    display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 15px;
     background: var(--glass-bg); border: 1px solid var(--glass-border);
-    border-radius: 12px; padding: 10px; 
+    border-radius: 12px; padding: 20px; 
     box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative;
-    max-width: 400px; margin-left: auto; margin-right: auto;
+    max-width: 500px; margin-left: auto; margin-right: auto;
   }
   
   .claw-header { 
-      font-size: 0.8rem; font-weight: 900; color: var(--theme-green); 
-      text-transform: uppercase; letter-spacing: 2px; opacity: 0.8;
+      font-size: 0.9rem; font-weight: 900; color: var(--theme-green); 
+      text-transform: uppercase; letter-spacing: 3px; opacity: 0.8;
+      border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; width: 100%; text-align: center;
   }
   
-  .token-row { display: flex; justify-content: center; align-items: center; gap: 30px; width: 100%; }
+  .token-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; width: 100%; }
   
-  .token-player { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .token-name { font-weight: 800; font-size: 0.7rem; letter-spacing: 1px; opacity: 0.7; }
+  .token-player { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+  .token-name { font-weight: 800; font-size: 0.8rem; letter-spacing: 1px; opacity: 0.7; }
   
   .token-ctrls { 
-      display: flex; align-items: center; gap: 8px; 
-      background: rgba(0,0,0,0.4); padding: 4px 10px; 
+      display: flex; align-items: center; gap: 10px; 
+      background: rgba(0,0,0,0.4); padding: 6px 15px; 
       border-radius: 20px; border: 1px solid #333; 
   }
   
   .tk-btn { 
       background: none; border: none; color: #666; font-weight: 900; 
-      font-size: 1rem; cursor: pointer; transition: 0.2s; padding: 0; line-height: 1;
+      font-size: 1.2rem; cursor: pointer; transition: 0.2s; padding: 0; line-height: 1;
   }
   .tk-btn:hover { color: var(--theme-green); }
   
-  .tk-val { font-size: 1.1rem; font-weight: 900; color: #fff; min-width: 20px; text-align: center; }
+  .tk-val { font-size: 1.3rem; font-weight: 900; color: #fff; min-width: 25px; text-align: center; }
+
+  /* New Middle Section for Coin & Output */
+  .token-mid-section {
+      flex: 1.5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+  }
 
   .machine-display {
-    width: 60px; height: 60px; /* Smaller */
+    width: 60px; height: 60px;
     background: radial-gradient(circle, #222, #050505);
     border: 2px solid var(--theme-green); 
     border-radius: 50%; display: flex; align-items: center;
-    justify-content: center; cursor: pointer; transition: 0.3s; position: relative;
+    justify-content: center; cursor: pointer; transition: 0.3s;
     box-shadow: 0 0 10px rgba(0,0,0,0.5);
   }
   .machine-display:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--theme-green); }
@@ -265,18 +274,32 @@
   
   .token-icon { font-size: 1.8rem; filter: drop-shadow(0 0 2px var(--theme-green)); }
   
-  .token-result-popup { 
-      position: absolute; top: -35px; background: var(--theme-green); color: #000; font-weight: 900;
-      padding: 4px 12px; border-radius: 4px; font-size: 0.8rem; white-space: nowrap;
-      animation: popBounce 2s forwards; display: none; z-index: 10;
-      box-shadow: 0 0 10px var(--theme-green);
+  /* Persistent Token Output */
+  .token-output-wrapper {
+      position: relative;
+      width: 100%;
+      height: 34px;
+      display: flex; align-items: center;
   }
-  @keyframes popBounce { 
-      0% { transform: translateY(10px) scale(0); opacity:0; } 
-      20% { transform: translateY(-5px) scale(1.1); opacity:1; } 
-      80% { transform: translateY(-5px) scale(1.1); opacity:1; } 
-      100% { transform: translateY(-20px) scale(1); opacity:0; } 
+  
+  .token-result-text {
+      width: 100%; height: 100%;
+      background: #111; border: 1px solid #333;
+      border-radius: 6px; color: #fff;
+      font-size: 0.85rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 0 25px 0 10px; /* Right padding for clear btn */
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+
+  .token-clear-btn {
+      position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: #666;
+      font-size: 1rem; cursor: pointer; font-weight: 900;
+      width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+      border-radius: 4px; transition: 0.2s;
+  }
+  .token-clear-btn:hover { color: #ff4444; background: rgba(255,68,68,0.1); }
 
   .anim-click:active { transform: scale(0.95) !important; filter: brightness(0.8); }
   .anim-hover:hover { transform: translateY(-2px); border-color: var(--theme-green); }
@@ -400,9 +423,14 @@
               </div>
           </div>
 
-          <div class="machine-display" onclick="safeCall('rollToken')">
-              <div class="token-icon">🪙</div>
-              <div class="token-result-popup" id="token-pop">Result!</div>
+          <div class="token-mid-section">
+              <div class="machine-display" onclick="safeCall('rollToken')">
+                  <div class="token-icon">🪙</div>
+              </div>
+              <div class="token-output-wrapper">
+                  <div id="token-result-display" class="token-result-text">-</div>
+                  <button class="token-clear-btn" onclick="safeCall('clearToken')">×</button>
+              </div>
           </div>
 
           <div class="token-player">
@@ -470,7 +498,6 @@
             let ptsInput = document.getElementById('chal-points-input');
             if(ptsInput && document.activeElement !== ptsInput) ptsInput.value = s.points;
         } else {
-            // Fix: ensure blank if empty in DB
             let ptsInput = document.getElementById('chal-points-input');
             if(ptsInput && document.activeElement !== ptsInput) ptsInput.value = "";
         }
@@ -485,8 +512,8 @@
         let lblA = document.getElementById('lbl-qg-a');
         let lblB = document.getElementById('lbl-qg-b');
         if(g.t === 'ShitWheel') {
-            lblA.innerText = "WHEEL 💩 →";
-            lblB.innerText = "RNG";
+            lblA.innerText = "NAME";
+            lblB.innerText = "NOTE";
         } else {
             lblA.innerText = "ALB";
             lblB.innerText = "BIU";
@@ -502,6 +529,10 @@
         const t = snap.val() || { alb:0, biu:0 };
         document.getElementById('tk-alb').innerText = t.alb || 0;
         document.getElementById('tk-biu').innerText = t.biu || 0;
+        
+        // Sync Token Display Result
+        let resDisplay = document.getElementById('token-result-display');
+        if(resDisplay) resDisplay.innerText = t.result || '-';
     });
 
     db.ref('record').on('value', snap => {
@@ -606,8 +637,10 @@
         
         const rand = list[Math.floor(Math.random() * list.length)];
         const pick = (typeof rand === 'object' && rand.text) ? rand.text : rand;
+        const note = (typeof rand === 'object' && rand.note) ? rand.note : "";
         
-        db.ref('gen').update({ a: "WHEEL 💩 →", b: pick, t: "ShitWheel" });
+        // Put Name in A, Note in B
+        db.ref('gen').update({ a: pick, b: note, t: "ShitWheel" });
     };
 
     window.localReroll = function(who) {
@@ -628,7 +661,6 @@
     // --- UPDATED TOKEN LOGIC ---
     window.rollToken = function() {
         const lib = window.appData || {};
-        // Try strict name, then lowercase, then fallback
         let raw = lib.TokenList || lib.tokenList || lib.tokens;
         
         if(!raw) {
@@ -642,10 +674,11 @@
         const rand = list[Math.floor(Math.random() * list.length)];
         const pick = (typeof rand === 'object' && rand.text) ? rand.text : rand;
         
-        const pop = document.getElementById('token-pop');
-        pop.innerText = pick;
-        pop.style.display = 'block';
-        setTimeout(() => { pop.style.display = 'none'; }, 2000);
+        db.ref('tokens').update({ result: pick });
+    };
+    
+    window.clearToken = function() {
+        db.ref('tokens').update({ result: "-" });
     };
 
     // --- REFACTORED: Challenge Mode Sync Logic ---
