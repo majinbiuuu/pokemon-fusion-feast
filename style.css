@@ -85,24 +85,19 @@ body::before {
     gap: 10px; 
     overflow-y: auto; 
     box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-    /* Transition for shrink effect */
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- COLLAPSED STATE (Hides Empty Space) --- */
 .col-p.collapsed-view {
-    height: auto !important; /* Force shrink */
-    align-self: start;       /* Prevent stretching to bottom */
-    overflow: hidden;        /* Clean clip */
+    height: auto !important; 
+    align-self: start;       
+    overflow: hidden;        
     min-height: 0;
 }
 
-/* Hide Clear Button in Collapsed Mode */
-.col-p.collapsed-view .clear-btn {
-    display: none !important;
-}
+.col-p.collapsed-view .clear-btn { display: none !important; }
 
-/* HEADER: Left (Name) | Center (Score) | Right (Buttons) */
+/* HEADER */
 .p-header { 
     display: flex; 
     flex-direction: row;
@@ -126,7 +121,7 @@ body::before {
 .tiny-btn { width: 28px; height: 28px; background: #1a1a1a; border: 1px solid #444; color: #888; cursor: pointer; border-radius: 6px; font-weight: 900; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
 .tiny-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
 
-/* --- BUTTON & COLLAPSE CONTROLS --- */
+/* --- SIDE BUTTONS --- */
 .ctrl-row {
     display: flex;
     gap: 8px;
@@ -148,7 +143,7 @@ body::before {
 .col-btn.collapse-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
 
 .col-btn.export { 
-    flex: 1; /* Fill remaining space */
+    flex: 1; 
     width: auto;
     margin: 0;
     padding: 6px; 
@@ -160,11 +155,11 @@ body::before {
 }
 .col-btn.export:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
 
-/* --- SLOT LIST ANIMATION --- */
+/* --- SLOT LIST --- */
 .slot-list { 
     display: flex; flex-direction: column; gap: 10px; flex: 1; 
     overflow: hidden;
-    max-height: 1000px; /* Arbitrary high value for transition */
+    max-height: 1000px; 
     opacity: 1;
     transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease;
 }
@@ -176,14 +171,13 @@ body::before {
     gap: 0;
 }
 
-/* --- MINI ROW (Collapsed View) --- */
 .mini-row {
-    display: none; /* Hidden by default */
+    display: none; 
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
     background: rgba(0,0,0,0.3);
-    padding: 10px; /* Increased padding */
+    padding: 10px; 
     border-radius: 8px;
     margin-bottom: 10px;
     border: 1px solid rgba(255,255,255,0.05);
@@ -192,10 +186,9 @@ body::before {
 
 .mini-row.active { display: flex; }
 
-/* UPDATED: Larger Mini Slots */
 .mini-slot {
-    width: 44px; /* Increased from 32px */
-    height: 44px; /* Increased from 32px */
+    width: 44px; 
+    height: 44px; 
     border-radius: 50%;
     background: #111;
     border: 1px solid #333;
@@ -204,18 +197,12 @@ body::before {
     justify-content: center;
     overflow: hidden;
     box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0; 
 }
 
-.mini-slot img {
-    width: 120%; /* Slight zoom for sprite visibility */
-    height: 120%;
-    object-fit: contain;
-}
-
+.mini-slot img { width: 120%; height: 120%; object-fit: contain; }
 .mini-slot.empty { opacity: 0.2; border-style: dashed; }
 
-/* STANDARD SLOTS */
 .slot { flex: 1; min-height: 65px; background: rgba(8,8,8,0.6); border: 1px dashed #333; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s; position: relative; overflow: hidden; }
 .slot:hover { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
 .slot.drag-over { border-color: var(--accent) !important; background: rgba(255,255,255, 0.05) !important; box-shadow: 0 0 15px var(--accent); transform: scale(1.02); }
@@ -227,12 +214,41 @@ body::before {
 .col-btn.clear-btn { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #666; font-weight: 800; cursor: pointer; border-radius: 8px; font-size: 0.75rem; letter-spacing: 1px; transition: 0.2s; margin-top: 5px;}
 .col-btn.clear-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
 
+/* --- CENTER COLUMN (DYNAMIC) --- */
 .col-c { display: flex; flex-direction: column; background: rgba(15,15,15,0.5); backdrop-filter: blur(6px); border: var(--border); border-radius: 16px; overflow: hidden; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-.tab-bar { display: flex; height: 55px; padding: 0 20px; align-items: center; gap: 20px; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; justify-content: center; }
-.tab { position: relative; padding: 10px 20px; font-weight: 800; color: #666; cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85rem; }
+
+/* COLLAPSED CENTER STATE */
+.col-c.collapsed-view {
+    height: auto !important;
+    align-self: start;
+    padding-bottom: 0;
+}
+.col-c.collapsed-view .tab-content { display: none !important; }
+
+/* UPDATED TAB BAR STYLES */
+.tab-bar { 
+    display: flex; height: 55px; padding: 0 20px; align-items: center; gap: 20px; 
+    background: rgba(0,0,0,0.8); /* Less Transparent */
+    border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; justify-content: center; 
+}
+
+.tab { 
+    position: relative; padding: 10px 20px; font-weight: 800; 
+    color: #666; cursor: pointer; transition: 0.3s; 
+    text-transform: uppercase; letter-spacing: 2px; 
+    font-size: 1.2rem; /* Bigger Font */
+}
+
 .tab:hover { color: #ccc; }
 .tab.active { color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.3); }
 .tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 3px; background: var(--accent); border-radius: 2px; box-shadow: 0 -2px 10px var(--accent); }
+
+/* New Tab Button (Collapse) */
+.tab-btn-collapse {
+    background: transparent; border: none; color: #888; font-size: 1.2rem; cursor: pointer; margin-right: 15px; transition: 0.2s;
+}
+.tab-btn-collapse:hover { color: #fff; transform: scale(1.1); }
+
 .tab-content { flex: 1; overflow: hidden; display: none; height: 100%; width: 100%; position:relative; }
 .tab-content.active { display: block; }
 
