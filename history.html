@@ -28,6 +28,47 @@
     overflow-y: auto;
   }
 
+  /* --- STATS SECTION (NEW) --- */
+  .stats-overview {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 25px;
+      animation: slideIn 0.4s ease-out;
+  }
+
+  .stat-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 15px 25px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      position: relative;
+      overflow: hidden;
+  }
+
+  .stat-card::before {
+      content: ''; position: absolute; top:0; left:0; width:100%; height:4px;
+  }
+  .sc-alb::before { background: #ff4444; box-shadow: 0 0 10px #ff4444; }
+  .sc-biu::before { background: #4488ff; box-shadow: 0 0 10px #4488ff; }
+
+  .stat-header {
+      font-size: 1.4rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;
+      padding-bottom: 10px; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
+  .stat-label { color: #888; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-val { font-size: 1.1rem; font-weight: 800; color: #fff; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
+  
+  .stat-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 5px 0; }
+  .chal-highlight { color: #d400ff; } /* Purple for Challenge stats text */
+
   /* --- TOP ACTIONS --- */
   .header-actions {
     display: flex;
@@ -236,6 +277,56 @@
 </head>
 <body>
 
+  <div class="stats-overview">
+      <div class="stat-card sc-alb">
+          <div class="stat-header" style="color:#ff4444">
+              ALB
+              <i class="fas fa-chart-bar" style="font-size:1rem; opacity:0.5"></i>
+          </div>
+          <div class="stat-row">
+              <span class="stat-label">Total Games Won</span>
+              <span class="stat-val" id="s-alb-wins">0</span>
+          </div>
+          <div class="stat-row">
+              <span class="stat-label">Overall Win Rate</span>
+              <span class="stat-val" id="s-alb-wr">0%</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-row">
+              <span class="stat-label chal-highlight">Challenge Wins</span>
+              <span class="stat-val" id="s-alb-cw">0</span>
+          </div>
+          <div class="stat-row">
+              <span class="stat-label chal-highlight">Chal. Win Rate</span>
+              <span class="stat-val" id="s-alb-cwr">0%</span>
+          </div>
+      </div>
+
+      <div class="stat-card sc-biu">
+          <div class="stat-header" style="color:#4488ff">
+              BIU
+              <i class="fas fa-chart-bar" style="font-size:1rem; opacity:0.5"></i>
+          </div>
+          <div class="stat-row">
+              <span class="stat-label">Total Games Won</span>
+              <span class="stat-val" id="s-biu-wins">0</span>
+          </div>
+          <div class="stat-row">
+              <span class="stat-label">Overall Win Rate</span>
+              <span class="stat-val" id="s-biu-wr">0%</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-row">
+              <span class="stat-label chal-highlight">Challenge Wins</span>
+              <span class="stat-val" id="s-biu-cw">0</span>
+          </div>
+          <div class="stat-row">
+              <span class="stat-label chal-highlight">Chal. Win Rate</span>
+              <span class="stat-val" id="s-biu-cwr">0%</span>
+          </div>
+      </div>
+  </div>
+
   <div class="header-actions">
     <button class="btn-add" onclick="openModal()">
       <i class="fas fa-plus"></i> Manual Add
@@ -324,6 +415,9 @@
       container.innerHTML = "";
       const raw = snap.val();
       
+      // CALL NEW STATS FUNCTION
+      updateStats(raw);
+
       if(!raw) {
           container.innerHTML = '<div class="empty-state">No matches found.</div>';
           return;
@@ -336,6 +430,54 @@
           renderMatchBlock(key, data, container);
       });
   });
+
+  // --- NEW STATS CALCULATION LOGIC ---
+  function updateStats(data) {
+      if(!data) return;
+      
+      let albWins = 0;
+      let biuWins = 0;
+      let totalGames = 0;
+      
+      let albChalWins = 0;
+      let biuChalWins = 0;
+      let chalTotal = 0;
+
+      Object.values(data).forEach(match => {
+          let w = match.winner;
+          let isChal = (match.settings && match.settings.mode === 'Challenge');
+          
+          if(w === 'ALB' || w === 'BIU') {
+              totalGames++;
+              if(w === 'ALB') albWins++;
+              if(w === 'BIU') biuWins++;
+              
+              if(isChal) {
+                  chalTotal++;
+                  if(w === 'ALB') albChalWins++;
+                  if(w === 'BIU') biuChalWins++;
+              }
+          }
+      });
+
+      // Avoid Divide by Zero
+      let albWR = totalGames > 0 ? ((albWins / totalGames) * 100).toFixed(1) : 0;
+      let biuWR = totalGames > 0 ? ((biuWins / totalGames) * 100).toFixed(1) : 0;
+      
+      let albCWR = chalTotal > 0 ? ((albChalWins / chalTotal) * 100).toFixed(1) : 0;
+      let biuCWR = chalTotal > 0 ? ((biuChalWins / chalTotal) * 100).toFixed(1) : 0;
+
+      // Update UI
+      document.getElementById('s-alb-wins').innerText = albWins;
+      document.getElementById('s-alb-wr').innerText = albWR + "%";
+      document.getElementById('s-alb-cw').innerText = albChalWins;
+      document.getElementById('s-alb-cwr').innerText = albCWR + "%";
+
+      document.getElementById('s-biu-wins').innerText = biuWins;
+      document.getElementById('s-biu-wr').innerText = biuWR + "%";
+      document.getElementById('s-biu-cw').innerText = biuChalWins;
+      document.getElementById('s-biu-cwr').innerText = biuCWR + "%";
+  }
 
   function renderMatchBlock(key, data, container) {
       let ts = data.timestamp || 0;
