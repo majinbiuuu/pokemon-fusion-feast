@@ -46,7 +46,7 @@ body::before {
 
 /* NOW PLAYING WIDGET */
 .np-widget { 
-    width: 650px; /* UPDATED: Made Wider (was 500px) */
+    width: 650px; 
     height: 60px; 
     background: rgba(0,0,0,0.4); border: var(--border); border-radius: 12px; 
     display: flex; align-items: center; overflow: hidden; padding-right: 15px; 
@@ -89,9 +89,8 @@ body::before {
 
 .p-name { font-size: 1.5rem; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; }
 
-/* UPDATED: Score made bigger */
 .p-score { 
-    font-size: 4rem; /* Changed from 2.5rem */
+    font-size: 4rem; 
     font-weight: 900; 
     line-height: 1; 
     transition: color 0.2s; 
@@ -101,7 +100,93 @@ body::before {
 .tiny-btn { width: 28px; height: 28px; background: #1a1a1a; border: 1px solid #444; color: #888; cursor: pointer; border-radius: 6px; font-weight: 900; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
 .tiny-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
 
-.slot-list { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+/* --- BUTTON & COLLAPSE CONTROLS --- */
+.ctrl-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 5px;
+}
+
+.col-btn.collapse-btn {
+    width: 36px;
+    flex-shrink: 0;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    background: rgba(255,255,255,0.05); border: 1px solid #444; color: #888; 
+    cursor: pointer; border-radius: 8px; transition: 0.2s;
+}
+.col-btn.collapse-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+
+.col-btn.export { 
+    flex: 1; /* Fill remaining space */
+    width: auto;
+    margin: 0;
+    padding: 6px; 
+    font-size: 0.8rem; 
+    background: rgba(255,255,255,0.05); border: 1px solid #444; 
+    color: #888; font-weight: 800; cursor: pointer; border-radius: 8px; 
+    transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+    text-transform: uppercase; letter-spacing: 1px;
+}
+.col-btn.export:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+
+/* --- SLOT LIST ANIMATION --- */
+.slot-list { 
+    display: flex; flex-direction: column; gap: 10px; flex: 1; 
+    overflow: hidden;
+    max-height: 1000px; /* Arbitrary high value for transition */
+    opacity: 1;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease;
+}
+
+.slot-list.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+    gap: 0;
+}
+
+/* --- MINI ROW (Collapsed View) --- */
+.mini-row {
+    display: none; /* Hidden by default */
+    flex-direction: row;
+    justify-content: space-between;
+    background: rgba(0,0,0,0.3);
+    padding: 8px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255,255,255,0.05);
+    animation: fadeIn 0.4s ease;
+}
+
+.mini-row.active { display: flex; }
+
+.mini-slot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #111;
+    border: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.mini-slot img {
+    width: 120%; /* Slight zoom for sprite visibility */
+    height: 120%;
+    object-fit: contain;
+}
+
+.mini-slot.empty { opacity: 0.2; border-style: dashed; }
+
+/* STANDARD SLOTS */
 .slot { flex: 1; min-height: 65px; background: rgba(8,8,8,0.6); border: 1px dashed #333; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s; position: relative; overflow: hidden; }
 .slot:hover { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
 .slot.drag-over { border-color: var(--accent) !important; background: rgba(255,255,255, 0.05) !important; box-shadow: 0 0 15px var(--accent); transform: scale(1.02); }
@@ -109,19 +194,6 @@ body::before {
 @keyframes snapIn { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
 .slot img { height: 90%; width: auto; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); z-index: 2; pointer-events: none; animation: snapIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 .slot-txt { display: none; }
-
-/* UPDATED: Export Button - Less wide, smaller, centered */
-.col-btn.export { 
-    width: 60%; /* Less wide (was 100%) */
-    margin: 0 auto; /* Centered */
-    padding: 6px; /* Smaller padding */
-    font-size: 0.8rem; /* Smaller font */
-    background: rgba(255,255,255,0.05); border: 1px solid #444; 
-    color: #888; font-weight: 800; cursor: pointer; border-radius: 8px; 
-    transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
-    text-transform: uppercase; letter-spacing: 1px;
-}
-.col-btn.export:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
 
 .col-btn.clear-btn { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #666; font-weight: 800; cursor: pointer; border-radius: 8px; font-size: 0.75rem; letter-spacing: 1px; transition: 0.2s; margin-top: 5px;}
 .col-btn.clear-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
