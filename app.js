@@ -627,7 +627,7 @@ function renderColumn(side, data) {
 }
 
 
-/* --- COLLAPSE / EXPAND LOGIC --- */
+/* --- COLLAPSE / EXPAND LOGIC (PLAYERS) --- */
 window.isCollapsed = false;
 
 window.toggleCollapse = function() {
@@ -682,8 +682,30 @@ window.generateMiniIcons = function(side) {
     miniRow.innerHTML = html;
 }
 
+/* --- COLLAPSE / EXPAND LOGIC (CENTER WINDOW) --- */
+window.centerCollapsed = false;
+
+window.toggleCenterCollapse = function() {
+    window.centerCollapsed = !window.centerCollapsed;
+    
+    const colC = document.querySelector('.col-c');
+    const icon = document.getElementById('c-collapse-icon');
+    
+    if(window.centerCollapsed) {
+        colC.classList.add('minimized');
+        if(icon) icon.className = "fas fa-expand-alt"; 
+    } else {
+        colC.classList.remove('minimized');
+        if(icon) icon.className = "fas fa-compress-alt"; 
+    }
+};
 
 window.switchTab = function(viewId, btn) { 
+    // If window is minimized, expand it automatically
+    if(window.centerCollapsed) {
+        window.toggleCenterCollapse();
+    }
+
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); 
     document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); 
     document.getElementById('view-'+viewId).classList.add('active'); 
