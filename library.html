@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Library</title>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="style-global.css" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<style>
+  /* --- LIBRARY THEME VARIABLES --- */
+  :root {
+    --theme-purple: #9c27b0;
+    --theme-red: #d32f2f;
+  }
+
+  body {
+    background: transparent;
+    font-family: 'Segoe UI', sans-serif;
+    color: #eee;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* --- LIBRARY LAYOUT --- */
+  .lib-container {
+      display: flex;
+      height: 100%;
+      gap: 0;
+  }
+
+  /* SIDEBAR */
+  .lib-sidebar {
+      width: 200px;
+      background: rgba(0, 0, 0, 0.3);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      padding: 15px;
+  }
+
+  .lib-sidebar h3 {
+      margin-top: 15px;
+      color: #666;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      margin-bottom: 5px;
+      font-weight: 800;
+  }
+  .lib-sidebar h3:first-child { margin-top: 0; }
+
+  .lib-sidebar ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      overflow-y: auto;
+  }
+
+  .lib-cat-item {
+      padding: 8px 12px;
+      margin-bottom: 2px;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: #aaa;
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: uppercase;
+      border-left: 3px solid transparent;
+  }
+
+  .lib-cat-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+  }
+
+  .lib-cat-item.active {
+      background: rgba(255,255,255,0.1);
+      color: var(--accent);
+      border-left-color: var(--accent);
+  }
+
+  /* LIBRARY THEME OVERRIDES (based on container data-attribute) */
+  .lib-container[data-theme="purple"] .lib-cat-item.active {
+      color: var(--theme-purple); border-left-color: var(--theme-purple);
+  }
+  .lib-container[data-theme="purple"] .lib-btn.action {
+      border-color: var(--theme-purple); color: var(--theme-purple);
+  }
+  .lib-container[data-theme="purple"] .lib-btn.action:hover {
+      background: var(--theme-purple); color: #fff;
+  }
+  .lib-container[data-theme="purple"] .lib-input:focus {
+      border-color: var(--theme-purple);
+  }
+
+  .lib-container[data-theme="red"] .lib-cat-item.active {
+      color: var(--theme-red); border-left-color: var(--theme-red);
+  }
+  .lib-container[data-theme="red"] .lib-btn.action {
+      border-color: var(--theme-red); color: var(--theme-red);
+  }
+  .lib-container[data-theme="red"] .lib-btn.action:hover {
+      background: var(--theme-red); color: #fff;
+  }
+  .lib-container[data-theme="red"] .lib-input:focus {
+      border-color: var(--theme-red);
+  }
+
+  /* EDITOR AREA */
+  .lib-editor {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 30px;
+      background: rgba(0,0,0,0.1);
+  }
+
+  .lib-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .lib-header h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: #fff;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+  }
+
+  .lib-header-labels {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 5px;
+      padding: 0 8px;
+      padding-right: 40px; /* Make room for delete buttons */
+  }
+
+  .lib-header-labels span {
+      font-size: 10px;
+      font-weight: 800;
+      color: #555;
+      text-transform: uppercase;
+      flex: 1;
+  }
+
+  .lib-scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 5px;
+  }
+
+  /* ITEM ROW */
+  .lib-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 5px;
+      animation: fadeIn 0.3s ease;
+      background: rgba(255,255,255,0.02);
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      align-items: center;
+  }
+  .lib-row:hover {
+      border-color: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+  }
+
+  /* INPUTS */
+  .lib-input {
+      flex: 1;
+      background: #111;
+      border: 1px solid #333;
+      padding: 10px 12px;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: 0.2s;
+      font-family: inherit;
+  }
+
+  .lib-input:focus {
+      border-color: var(--accent);
+      background: #000;
+  }
+
+  .lib-btn {
+      padding: 8px 16px;
+      background: #222;
+      border: 1px solid #444;
+      color: #ccc;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: 0.2s;
+      text-transform: uppercase;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+  }
+
+  .lib-btn:hover {
+      background: #333;
+      color: #fff;
+  }
+
+  .lib-btn.action {
+      border-color: var(--accent);
+      color: var(--accent);
+  }
+  .lib-btn.action:hover {
+      background: var(--accent);
+      color: #000;
+  }
+
+  /* DELETE BUTTON */
+  .del-btn {
+      background: rgba(255, 68, 68, 0.05);
+      border: 1px solid rgba(255, 68, 68, 0.2);
+      color: #d32f2f;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.2s;
+      flex-shrink: 0;
+      padding: 0;
+  }
+
+  .del-btn:hover {
+      background: #d32f2f;
+      color: #fff;
+      border-color: #d32f2f;
+  }
+
+  @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+  <div class="lib-container">
+      <div class="lib-sidebar" id="lib-cat-list">
+          </div>
+      
+      <div class="lib-editor">
+          <div class="lib-header">
+              <h2 id="lib-current-title">Select Category</h2>
+              <button class="lib-btn action" onclick="addItemToLibrary()">
+                  <i class="fas fa-plus"></i> Add New
+              </button>
+          </div>
+          <div class="lib-header-labels" id="lib-labels">
+              <span>TEXT / VALUE</span>
+              <span>NOTE (Optional)</span>
+              <span style="width:28px"></span>
+          </div>
+          <div id="lib-item-list" class="lib-scroll-area">
+              <div style="padding:20px; text-align:center; color:#555;">Select a category to edit.</div>
+          </div>
+      </div>
+  </div>
+
+<script>
+  // FIREBASE SETUP
+  const firebaseConfig = {
+      apiKey: "AIzaSyDz82Dp56EISYqk3hza3upJ2pAjsStgMKo",
+      authDomain: "pokemon-masters-d153a.firebaseapp.com",
+      databaseURL: "https://pokemon-masters-d153a-default-rtdb.firebaseio.com",
+      projectId: "pokemon-masters-d153a",
+      storageBucket: "pokemon-masters-d153a.firebasestorage.app",
+      messagingSenderId: "67655442054",
+      appId: "1:67655442054:web:705baa26ffda58b5d3fb07",
+      measurementId: "G-LGW9RJZDP3"
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // THEME SYNC
+  window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'THEME_UPDATE') {
+          document.documentElement.style.setProperty('--accent', event.data.color);
+      }
+  });
+  if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
+
+  // --- LIBRARY LOGIC ---
+  const LIBRARY_SECTIONS = {
+      "Global Effects": {
+          "Rewards": { path: "library/rewards", theme: "purple" },
+          "Rules": { path: "library/rules", theme: "red" }
+      },
+      "Lists": {
+          "Game Modes": { path: "library/gameModes" },
+          "Side Options": { path: "library/sides" },
+          "Points List": { path: "library/points" },
+          "SP List": { path: "library/sp" },
+          "Shit Wheel": { path: "library/ShitWheelList" },
+          "Tokens": { path: "library/TokenList" }
+      }
+  };
+
+  let currentLibPath = null;
+  let libListener = null;
+
+  function initLibrarySidebar() {
+      const listContainer = document.getElementById('lib-cat-list');
+      if(!listContainer) return;
+      listContainer.innerHTML = '';
+
+      let firstItem = null;
+
+      for (const [sectionName, sectionItems] of Object.entries(LIBRARY_SECTIONS)) {
+          let header = document.createElement('h3');
+          header.innerText = sectionName;
+          listContainer.appendChild(header);
+
+          let ul = document.createElement('ul');
+          
+          for (const [itemName, itemData] of Object.entries(sectionItems)) {
+              let li = document.createElement('li');
+              li.className = 'lib-cat-item';
+              li.innerText = itemName;
+              li.onclick = () => loadLibraryCategory(itemName, itemData.path, li, itemData.theme);
+              
+              if(!firstItem) firstItem = { name: itemName, path: itemData.path, el: li, theme: itemData.theme };
+              ul.appendChild(li);
+          }
+          listContainer.appendChild(ul);
+      }
+
+      // Auto-select first item
+      if(firstItem) loadLibraryCategory(firstItem.name, firstItem.path, firstItem.el, firstItem.theme);
+  }
+
+  function loadLibraryCategory(name, dbPath, el, theme) {
+      document.querySelectorAll('.lib-cat-item').forEach(i => i.classList.remove('active'));
+      if(el) el.classList.add('active');
+      document.getElementById('lib-current-title').innerText = name;
+
+      const libContainer = document.querySelector('.lib-container');
+      if(libContainer) {
+          libContainer.setAttribute('data-theme', theme || 'default');
+      }
+
+      if(currentLibPath === dbPath) return;
+
+      if(currentLibPath && libListener) {
+          db.ref(currentLibPath).off('value', libListener);
+      }
+
+      currentLibPath = dbPath;
+      const container = document.getElementById('lib-item-list');
+      container.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">Loading...</div>';
+
+      libListener = db.ref(currentLibPath).on('value', snap => {
+          renderLibraryItems(snap.val());
+      });
+  }
+
+  function renderLibraryItems(data) {
+      const container = document.getElementById('lib-item-list');
+      container.innerHTML = '';
+
+      if (!data) {
+          container.innerHTML = '<div style="padding:20px; text-align:center; color:#555;">List is empty. Add a new item.</div>';
+          return; 
+      }
+
+      let items = [];
+      
+      if (Array.isArray(data)) {
+          data.forEach((val, idx) => {
+              if(val !== null) items.push({ key: idx, val: val });
+          });
+      } else if (typeof data === 'object') {
+          Object.keys(data).forEach(key => {
+              items.push({ key: key, val: data[key] });
+          });
+      } else {
+          items.push({ key: 'value', val: data });
+      }
+
+      items.forEach(item => {
+          let textVal = "";
+          let noteVal = "";
+
+          if (typeof item.val === 'object') {
+              textVal = item.val.text || "";
+              noteVal = item.val.note || "";
+          } else {
+              textVal = item.val;
+          }
+
+          const div = document.createElement('div');
+          div.className = 'lib-row';
+          div.innerHTML = `
+              <input type="text" class="lib-input" 
+                     value="${textVal}" 
+                     onchange="updateLibItem('${item.key}', 'text', this.value)"
+                     placeholder="Item Name">
+                     
+              <input type="text" class="lib-input" 
+                     value="${noteVal}" 
+                     onchange="updateLibItem('${item.key}', 'note', this.value)"
+                     placeholder="Note...">
+                     
+              <button class="del-btn" onclick="deleteLibItem('${item.key}')">
+                  <i class="fas fa-trash-alt"></i>
+              </button>
+          `;
+          container.appendChild(div);
+      });
+  }
+
+  window.addItemToLibrary = function() {
+      if(!currentLibPath) return;
+      const newRef = db.ref(currentLibPath).push();
+      newRef.set({ text: "New Item", note: "" });
+  };
+
+  window.updateLibItem = function(key, field, val) {
+      if(!currentLibPath) return;
+      
+      db.ref(currentLibPath + '/' + key).once('value', snap => {
+          let current = snap.val();
+          let updatePayload = {};
+
+          if (typeof current === 'object') {
+              updatePayload = { ...current };
+              updatePayload[field] = val;
+          } else {
+              updatePayload = { text: current, note: "" };
+              if(field === 'text') updatePayload.text = val;
+              if(field === 'note') updatePayload.note = val;
+          }
+          
+          db.ref(currentLibPath + '/' + key).set(updatePayload);
+      });
+  };
+
+  window.deleteLibItem = function(key) {
+      if(!currentLibPath) return;
+      if(confirm("Delete this item?")) {
+          db.ref(currentLibPath + '/' + key).set(null);
+      }
+  };
+
+  // Init
+  initLibrarySidebar();
+</script>
+</body>
+</html>
