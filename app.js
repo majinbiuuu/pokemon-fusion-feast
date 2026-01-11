@@ -31,7 +31,7 @@ const COMPETITIVE_SETS = {
     'Heatran': { item: 'Leftovers', nature: 'Calm', evs: '252 HP / 4 SpA / 252 SpD', moves: ['Magma Storm', 'Earth Power', 'Taunt', 'Stealth Rock'] },
     'Zapdos': { item: 'Heavy-Duty Boots', nature: 'Timid', evs: '252 HP / 104 Def / 152 Spe', moves: ['Discharge', 'Hurricane', 'Roost', 'Defog'] },
     'Urshifu-Rapid-Strike': { item: 'Choice Band', nature: 'Jolly', evs: '252 Atk / 4 Def / 252 Spe', moves: ['Surging Strikes', 'Close Combat', 'Aqua Jet', 'U-turn'] },
-    'Garchomp': { item: 'Rocky Helmet', nature: 'Jolly', evs: '252 HP / 4 Def / 252 Spe', moves: ['Stealth Rock', 'Earthquake', 'Dragon Tail', 'Fire Blast'] }, // Tank Chomp
+    'Garchomp': { item: 'Rocky Helmet', nature: 'Jolly', evs: '252 HP / 4 Def / 252 Spe', moves: ['Stealth Rock', 'Earthquake', 'Dragon Tail', 'Fire Blast'] }, 
     'Volcarona': { item: 'Heavy-Duty Boots', nature: 'Timid', evs: '248 HP / 8 Def / 252 Spe', moves: ['Quiver Dance', 'Fiery Dance', 'Bug Buzz', 'Roost'] },
     'Corviknight': { item: 'Leftovers', nature: 'Impish', evs: '252 HP / 168 Def / 88 SpD', moves: ['Roost', 'Defog', 'Brave Bird', 'U-turn'] },
     'Kartana': { item: 'Choice Scarf', nature: 'Jolly', evs: '252 Atk / 4 SpD / 252 Spe', moves: ['Leaf Blade', 'Sacred Sword', 'Smart Strike', 'Knock Off'] },
@@ -322,6 +322,9 @@ window.drop = function(ev) {
         if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'markUsed', id: data.id }, '*');
         window.GEN_DRAG_PAYLOAD = null;
         setTimeout(() => window.syncLock = false, 1000);
+        
+        // Refresh Icons if collapsed
+        if(window.isCollapsed) generateMiniIcons(side);
     } 
 };
 
@@ -354,6 +357,9 @@ window.clearCol = function(p) {
     window.initSlots('slots-'+p); 
     saveColumnState(p);
     setTimeout(() => window.syncLock = false, 1000);
+    
+    // Refresh Icons if collapsed
+    if(window.isCollapsed) generateMiniIcons(p);
 };
 
 // --- EXPORT WITH SETDEX DATA (Showdown Calc) ---
@@ -616,7 +622,62 @@ function renderColumn(side, data) {
             }
         }
     }
+    // Update Mini Icons if Collapsed
+    if(window.isCollapsed) generateMiniIcons(side);
 }
+
+
+/* --- COLLAPSE / EXPAND LOGIC --- */
+window.isCollapsed = false;
+
+window.toggleCollapse = function() {
+    window.isCollapsed = !window.isCollapsed;
+    
+    // Update Button Icons
+    const icons = document.querySelectorAll('.collapse-btn i');
+    icons.forEach(icon => {
+        icon.className = window.isCollapsed ? "fas fa-expand-alt" : "fas fa-compress-alt";
+    });
+
+    // Handle Animation & Mini Row Generation for BOTH sides
+    ['alb', 'biu'].forEach(side => {
+        const list = document.getElementById('slots-' + side);
+        const miniRow = document.getElementById('mini-' + side);
+        
+        if (window.isCollapsed) {
+            // 1. Generate Mini Icons from current slots
+            generateMiniIcons(side);
+            
+            // 2. Hide List, Show Mini
+            list.classList.add('collapsed');
+            miniRow.classList.add('active');
+        } else {
+            // 1. Show List, Hide Mini
+            list.classList.remove('collapsed');
+            miniRow.classList.remove('active');
+        }
+    });
+};
+
+window.generateMiniIcons = function(side) {
+    const miniRow = document.getElementById('mini-' + side);
+    const slots = document.getElementById('slots-' + side).getElementsByClassName('slot');
+    
+    let html = '';
+    
+    // Loop through existing slots to grab images
+    for(let i=0; i < slots.length; i++) {
+        const img = slots[i].querySelector('img');
+        if (img) {
+            html += `<div class="mini-slot"><img src="${img.src}"></div>`;
+        } else {
+            html += `<div class="mini-slot empty"></div>`;
+        }
+    }
+    
+    miniRow.innerHTML = html;
+}
+
 
 window.switchTab = function(viewId, btn) { 
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); 
@@ -632,8 +693,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /* --- LIBRARY / CMS SYSTEM --- */
 
-// CONFIGURATION: Map friendly names to Firebase paths
-// UPDATED: Used Capitalized Keys for ShitWheel and Tokens to match Sheets sync
 const LIBRARY_MAP = {
     "Game Modes": "library/gameModes",
     "Side Options": "library/sides",
@@ -751,9 +810,6 @@ function renderLibraryItems(data) {
 // 1. ADD
 window.addItemToLibrary = function() {
     if(!currentLibPath) return;
-    
-    // Check if we are in an array-like path (numeric keys) or object-like
-    // Simplest is to push new object
     const newRef = db.ref(currentLibPath).push();
     newRef.set({ text: "New Item", note: "" });
 };
@@ -761,10 +817,6 @@ window.addItemToLibrary = function() {
 // 2. UPDATE (Real-time on change)
 window.updateLibItem = function(key, field, val) {
     if(!currentLibPath) return;
-    
-    // We need to fetch the current object to ensure we don't overwrite the other field
-    // OR we can just do a patch update if it's an object.
-    // However, if the data was previously a simple string, we must convert it to an object first.
     
     db.ref(currentLibPath + '/' + key).once('value', snap => {
         let current = snap.val();
@@ -776,7 +828,6 @@ window.updateLibItem = function(key, field, val) {
         } else {
             // It was a string, convert to object
             updatePayload = { text: current, note: "" };
-            // If updating text, change text. If updating note, change note.
             if(field === 'text') updatePayload.text = val;
             if(field === 'note') updatePayload.note = val;
         }
