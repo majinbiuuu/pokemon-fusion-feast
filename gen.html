@@ -1,668 +1,848 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Generator</title>
-<link href="style-global.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+window.GEN_DRAG_PAYLOAD = null;
+var lastTopVol = 100;
+window.returningIndex = -1;
+window.SETDEX_CACHE = null; 
+window.myRole = localStorage.getItem('myRole') || 'spectator';
 
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+/* --- CONFIGURATION & DATA --- */
+const MEGA_STONE_EXCEPTIONS = {
+    'Lucario': 'Lucarionite', 'Garchomp': 'Garchompite', 'Salamence': 'Salamencite',
+    'Metagross': 'Metagrossite', 'Gyarados': 'Gyaradosite', 'Alakazam': 'Alakazite',
+    'Kangaskhan': 'Kangaskhanite', 'Pinsir': 'Pinsirite', 'Aerodactyl': 'Aerodactylite',
+    'Beedrill': 'Beedrillite', 'Pidgeot': 'Pidgeotite', 'Slowbro': 'Slowbronite',
+    'Steelix': 'Steelixite', 'Sceptile': 'Sceptilite', 'Swampert': 'Swampertite',
+    'Blaziken': 'Blazikenite', 'Gardevoir': 'Gardevoirite', 'Gallade': 'Galladite',
+    'Altaria': 'Altarianite', 'Sharpedo': 'Sharpedonite', 'Camerupt': 'Cameruptite',
+    'Lopunny': 'Lopunnite', 'Mawile': 'Mawilite', 'Medicham': 'Medichamite',
+    'Manectric': 'Manectite', 'Banette': 'Banettite', 'Absol': 'Absolite',
+    'Glalie': 'Glalitite', 'Houndoom': 'Houndoominite', 'Tyranitar': 'Tyranitarite',
+    'Scizor': 'Scizorite', 'Heracross': 'Heracronite', 'Abomasnow': 'Abomasite',
+    'Latias': 'Latiasite', 'Latios': 'Latiosite', 'Gengar': 'Gengarite',
+    'Venusaur': 'Venusaurite', 'Charizard X': 'Charizardite X', 'Charizard Y': 'Charizardite Y',
+    'Mewtwo X': 'Mewtwonite X', 'Mewtwo Y': 'Mewtwonite Y', 'Ampharos': 'Ampharosite', 
+    'Aggron': 'Aggronite', 'Sableye': 'Sablenite'
+};
 
-<style>
-  :root { --theme-green: var(--accent); }
-  body { font-family: 'Segoe UI', sans-serif; color: #eee; text-align: center; margin: 0; padding: 10px; box-sizing: border-box; background: transparent; user-select: none; min-height: 100vh; }
+const COMPETITIVE_SETS = {
+    'Landorus-Therian': { item: 'Leftovers', nature: 'Impish', evs: '252 HP / 164 Def / 92 Spe', moves: ['Stealth Rock', 'Earthquake', 'U-turn', 'Toxic'] },
+    'Ferrothorn': { item: 'Leftovers', nature: 'Careful', evs: '252 HP / 4 Def / 252 SpD', moves: ['Spikes', 'Knock Off', 'Leech Seed', 'Power Whip'] },
+    'Toxapex': { item: 'Black Sludge', nature: 'Bold', evs: '252 HP / 252 Def / 4 SpD', moves: ['Scald', 'Recover', 'Haze', 'Toxic'] },
+    'Dragapult': { item: 'Choice Specs', nature: 'Timid', evs: '252 SpA / 4 SpD / 252 Spe', moves: ['Draco Meteor', 'Shadow Ball', 'U-turn', 'Flamethrower'] },
+    'Weavile': { item: 'Heavy-Duty Boots', nature: 'Jolly', evs: '252 Atk / 4 SpD / 252 Spe', moves: ['Swords Dance', 'Triple Axel', 'Knock Off', 'Ice Shard'] },
+    'Heatran': { item: 'Leftovers', nature: 'Calm', evs: '252 HP / 4 SpA / 252 SpD', moves: ['Magma Storm', 'Earth Power', 'Taunt', 'Stealth Rock'] },
+    'Zapdos': { item: 'Heavy-Duty Boots', nature: 'Timid', evs: '252 HP / 104 Def / 152 Spe', moves: ['Discharge', 'Hurricane', 'Roost', 'Defog'] },
+    'Urshifu-Rapid-Strike': { item: 'Choice Band', nature: 'Jolly', evs: '252 Atk / 4 Def / 252 Spe', moves: ['Surging Strikes', 'Close Combat', 'Aqua Jet', 'U-turn'] },
+    'Garchomp': { item: 'Rocky Helmet', nature: 'Jolly', evs: '252 HP / 4 Def / 252 Spe', moves: ['Stealth Rock', 'Earthquake', 'Dragon Tail', 'Fire Blast'] }, 
+    'Volcarona': { item: 'Heavy-Duty Boots', nature: 'Timid', evs: '248 HP / 8 Def / 252 Spe', moves: ['Quiver Dance', 'Fiery Dance', 'Bug Buzz', 'Roost'] },
+    'Corviknight': { item: 'Leftovers', nature: 'Impish', evs: '252 HP / 168 Def / 88 SpD', moves: ['Roost', 'Defog', 'Brave Bird', 'U-turn'] },
+    'Kartana': { item: 'Choice Scarf', nature: 'Jolly', evs: '252 Atk / 4 SpD / 252 Spe', moves: ['Leaf Blade', 'Sacred Sword', 'Smart Strike', 'Knock Off'] },
+    'Tapu Lele': { item: 'Choice Specs', nature: 'Timid', evs: '252 SpA / 4 SpD / 252 Spe', moves: ['Psychic', 'Moonblast', 'Focus Blast', 'Psyshock'] }
+};
 
-  /* PEER HOVER STYLES */
-  .peer-hover-alb { border-color: #ff4444 !important; box-shadow: 0 0 15px #ff4444 !important; z-index: 100; position:relative; }
-  .peer-hover-biu { border-color: #4488ff !important; box-shadow: 0 0 15px #4488ff !important; z-index: 100; position:relative; }
+// --- SETTINGS LOGIC ---
+window.toggleSettings = function() {
+    let el = document.getElementById('settings-modal');
+    el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
+    if(el.style.display === 'flex') updateIdentityUI();
+};
 
-  /* PANEL */
-  .control-panel { background: rgba(8, 8, 8, 0.95); border: 1px solid #333; border-radius: 12px; padding: 10px 15px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); backdrop-filter: blur(10px); position: relative; z-index: 10; margin-bottom: 20px; }
-  .cp-row { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; position: relative; }
-  .cp-row.bottom { justify-content: space-between; margin-top: 5px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); align-items: center; min-height: 45px; }
+window.saveConfig = function(key, val) {
+    db.ref('config/' + key).set(val);
+};
 
-  /* DROPDOWNS */
-  .dd-wrapper { position: relative; display: inline-block; flex: 1; min-width: 120px; max-width: 180px; } 
-  .dd-btn { background: #050505; color: #fff; border: 1px solid var(--theme-green); padding: 6px 10px; border-radius: 6px; font-weight: 700; text-transform: uppercase; cursor: pointer; font-size: 13px; box-shadow: 0 0 5px var(--theme-green); width: 100%; box-sizing: border-box; text-align: left; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
-  .dd-btn:hover { background: #151515; box-shadow: 0 0 15px var(--theme-green); }
-  .arrow-down { font-size: 10px; color: var(--theme-green); }
-  .dd-menu { display: none; position: absolute; top: 105%; left: 0; width: 100%; max-height: 350px; overflow-y: auto; background: #0a0a0a; border: 1px solid #333; border-radius: 6px; box-shadow: 0 10px 40px #000; z-index: 2000; padding: 4px; box-sizing: border-box; }
-  .dd-menu.show { display: block; }
-  .dd-item { display: flex; align-items: center; padding: 8px; cursor: pointer; border-radius: 4px; font-size: 13px; font-weight: 600; color: #aaa; transition: 0.1s; text-align: left; }
-  .dd-item:hover { background: #222; color: #fff; }
-  .dd-item.selected { background: rgba(255, 255, 255, 0.1); color: var(--theme-green); }
-  .dd-box { width: 12px; height: 12px; border: 1px solid #555; border-radius: 2px; margin-right: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
-  .dd-item.selected .dd-box { background: var(--theme-green); border-color: var(--theme-green); color: #000; font-weight: bold; }
-  .dd-item.selected .dd-box::after { content: '\2713'; }
-
-  /* AMOUNT BOX */
-  .amount-box { display: flex; align-items: center; background: #000; border: 1px solid var(--theme-green); border-radius: 6px; overflow: hidden; height: 32px; }
-  .amt-btn { background: transparent; border: none; color: var(--theme-green); font-weight: 900; padding: 0 12px; cursor: pointer; font-size: 16px; height: 100%; }
-  .amt-btn:hover { background: rgba(255, 255, 255, 0.1); }
-  .amt-val { color: #fff; font-weight: 900; padding: 0 8px; min-width: 20px; font-size: 14px; }
-  
-  /* SEARCH BAR (UPDATED) */
-  .search-wrapper { position: relative; width: 160px; }
-  .search-input {
-      width: 100%; background: #050505; border: 1px solid var(--theme-green); color: #fff;
-      padding: 6px 10px 6px 28px; border-radius: 6px; font-weight: 700; font-size: 12px;
-      box-shadow: none; outline: none; transition: 0.2s;
-      font-family: inherit; box-sizing: border-box; height: 30px;
-  }
-  .search-input:focus { box-shadow: 0 0 10px var(--theme-green); background: #111; }
-  .search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--theme-green); font-size: 12px; pointer-events: none; }
-
-  /* TOGGLES */
-  .toggle-btn { background: #050505; border: 1px solid var(--theme-green); color: var(--theme-green); padding: 5px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 12px; transition: 0.2s; display: flex; align-items: center; gap: 6px; height: 30px; }
-  .toggle-btn:hover { background: rgba(255, 255, 255, 0.1); }
-  .toggle-btn.active { background: var(--theme-green); color: #000; box-shadow: 0 0 10px var(--theme-green); }
-  
-  /* CENTER NAV */
-  .gen-wrapper-center { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; }
-  .nav-arrow { background: #111; border: 1px solid #444; color: #888; width: 36px; height: 36px; border-radius: 6px; cursor: pointer; font-weight: 900; font-size: 16px; transition: 0.2s; display:flex; align-items:center; justify-content:center; }
-  .nav-arrow:hover { border-color: #fff; color: #fff; background: #222; }
-  .big-gen-btn { background: var(--theme-green); color: #000; border: none; padding: 0 40px; height: 40px; font-size: 16px; font-weight: 900; border-radius: 6px; cursor: pointer; letter-spacing: 1px; box-shadow: 0 0 15px var(--theme-green); transition: 0.2s; text-transform: uppercase; }
-  .big-gen-btn:hover { filter: brightness(1.2); transform: scale(1.02); box-shadow: 0 0 25px var(--theme-green); }
-  .big-gen-btn:active { transform: scale(0.96); }
-  
-  /* LEFT ACTIONS */
-  .left-actions { display: flex; gap: 8px; }
-  .action-btn { background: transparent; border: 1px solid #444; color: #888; padding: 8px 12px; border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer; text-transform: uppercase; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
-  .action-btn:hover { border-color: #fff; color: #fff; background: #222; transform: translateY(-2px); }
-  
-  /* TAGS */
-  #active-tags { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; max-width: 400px; margin-left: auto; }
-  .tag { background: rgba(0,0,0,0.9); border: 1px solid var(--theme-green); color: var(--theme-green); padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; pointer-events: auto; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.6); animation: popIn 0.2s ease-out; }
-  .tag-x { font-size: 11px; cursor: pointer; opacity: 0.6; } .tag-x:hover { opacity: 1; } .tag-x::after { content: '\2715'; } 
-  @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-  /* GRID */
-  #gen-grid { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; padding-bottom: 60px; }
-  .poke-card { background: #111; border: 1px solid #333; border-radius: 12px; width: 150px; padding: 15px 10px; text-align: center; cursor: grab; position: relative; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 8px 20px rgba(0,0,0,0.5); user-select: none; }
-  .poke-card:hover { transform: translateY(-5px); border-color: var(--theme-green); box-shadow: 0 0 20px var(--theme-green); }
-  .poke-card.used { opacity: 0.2; filter: grayscale(1); border-style: dashed; pointer-events: none; }
-  
-  /* SPRITES */
-  .poke-img { width: 110px; height: 110px; object-fit: contain; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.6)); transition: 0.2s; margin-bottom: 5px; pointer-events: none; }
-  
-  .poke-name { color: #fff; font-weight: 900; font-size: 14px; margin-top: 5px; text-transform: capitalize; }
-  .poke-type { font-size: 11px; font-weight: 700; color: #888; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .shiny-star { position: absolute; top: 10px; right: 10px; font-size: 14px; color: #ffff00; text-shadow: 0 0 5px orange; animation: sparkle 2s infinite; }
-  .shiny-star::after { content: '\2726'; }
-  @keyframes sparkle { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(1.2);} }
-
-  /* OVERLAY */
-  #gen-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-  .spin { width: 60px; height: 60px; border: 6px solid #333; border-top-color: var(--theme-green); border-radius: 50%; animation: spin 0.6s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .empty-msg { color: #ff4444; font-weight: 900; font-size: 18px; margin-top: 40px; text-transform: uppercase; letter-spacing: 1px; animation: pulse 2s infinite; width: 100%; text-align: center; cursor: pointer; }
-</style>
-</head>
-<body>
-
-  <div id="gen-overlay">
-    <div class="spin"></div>
-    <div id="gen-msg" style="margin-top:20px; color:var(--theme-green); font-weight:900; font-size:16px; letter-spacing:1px;">DOWNLOADING POKEDEX...</div>
-  </div>
-
-  <div class="control-panel">
-    <div class="cp-row">
-      <div class="dd-wrapper"><div class="dd-btn" id="dd-btn-gen" onclick="toggleDD('gen')">GENERATIONS <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-gen"></div></div>
-      <div class="dd-wrapper"><div class="dd-btn" id="dd-btn-type" onclick="toggleDD('type')">TYPES <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-type"></div></div>
-      <div class="dd-wrapper"><div class="dd-btn" id="dd-btn-color" onclick="toggleDD('color')">COLORS <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-color"></div></div>
-      <div class="amount-box"><button class="amt-btn" id="btn-amt-sub" onclick="modAmt(-1)">-</button><span class="amt-val" id="amt-display">6</span><button class="amt-btn" id="btn-amt-add" onclick="modAmt(1)">+</button></div>
-    </div>
-
-    <div class="cp-row">
-      <button class="toggle-btn" id="btn-mega" onclick="toggleSetting('mega')"><span>&#9673;</span> MEGAMIND</button>
-      <button class="toggle-btn active" id="btn-dupes" onclick="toggleSetting('dupes')"><span>&ne;</span> NO DUPES</button>
-      <button class="toggle-btn active" id="btn-evolved" onclick="toggleSetting('evolved')"><span>&#11014;</span> EVOLVED</button>
-      
-      <div class="search-wrapper">
-          <span class="search-icon"><i class="fas fa-search"></i></span>
-          <input type="text" class="search-input" id="search-input" placeholder="Search..." oninput="handleSearch(this.value)">
-      </div>
-    </div>
-
-    <div class="cp-row bottom">
-      <div class="left-actions">
-        <button class="action-btn" id="btn-clear" onclick="doClear()"><span>&#10006;</span> CLEAR ALL</button>
-        <button class="action-btn" id="btn-reset" onclick="doReset()"><span>&#10227;</span> RESET MEMORY</button>
-      </div>
-      <div class="gen-wrapper-center">
-        <button class="nav-arrow" id="btn-hist-back" onclick="goHistory(-1)">&#10094;</button>
-        <button class="big-gen-btn" id="btn-run-gen" onclick="runGen()">GENERATE</button>
-        <button class="nav-arrow" id="btn-hist-fwd" onclick="goHistory(1)">&#10095;</button>
-      </div>
-      <div id="active-tags"></div>
-    </div>
-  </div>
-
-  <div id="gen-grid"></div>
-
-<script>
-  const firebaseConfig = { apiKey: "AIzaSyDz82Dp56EISYqk3hza3upJ2pAjsStgMKo", authDomain: "pokemon-masters-d153a.firebaseapp.com", databaseURL: "https://pokemon-masters-d153a-default-rtdb.firebaseio.com", projectId: "pokemon-masters-d153a", storageBucket: "pokemon-masters-d153a.firebasestorage.app", messagingSenderId: "67655442054", appId: "1:67655442054:web:705baa26ffda58b5d3fb07", measurementId: "G-LGW9RJZDP3" };
-  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-
-  // --- CONFIG ---
-  var TYPES = [ {v:'fire',t:'🔥 Fire'}, {v:'water',t:'💧 Water'}, {v:'grass',t:'🍃 Grass'}, {v:'electric',t:'⚡ Electric'}, {v:'psychic',t:'🔮 Psychic'}, {v:'ice',t:'❄️ Ice'}, {v:'dragon',t:'🐉 Dragon'}, {v:'dark',t:'🌑 Dark'}, {v:'fairy',t:'🎀 Fairy'}, {v:'normal',t:'🙂 Normal'}, {v:'fighting',t:'🥊 Fighting'}, {v:'flying',t:'🌪️ Flying'}, {v:'poison',t:'💀 Poison'}, {v:'ground',t:'🌎 Ground'}, {v:'rock',t:'🏔️ Rock'}, {v:'bug',t:'🦗 Bug'}, {v:'ghost',t:'👻 Ghost'}, {v:'steel',t:'⚙️ Steel'} ];
-  var COLORS = ['Black','Blue','Brown','Green','Pink','Purple','Red','White','Yellow'];
-  var GENS = [ {v:'1',t:'Gen 1 - Kanto'},{v:'2',t:'Gen 2 - Johto'},{v:'3',t:'Gen 3 - Hoenn'}, {v:'4',t:'Gen 4 - Sinnoh'},{v:'5',t:'Gen 5 - Unova'},{v:'6',t:'Gen 6 - Kalos'}, {v:'7',t:'Gen 7 - Alola'},{v:'8',t:'Gen 8 - Galar'},{v:'9',t:'Gen 9 - Paldea'} ];
-  var SHINY_MAP = { 'charizard':'black','greninja':'black','rayquaza':'black','haxorus':'black','gyarados':'red','metagross':'silver','umbreon':'blue','psyduck':'blue','ponyta':'blue','mew':'blue','ditto':'blue','wooloo':'black','cetitan':'black','koraidon':'black', 'ninetalesalola':'white','miraidon':'white' };
-  var COLOR_OVERRIDE = { 'ironbundle': ['white','blue'], 'ninetalesalola': ['white','blue'] };
-
-  // --- STATE ---
-  var RAW_DB = {};
-  var ALL_KEYS = [];
-  var GLOBAL_SEEN = []; 
-  var USED_IDS = []; 
-  var FILTERS = { gen:[], type:[], color:[] };
-  var SETTINGS = { mega:false, evolved:true, dupes:true };
-  var HISTORY = []; var HIST_PTR = -1;
-  var AMT_OPTS = [1,2,3,6,10,25,50]; var AMT_IDX = 3;
-
-  initDropdowns();
-  document.addEventListener('click', function(e){ if(!e.target.closest('.dd-wrapper')) closeAllDD(); });
-
-  // --- FIX: DRAG & DROP RETURN LISTENER ---
-  document.body.addEventListener('dragover', function(e) { e.preventDefault(); });
-  document.body.addEventListener('drop', function(e) {
-      e.preventDefault();
-      window.parent.postMessage({ type: 'GENERATOR_DROP' }, '*');
-  });
-
-  // --- FIX: USE ALLORIGINS PROXY FOR OFFICIAL DATA ---
-  // This fetches the official 'play.pokemonshowdown.com' file but routes it through allorigins.win to bypass CORS.
-  const proxyUrl = "https://api.allorigins.win/raw?url=";
-  const targetUrl = "https://play.pokemonshowdown.com/data/pokedex.json";
-
-  fetch(proxyUrl + encodeURIComponent(targetUrl))
-  .then(res => {
-      if(!res.ok) throw new Error("Network response was not ok");
-      return res.json();
-  })
-  .then(data => {
-      RAW_DB = data;
-      ALL_KEYS = Object.keys(data).filter(k => data[k].num > 0);
-      document.getElementById('gen-overlay').style.display = 'none';
-      startSync();
-  }).catch(e => { 
-      console.error("Data Fetch Error:", e);
-      document.getElementById('gen-msg').innerText = "DATA ERROR - CHECK CONSOLE"; 
-  });
-
-  window.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'THEME_UPDATE') {
-          document.documentElement.style.setProperty('--accent', event.data.color);
-      }
-      if (event.data && event.data.type === 'markUsed') {
-          markUsedLocal(event.data.id);
-      }
-      if (event.data && event.data.type === 'freePokemon') {
-          freePokemonLocal(event.data.id);
-      }
-      // --- PRESENCE SYNC ---
-      if(event.data.type === 'PEER_HOVER') {
-          document.querySelectorAll('.peer-hover-alb, .peer-hover-biu').forEach(el=>el.classList.remove('peer-hover-alb','peer-hover-biu'));
-          if(event.data.id && event.data.role) {
-              let el = document.getElementById(event.data.id);
-              if(el) el.classList.add('peer-hover-'+event.data.role);
-          }
-      }
-  });
-  if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
-
-  // --- HOVER REPORTING ---
-  document.addEventListener('mouseover', e => {
-      let t = e.target.closest('[id]'); 
-      if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
-  });
-
-  function isSameTeam(a, b) {
-      return JSON.stringify(a) === JSON.stringify(b);
-  }
-
-  function startSync() {
-      // 1. SYNC GENERATED TEAM WITH INTELLIGENT NAVIGATION CHECK
-      db.ref('gen/team').on('value', snap => {
-          if(document.getElementById('search-input').value.trim() !== '') return;
-          var team = snap.val() || [];
-          
-          if (team.length === 0) {
-              renderGrid([]);
-              return;
-          }
-
-          // Check if this update matches our current state (no action needed)
-          if (isSameTeam(team, HISTORY[HIST_PTR])) return;
-
-          // Check if this update is a "Back" navigation
-          if (HIST_PTR > 0 && isSameTeam(team, HISTORY[HIST_PTR - 1])) {
-              HIST_PTR--;
-              renderGrid(team);
-              return;
-          }
-
-          // Check if this update is a "Forward" navigation
-          if (HIST_PTR < HISTORY.length - 1 && isSameTeam(team, HISTORY[HIST_PTR + 1])) {
-              HIST_PTR++;
-              renderGrid(team);
-              return;
-          }
-
-          // Otherwise, it's a completely new generation
-          showFinal(team, true); 
-      });
-
-      // 2. SYNC USED POKEMON
-      db.ref('gen/used').on('value', snap => {
-          var map = snap.val() || {};
-          USED_IDS = Object.keys(map);
-          updateUsedVisuals();
-      });
-
-      // 3. SYNC FILTERS (NEW)
-      db.ref('gen/filters').on('value', snap => {
-          var val = snap.val();
-          if(!val) val = { gen:[], type:[], color:[] };
-          FILTERS = val;
-          // Ensure arrays exist to prevent errors
-          if(!FILTERS.gen) FILTERS.gen = [];
-          if(!FILTERS.type) FILTERS.type = [];
-          if(!FILTERS.color) FILTERS.color = [];
-          
-          renderTags(); // Update chips
-          updateDropdownVisuals(); // Update dropdown checkmarks
-      });
-
-      // 4. SYNC SETTINGS (NEW)
-      db.ref('gen/settings').on('value', snap => {
-          var val = snap.val();
-          if(val) {
-              SETTINGS = val;
-              updateSettingVisuals();
-          }
-      });
-
-      // 5. SYNC AMOUNT (NEW)
-      db.ref('gen/amount').on('value', snap => {
-          var val = snap.val();
-          if(val !== null && val !== undefined) {
-              AMT_IDX = val;
-              document.getElementById('amt-display').innerText = AMT_OPTS[AMT_IDX];
-          }
-      });
-  }
-
-  // --- LOGIC ---
-  function runGen() {
-    document.getElementById('search-input').value = "";
-    
-    var amount = AMT_OPTS[AMT_IDX];
-    if(ALL_KEYS.length===0) return;
-
-    var pool = [];
-    var activeColors = FILTERS.color.map(c => c.toLowerCase());
-    var allowedForms = ["alola","galar","hisui","paldea"];
-
-    for(var i=0; i<ALL_KEYS.length; i++){
-      var key = ALL_KEYS[i];
-      var p = RAW_DB[key];
-      if(key.includes('totem') || key.includes('eternamax') || key.includes('starter') || key.includes('gmax')) continue;
-
-      var root = p.baseSpecies || p.name;
-      
-      if(SETTINGS.dupes) {
-          if(GLOBAL_SEEN.includes(root)) continue;
-          if(USED_IDS.includes(key)) continue; 
-      }
-
-      var forme = (p.forme || "").toLowerCase();
-      var isMega = forme.includes("mega");
-
-      if(SETTINGS.mega && !isMega) continue;
-      if(!SETTINGS.mega && isMega) continue;
-
-      if(FILTERS.gen.length > 0) {
-         var effectiveGen = p.gen || getGenByNum(p.num || p.id);
-         if(forme.includes('alola')) effectiveGen = 7;
-         else if(forme.includes('galar')) effectiveGen = 8;
-         else if(forme.includes('hisui')) effectiveGen = 8;
-         else if(forme.includes('paldea')) effectiveGen = 9;
-         if(!FILTERS.gen.includes(effectiveGen.toString())) continue;
-      }
-      
-      if(!SETTINGS.mega) {
-         var isRegional = allowedForms.includes(forme);
-         var isBase = !p.forme; 
-         if(!isBase && !isRegional) continue; 
-      }
-
-      if(SETTINGS.evolved && p.evos) continue;
-
-      if(FILTERS.type.length > 0) {
-         var tMatch = false;
-         for(var t=0; t<p.types.length; t++) { if(FILTERS.type.indexOf(p.types[t].toLowerCase()) > -1) tMatch=true; }
-         if(!tMatch) continue;
-      }
-
-      var shiny = false;
-      if(activeColors.length > 0) {
-         var colorMatch = false;
-         var pColor = (p.color || "").toLowerCase();
-         if(pColor === 'gray') { if(activeColors.includes('black') || activeColors.includes('white')) colorMatch = true; } 
-         else if(activeColors.includes(pColor)) colorMatch = true;
-         if(COLOR_OVERRIDE[key] && COLOR_OVERRIDE[key].some(c => activeColors.includes(c))) colorMatch = true;
-         var baseKey = key;
-         for(var k in SHINY_MAP) { if(baseKey.includes(k) && activeColors.includes(SHINY_MAP[k])) { colorMatch=true; shiny=true; } }
-         if(!colorMatch) continue;
-      }
-      pool.push({ key: key, data: p, shiny: shiny });
+// --- IDENTITY LOGIC ---
+window.setIdentity = function(role) {
+    // 1. Remove old presence if exists
+    if(window.myRole && window.myRole !== 'spectator') {
+        db.ref('presence/' + window.myRole).remove();
+        db.ref('presence/' + window.myRole).onDisconnect().cancel(); 
     }
 
-    if(pool.length === 0) { 
-        document.getElementById('gen-grid').innerHTML = '<div class="empty-msg" onclick="doReset()">POOL EMPTY - RESET MEMORY</div>'; 
+    // 2. Set New Role
+    window.myRole = role;
+    localStorage.setItem('myRole', role);
+    updateIdentityUI();
+    
+    // 3. Setup New Presence (with Disconnect Handler)
+    if(role !== 'spectator') {
+        db.ref('presence/' + role).onDisconnect().remove();
+        updatePresence();
+    }
+};
+
+function updateIdentityUI() {
+    document.querySelectorAll('.who-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById('role-' + (window.myRole === 'spectator' ? 'spec' : window.myRole));
+    if(btn) btn.classList.add('active');
+}
+
+// --- SYNC CONFIG (Updated for P1/P2) ---
+db.ref('config').on('value', snap => {
+    const c = snap.val() || {};
+    
+    // 1. Theme Color & Sync
+    if(c.theme) {
+        document.documentElement.style.setProperty('--accent', c.theme);
+        document.getElementById('st-theme-color').value = c.theme;
+        broadcastToIframes({ type: 'THEME_UPDATE', color: c.theme });
+    }
+
+    // 2. Background Image
+    if(c.bgUrl) {
+        document.body.style.backgroundImage = `url('${c.bgUrl}')`;
+        document.getElementById('st-bg-url').value = c.bgUrl;
+    } else {
+        document.body.style.backgroundImage = 'none';
+        document.getElementById('st-bg-url').value = '';
+    }
+
+    // 3. Background Color
+    if(c.bgColor) {
+        document.body.style.backgroundColor = c.bgColor;
+        document.getElementById('st-bg-color').value = c.bgColor;
+    }
+
+    // 4. Saved Wallpapers
+    renderSavedWallpapers(c.savedWallpapers || []);
+
+    // 5. Player 1 Config
+    const p1Name = c.p1Name || "ALB";
+    const p1Color = c.p1Color || "#ff4444";
+    document.documentElement.style.setProperty('--p1-color', p1Color);
+    document.getElementById('disp-p1-name').innerText = p1Name;
+    document.getElementById('disp-p1-name').style.color = p1Color;
+    
+    if(document.activeElement !== document.getElementById('st-p1-name')) 
+        document.getElementById('st-p1-name').value = p1Name;
+    document.getElementById('st-p1-color').value = p1Color;
+
+    // 6. Player 2 Config
+    const p2Name = c.p2Name || "BIU";
+    const p2Color = c.p2Color || "#4488ff";
+    document.documentElement.style.setProperty('--p2-color', p2Color);
+    document.getElementById('disp-p2-name').innerText = p2Name;
+    document.getElementById('disp-p2-name').style.color = p2Color;
+
+    if(document.activeElement !== document.getElementById('st-p2-name')) 
+        document.getElementById('st-p2-name').value = p2Name;
+    document.getElementById('st-p2-color').value = p2Color;
+
+    // Broadcast Config Update to Iframes (so they can update names/colors)
+    broadcastToIframes({ 
+        type: 'CONFIG_UPDATE', 
+        p1Name, p1Color, p2Name, p2Color 
+    });
+});
+
+function broadcastToIframes(msg) {
+    ['frame-play', 'frame-gen', 'frame-music', 'frame-hist', 'frame-lib'].forEach(id => {
+        let el = document.getElementById(id);
+        if(el && el.contentWindow) el.contentWindow.postMessage(msg, '*');
+    });
+}
+
+// --- WALLPAPER MANAGER ---
+function addCurrentToSaved() {
+    let current = document.getElementById('st-bg-url').value;
+    if(!current) return;
+    db.ref('config/savedWallpapers').once('value', snap => {
+        let list = snap.val() || [];
+        if(!list.includes(current)) {
+            list.push(current);
+            db.ref('config/savedWallpapers').set(list);
+        }
+    });
+}
+
+function removeWallpaper(idx) {
+    db.ref('config/savedWallpapers').once('value', snap => {
+        let list = snap.val() || [];
+        list.splice(idx, 1);
+        db.ref('config/savedWallpapers').set(list);
+    });
+}
+
+function renderSavedWallpapers(list) {
+    const container = document.getElementById('saved-bg-list');
+    container.innerHTML = '';
+    list.forEach((url, idx) => {
+        let d = document.createElement('div');
+        d.className = 'saved-thumb';
+        d.style.backgroundImage = `url('${url}')`;
+        d.onclick = () => saveConfig('bgUrl', url);
+        d.innerHTML = `<div class="del-thumb" onclick="event.stopPropagation(); removeWallpaper(${idx})">&times;</div>`;
+        container.appendChild(d);
+    });
+}
+
+// --- SETTINGS DRAG DROP ---
+window.dragOverHandler = function(ev) {
+    ev.preventDefault();
+    document.getElementById('drop-zone').classList.add('drag-over');
+}
+
+window.dragLeaveHandler = function(ev) {
+    document.getElementById('drop-zone').classList.remove('drag-over');
+}
+
+window.dropHandler = function(ev) {
+    ev.preventDefault();
+    document.getElementById('drop-zone').classList.remove('drag-over');
+    if(ev.dataTransfer.files && ev.dataTransfer.files.length > 0) {
+        const file = ev.dataTransfer.files[0];
+        if(file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                saveConfig('bgUrl', e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+}
+
+// --- FULLSCREEN LOGIC ---
+window.toggleFullScreen = function() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch((e) => {
+            console.log(`Error attempting to enable fullscreen: ${e.message}`);
+        });
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+};
+
+// --- PRESENCE LOGIC ---
+var myId = localStorage.getItem('presenceId');
+if (!myId) {
+    myId = Date.now().toString() + Math.random().toString().slice(2,5);
+    localStorage.setItem('presenceId', myId);
+}
+
+var presenceRef = db.ref('presence');
+var connectedRef = db.ref('.info/connected');
+
+// Standard "Online Count" Logic
+connectedRef.on('value', function(snap) {
+    if (snap.val() === true) {
+        var userRef = presenceRef.child('list/' + myId);
+        userRef.onDisconnect().remove();
+        userRef.set(true);
+    }
+});
+
+presenceRef.child('list').on('value', function(snap) {
+    var val = snap.val() || {};
+    var count = Object.keys(val).length;
+    document.getElementById('presence-count').innerHTML = `<i class="fas fa-users" style="font-size: 11px;"></i> ${count}`;
+});
+
+// --- NEW: TAB PRESENCE SYSTEM (Glow Removed) ---
+let currentTabId = 'tab-play';
+
+function initPresenceSystem() {
+    // 2. Listen for OTHER players
+    db.ref('presence').on('value', snap => {
+        const p = snap.val() || {};
+        const roles = ['p1', 'p2'];
+        
+        // Clear old indicators in Shell
+        document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
+
+        roles.forEach(role => {
+            if(role === window.myRole) return; // Don't show self
+            
+            const data = p[role];
+            if(!data) return;
+
+            // Show "Present in Tab" Dot ONLY
+            if(data.tab) {
+                const targetTab = document.querySelector(`.tab[data-id="tab-${data.tab}"]`);
+                if(targetTab) {
+                    const badgeContainer = targetTab.querySelector('.tab-badges');
+                    if(badgeContainer) {
+                        const dot = document.createElement('div');
+                        dot.className = `p-dot ${role}`;
+                        badgeContainer.appendChild(dot);
+                    }
+                }
+            }
+        });
+    });
+}
+
+function updatePresence() {
+    if(window.myRole === 'spectator') return;
+    
+    let tabShort = currentTabId.replace('tab-', '');
+    
+    // We do NOT send hover data anymore as requested
+    db.ref('presence/' + window.myRole).update({
+        tab: tabShort,
+        timestamp: Date.now()
+    });
+}
+
+
+// --- DASHBOARD SYNC ---
+db.ref('dashboard').on('value', snap => {
+    if(window.syncLock) return; 
+    const s = snap.val() || {};
+    window.scores.alb = s.scoreAlb || 0; window.scores.biu = s.scoreBiu || 0;
+    document.getElementById('score-alb').innerText = window.scores.alb;
+    document.getElementById('score-biu').innerText = window.scores.biu;
+    if(s.slotsAlb) renderColumn('alb', s.slotsAlb);
+    if(s.slotsBiu) renderColumn('biu', s.slotsBiu);
+});
+
+db.ref('music/status').on('value', snap => {
+    const m = snap.val() || {};
+    const titleEl = document.getElementById('np-title-top');
+    if(titleEl) titleEl.innerText = m.currentTitle || "System Ready";
+
+    const imgEl = document.getElementById('np-img-top');
+    if(imgEl) {
+        imgEl.src = m.currentId ? `https://img.youtube.com/vi/${m.currentId}/mqdefault.jpg` : "";
+        imgEl.style.display = m.currentId ? 'block' : 'none';
+    }
+
+    const playBtn = document.getElementById('top-play-btn');
+    if(playBtn) {
+        let isPlaying = (m.state === 'PLAYING');
+        playBtn.innerHTML = isPlaying ? '<span class="material-icons">pause</span>' : '<span class="material-icons">play_arrow</span>';
+    }
+});
+
+window.mediaAction = function(action) {
+    if(action === 'play') {
+        db.ref('music/status/state').once('value', snap => {
+            let current = snap.val() || 'PAUSED'; 
+            let next = (current === 'PLAYING') ? 'PAUSED' : 'PLAYING';
+            db.ref('music/status/state').set(next);
+        });
+    } 
+    else {
+         db.ref('music/cmd').set({ action: action, time: Date.now() });
+    }
+};
+
+window.sendVolume = function(val) {
+    let frame = document.getElementById('frame-music');
+    if(frame && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: 'setVolume', value: val }, '*');
+    }
+    updateTopVolIcon(val);
+    if(val > 0) lastTopVol = val;
+}
+
+window.toggleTopMute = function() {
+    let slider = document.getElementById('top-vol-slider');
+    let current = slider.value;
+    if(current > 0) {
+        sendVolume(0);
+        slider.value = 0;
+    } else {
+        sendVolume(lastTopVol);
+        slider.value = lastTopVol;
+    }
+}
+
+function updateTopVolIcon(val) {
+    let icon = document.getElementById('top-vol-icon');
+    if(val == 0) icon.innerText = "volume_off";
+    else if(val < 50) icon.innerText = "volume_down";
+    else icon.innerText = "volume_up";
+}
+
+window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'requestClearCols') {
+        clearCol('alb'); clearCol('biu');
+    }
+    if (event.data && event.data.type === 'GENERATOR_DROP') {
+        handleReturnLogic();
+    }
+});
+
+function handleReturnLogic() {
+    if(window.returningId && window.returningElement) {
+         let frame = document.getElementById('frame-gen');
+         if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
+         
+         window.returningElement.innerHTML = "";
+         window.returningElement.classList.remove('filled');
+         window.returningElement.draggable = false;
+         
+         var parentId = window.returningElement.parentElement.id;
+         var side = parentId.split('-')[1]; 
+         
+         if(window.returningIndex !== -1) {
+             var dbKey = side === 'alb' ? 'slotsAlb' : 'slotsBiu';
+             db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
+         } else {
+             saveColumnState(side);
+         }
+         
+         window.returningId = null; window.returningElement = null; window.returningIndex = -1;
+    }
+}
+
+window.modScore = function(p, op) {
+    window.syncLock = true;
+    if(op==='add') window.scores[p]++; else window.scores[p] = Math.max(0, window.scores[p]-1);
+    document.getElementById('score-'+p).innerText = window.scores[p];
+    db.ref('dashboard/score' + (p==='alb'?'Alb':'Biu')).set(window.scores[p]);
+    setTimeout(() => window.syncLock = false, 500);
+};
+
+window.initSlots = function(id) { 
+    var h = ''; 
+    for(var i=0; i<6; i++) h += `<div class="slot" data-idx="${i}" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event)"></div>`; 
+    document.getElementById(id).innerHTML = h; 
+};
+
+window.allowDrop = function(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); ev.dataTransfer.dropEffect = "copy"; };
+window.leaveDrop = function(ev) { ev.currentTarget.classList.remove('drag-over'); };
+
+window.drop = function(ev) { 
+    ev.preventDefault(); 
+    ev.currentTarget.classList.remove('drag-over'); 
+    var data = window.GEN_DRAG_PAYLOAD;
+    if(!data) { try { data = JSON.parse(ev.dataTransfer.getData("text/plain")); } catch(e){} }
+    if(data) { 
+        window.syncLock = true;
+        ev.currentTarget.innerHTML = `<img src="${data.img}" onerror="this.src='https://play.pokemonshowdown.com/sprites/gen5/${data.id}.png'"><div class="slot-txt" data-id="${data.id}">${data.name}</div>`; 
+        ev.currentTarget.classList.add('filled'); 
+        ev.currentTarget.draggable = true;
+        let idx = ev.currentTarget.dataset.idx;
+        ev.currentTarget.ondragstart = function(e) { slotDragStart(e, data.id, idx); };
+        var parentId = ev.currentTarget.parentElement.id;
+        var side = parentId.split('-')[1]; 
+        saveColumnState(side);
+        let frame = document.getElementById('frame-gen');
+        if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'markUsed', id: data.id }, '*');
+        window.GEN_DRAG_PAYLOAD = null;
+        setTimeout(() => window.syncLock = false, 1000);
+        
+        // Refresh Icons if collapsed
+        if(window.isCollapsed) generateMiniIcons(side);
+    } 
+};
+
+function slotDragStart(e, id, idx) {
+    e.dataTransfer.setData("text/return", id);
+    e.dataTransfer.effectAllowed = "move";
+    window.returningId = id; 
+    window.returningElement = e.target;
+    window.returningIndex = idx;
+}
+
+window.allowReturnDrop = function(ev) { if(window.returningId) ev.preventDefault(); };
+
+window.returnDrop = function(ev) {
+    ev.preventDefault();
+    handleReturnLogic();
+};
+
+window.clearCol = function(p) { 
+    window.syncLock = true;
+    var container = document.getElementById('slots-'+p);
+    var kids = container.getElementsByClassName('slot');
+    let frame = document.getElementById('frame-gen');
+    for(var i=0; i<kids.length; i++) {
+       var txt = kids[i].querySelector('.slot-txt');
+       if(txt && txt.dataset.id && frame && frame.contentWindow) {
+           frame.contentWindow.postMessage({ type: 'freePokemon', id: txt.dataset.id }, '*');
+       }
+    }
+    window.initSlots('slots-'+p); 
+    saveColumnState(p);
+    setTimeout(() => window.syncLock = false, 1000);
+    
+    // Refresh Icons if collapsed
+    if(window.isCollapsed) generateMiniIcons(p);
+};
+
+// --- EXPORT WITH SETDEX DATA (Showdown Calc) ---
+window.exportTeam = async function(side) {
+    var btn = document.getElementById('export-' + side);
+    var originalIcon = '<i class="fas fa-file-export"></i> Export Team';
+    
+    // VISUAL LOADING
+    btn.innerHTML = '<i class="fas fa-spinner"></i> Exporting...';
+    
+    var container = document.getElementById('slots-' + side);
+    var kids = container.getElementsByClassName('slot');
+    var exportText = "";
+    var monsToFetch = [];
+    
+    for(var i=0; i<kids.length; i++) {
+        var txt = kids[i].querySelector('.slot-txt');
+        if(txt && txt.dataset.id) {
+            monsToFetch.push({ 
+                name: txt.innerText.trim(), 
+                id: txt.dataset.id 
+            });
+        }
+    }
+    
+    if(monsToFetch.length === 0) { 
+        alert("Column is empty!"); 
+        btn.innerHTML = originalIcon;
         return; 
     }
 
-    var picked = [];
-    var batchSpecies = []; 
-    
-    for(var k=0; k<amount; k++) {
-       if(pool.length===0) break;
-       var r = Math.floor(Math.random() * pool.length);
-       var candidate = pool[r];
-       var root = candidate.data.baseSpecies || candidate.data.name;
-       
-       if(SETTINGS.dupes) {
-           if(batchSpecies.includes(root)) { pool.splice(r,1); k--; continue; }
-           batchSpecies.push(root);
-           GLOBAL_SEEN.push(root); 
-       }
-       picked.push(candidate);
-       if(!SETTINGS.dupes) pool.splice(r,1); 
-    }
-    
-    // Only update DB. The listener handles the history push and rendering for everyone.
-    db.ref('gen/team').set(picked);
-  }
-
-  // --- SEARCH LOGIC ---
-  function handleSearch(term) {
-      term = term.trim().toLowerCase();
-      var g = document.getElementById('gen-grid'); 
-      
-      if(term === "") {
-          g.innerHTML = "";
-          db.ref('gen/team').once('value', snap => {
-              showFinal(snap.val() || [], false);
-          });
-          return;
-      }
-
-      var results = [];
-      var limit = 50; 
-      
-      for(var i=0; i<ALL_KEYS.length; i++) {
-          if(results.length >= limit) break;
-          var key = ALL_KEYS[i];
-          var p = RAW_DB[key];
-          
-          if(key.includes('totem') || key.includes('starter') || key.includes('gmax')) continue;
-          
-          var nameLow = p.name.toLowerCase();
-          
-          if(nameLow.includes(term) || key.includes(term)) {
-              results.push({ key: key, data: p, shiny: false });
-          }
-      }
-      
-      renderGrid(results);
-  }
-
-  function getGenByNum(num) {
-    if(!num) return 0;
-    var n = parseInt(num);
-    if(isNaN(n)) return 0; 
-    if(n <= 151) return 1; if(n <= 251) return 2; if(n <= 386) return 3; if(n <= 493) return 4;
-    if(n <= 649) return 5; if(n <= 721) return 6; if(n <= 809) return 7; if(n <= 905) return 8;
-    return 9;
-  }
-
-  function showFinal(team, pushHist) {
-    if(!team) team = []; 
-    
-    if(pushHist && team.length > 0) {
-        if(HIST_PTR < HISTORY.length - 1) {
-            HISTORY = HISTORY.slice(0, HIST_PTR + 1);
+    // 1. Fetch SETDEX Data if not cached
+    if (!window.SETDEX_CACHE) {
+        try {
+            // Using a more reliable proxy or direct link if possible
+            const proxyUrl = "https://corsproxy.io/?";
+            const calcUrl = "https://calc.pokemonshowdown.com/data/sets/gen9.js"; 
+            const res = await fetch(proxyUrl + calcUrl);
+            if(res.ok) {
+                let text = await res.text();
+                // Format is: var SETDEX_SV = { ... };
+                let start = text.indexOf('{');
+                let end = text.lastIndexOf('}');
+                if (start !== -1 && end !== -1) {
+                    let jsonStr = text.substring(start, end + 1);
+                    window.SETDEX_CACHE = JSON.parse(jsonStr);
+                }
+            }
+        } catch(e) {
+            console.warn("Setdex fetch failed, using fallback mode.", e);
         }
-        HISTORY.push(team); 
-        HIST_PTR = HISTORY.length - 1;
     }
-    renderGrid(team);
-  }
 
-  function renderGrid(team) {
-    var g = document.getElementById('gen-grid'); 
-    g.innerHTML=''; 
-    if(!team || team.length === 0) return; 
+    for (let mon of monsToFetch) {
+        let set = null;
+        
+        // --- MEGA DETECTION & NAME CLEANING ---
+        let baseName = mon.name;
+        let isMega = false;
+        let megaStone = "";
+        
+        if(baseName.includes("Mega")) {
+            isMega = true;
+            let parts = baseName.split(" Mega");
+            let cleanBase = parts[0].trim(); // e.g., "Lucario"
+            let suffix = parts[1] ? parts[1].trim() : ""; // "X", "Y" or empty
+            
+            // Construct Lookup Name for dictionary
+            let lookupName = cleanBase + (suffix ? " " + suffix : "");
+            
+            // 1. Check Exceptions Dictionary (e.g. Lucario -> Lucarionite)
+            if(MEGA_STONE_EXCEPTIONS[lookupName]) {
+                megaStone = MEGA_STONE_EXCEPTIONS[lookupName];
+            } 
+            // 2. Check Exceptions Dictionary using just base name (e.g. Lucario)
+            else if(MEGA_STONE_EXCEPTIONS[cleanBase]) {
+                megaStone = MEGA_STONE_EXCEPTIONS[cleanBase];
+            }
+            else {
+                // 3. Default Rule: Name + "ite" (e.g. Pidgeot -> Pidgeotite)
+                megaStone = cleanBase + "ite" + (suffix ? " " + suffix : "");
+            }
+            
+            // Special Orbs logic
+            if(cleanBase === "Kyogre" && suffix.includes("Primal")) megaStone = "Blue Orb";
+            if(cleanBase === "Groudon" && suffix.includes("Primal")) megaStone = "Red Orb";
+            if(cleanBase === "Rayquaza") megaStone = ""; 
+            
+            // Use base name for set lookup so we find the base pokemon's stats/moves
+            baseName = cleanBase;
+        }
 
-    team.forEach(function(item) {
-       var p = item.data;
-       var shiny = item.shiny;
-       if(shiny === undefined || shiny === false) {
-           if(activeColorsLength() === 0 && Math.random() < 0.01) shiny = true;
-       }
-       
-       var displayName = p.name.replace(/-/g, ' '); 
-       var types = p.types; 
-       var rawBase = p.baseSpecies || p.name;
-       var cleanName = rawBase.toLowerCase().replace('♀','f').replace('♂','m').replace(/[^a-z0-9]/g, '');
-       var spriteName = cleanName;
+        // --- STRATEGY 1: CHECK PREDEFINED SETS ---
+        if (COMPETITIVE_SETS[baseName]) {
+            set = COMPETITIVE_SETS[baseName];
+        } 
+        
+        // --- STRATEGY 2: LOOKUP IN SMOGON DUMP ---
+        else if (window.SETDEX_CACHE) {
+            // Try exact match
+            let setData = window.SETDEX_CACHE[baseName];
+            
+            // Try fuzzy match (ignore case/spaces)
+            if (!setData) {
+                let cleanId = baseName.toLowerCase().replace(/[^a-z0-9]/g, '');
+                let foundKey = Object.keys(window.SETDEX_CACHE).find(k => 
+                    k.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanId
+                );
+                if(foundKey) setData = window.SETDEX_CACHE[foundKey];
+            }
 
-       var folder = shiny ? 'ani-shiny' : 'ani';
-       var backupFolder = shiny ? 'gen5-shiny' : 'gen5';
-       var mainImg = "https://play.pokemonshowdown.com/sprites/" + folder + "/" + spriteName + ".gif";
-       var backupImg = "https://play.pokemonshowdown.com/sprites/" + backupFolder + "/" + spriteName + ".png";
+            if (setData) {
+                // Get the first available set (usually the most common one)
+                let firstSetName = Object.keys(setData)[0];
+                set = setData[firstSetName];
+            }
+        }
 
-       var typeHtml = types.map(function(t) { 
-            var found = TYPES.find(obj => obj.v === t.toLowerCase());
-            return found ? found.t : t;
-       }).join(' / ');
+        if (set) {
+            // --- BUILD EXPORT FROM SMOGON/PRESET ---
+            let item = isMega && megaStone ? megaStone : (set.item || 'Leftovers');
+            
+            exportText += `${baseName} @ ${item}\n`;
+            if(set.ability) exportText += `Ability: ${set.ability}\n`;
+            if(set.level && set.level != 100) exportText += `Level: ${set.level}\n`;
+            if(set.teraType && !isMega) exportText += `Tera Type: ${set.teraType}\n`;
+            
+            if(set.evs) {
+                if(typeof set.evs === 'string') {
+                    exportText += `EVs: ${set.evs}\n`;
+                } else {
+                    let evList = [];
+                    for (const [stat, val] of Object.entries(set.evs)) {
+                        if(val > 0) evList.push(`${val} ${stat.replace('spa','SpA').replace('spd','SpD').replace('spe','Spe').replace('atk','Atk').replace('def','Def').replace('hp','HP')}`);
+                    }
+                    if(evList.length > 0) exportText += `EVs: ${evList.join(' / ')}\n`;
+                }
+            }
 
-       var d=document.createElement('div'); d.className='poke-card';
-       d.draggable=true; 
-       d.id = 'pk-'+spriteName; 
-       
-       if(USED_IDS.includes(spriteName)) d.classList.add('used');
+            if(set.nature) exportText += `${set.nature} Nature\n`;
+            if(set.moves) set.moves.forEach(m => exportText += `- ${m}\n`);
+            exportText += `\n`;
 
-       var payload = {id: spriteName, name: displayName, img: mainImg};
-       var jsonStr = JSON.stringify(payload);
-       d.setAttribute('data-json', jsonStr);
-       
-       var html = '<img class="poke-img" src="'+mainImg+'" onerror="this.src=\''+backupImg+'\'"><div class="poke-name">'+displayName+'</div><div class="poke-type">'+typeHtml+'</div>';
-       if(shiny) html += '<div class="shiny-star">&#10022;</div>';
-       d.innerHTML = html;
+        } else {
+            // --- STRATEGY 3: SMART FALLBACK (PokeAPI + Logic) ---
+            try {
+                let query = baseName.toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+                let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${query}`);
+                if(!res.ok) throw new Error("Not found");
+                let data = await res.json();
+                
+                // 1. Analyze Stats for Item/Nature Choice
+                let stats = {};
+                data.stats.forEach(s => stats[s.stat.name] = s.base_stat);
+                
+                // Identify highest stats
+                let sortedStats = data.stats.sort((a,b) => b.base_stat - a.base_stat);
+                let best1 = sortedStats[0].stat.name;
+                
+                let isFast = stats['speed'] >= 100;
+                let isAttacker = stats['attack'] > stats['special-attack'];
+                let isBulky = (stats['hp'] > 90 || stats['defense'] > 90 || stats['special-defense'] > 90) && stats['speed'] < 80;
 
-       d.addEventListener('dragstart', function(e){ 
-          if(window.parent) window.parent.GEN_DRAG_PAYLOAD = payload;
-          e.dataTransfer.setData("text/plain", jsonStr);
-          e.dataTransfer.effectAllowed = "copy";
-          e.dataTransfer.setDragImage(d, 75, 75);
-       });
-       
-       g.appendChild(d);
+                // 2. Smart Item Selection
+                let smartItem = 'Leftovers'; // Default for balanced mons
+                
+                if (isMega && megaStone) {
+                    smartItem = megaStone;
+                } else {
+                    if (isFast && (stats['attack'] > 100 || stats['special-attack'] > 100)) {
+                        smartItem = 'Life Orb'; // Fast attackers get Life Orb
+                        if (stats['speed'] > 120) smartItem = 'Choice Specs'; // Very fast special -> Specs? (Simplified)
+                        if (isAttacker && stats['speed'] > 110) smartItem = 'Choice Band';
+                    } else if (isBulky) {
+                        smartItem = 'Leftovers';
+                    } else if (stats['speed'] > 130) {
+                        smartItem = 'Focus Sash'; // Frail speedsters
+                    } else {
+                        smartItem = 'Heavy-Duty Boots'; // Good generic pivot item
+                    }
+                }
+
+                // 3. Nature Selection
+                const natureMap = { 'attack':'Adamant', 'defense':'Impish', 'special-attack':'Modest', 'special-defense':'Calm', 'speed':'Jolly' };
+                // If speed is good, boost it; otherwise boost main attack stat
+                let natureStat = isFast ? 'speed' : (isAttacker ? 'attack' : 'special-attack');
+                if (isBulky && !isAttacker) natureStat = 'special-defense'; // Bulky special defender
+                if (isBulky && isAttacker) natureStat = 'attack'; // Bulky physical
+                let nature = natureMap[natureStat] || 'Serious';
+
+                // 4. Moves (Last 4 Level Up moves as heuristic)
+                let levelMoves = data.moves.filter(m => m.version_group_details.some(d => d.move_learn_method.name === 'level-up'));
+                let moves = levelMoves.slice(-4).map(m => m.move.name);
+                moves = moves.map(m => m.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
+
+                // 5. Build String
+                exportText += `${baseName} @ ${smartItem}\n`;
+                let abil = data.abilities[0].ability.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                exportText += `Ability: ${abil}\n`;
+                exportText += `${nature} Nature\n`;
+                
+                // Simple 252/252 Spread based on best stats
+                let evStat1 = isFast ? 'Spe' : 'HP';
+                let evStat2 = isAttacker ? 'Atk' : 'SpA';
+                if(isBulky) { evStat1 = 'HP'; evStat2 = (stats['defense'] > stats['special-defense']) ? 'Def' : 'SpD'; }
+                
+                exportText += `EVs: 252 ${evStat1} / 252 ${evStat2} / 4 SpD\n`;
+                
+                if(moves.length > 0) moves.forEach(m => exportText += `- ${m}\n`);
+                else exportText += `- Tackle\n`;
+                
+                exportText += `\n`;
+
+            } catch(e) {
+                console.log("Export fallback failed for", baseName);
+                exportText += `${baseName}\n\n`;
+            }
+        }
+    }
+
+    // VISUAL DONE
+    navigator.clipboard.writeText(exportText).then(function() {
+        btn.innerHTML = '<i class="fas fa-check" style="color:#0f0"></i> Copied!';
+        setTimeout(() => { btn.innerHTML = originalIcon; }, 2000);
     });
-  }
+}
 
-  function markUsedLocal(id) {
-      if(!USED_IDS.includes(id)) {
-          USED_IDS.push(id);
-          db.ref('gen/used/' + id).set(true);
-          
-          var p = RAW_DB[id];
-          if(p) {
-              var root = p.baseSpecies || p.name;
-              if(!GLOBAL_SEEN.includes(root)) GLOBAL_SEEN.push(root);
-          }
-      }
-      updateUsedVisuals();
-  }
-
-  function freePokemonLocal(id) {
-      var idx = USED_IDS.indexOf(id);
-      if(idx > -1) {
-          USED_IDS.splice(idx, 1);
-          db.ref('gen/used/' + id).remove();
-      }
-      updateUsedVisuals();
-  }
-
-  function updateUsedVisuals() {
-      var cards = document.getElementsByClassName('poke-card');
-      for(var i=0; i<cards.length; i++) {
-          var id = cards[i].id.replace('pk-', '');
-          if(USED_IDS.includes(id)) cards[i].classList.add('used');
-          else cards[i].classList.remove('used');
-      }
-  }
-  
-  function activeColorsLength() { return FILTERS.color.length; }
-
-  // --- ACTIONS (SYNCED) ---
-  function initDropdowns() {
-    buildDD('dd-gen', GENS, 'gen', function(v){ return v.t; }, true);
-    buildDD('dd-type', TYPES, 'type', function(v){ return v.t; }, true);
-    buildDD('dd-color', COLORS, 'color', function(v){ return v; });
-  }
-  function buildDD(id, list, cat, lblFn, isObj){
-    var h='';
-    for(var i=0;i<list.length;i++){
-      var val = isObj?list[i].v:list[i];
-      var lbl = isObj?list[i].t:lblFn(val);
-      // Added data-val for easier sync updates
-      h+='<div class="dd-item" data-val="'+val+'" onclick="toggleTag(\''+cat+'\',\''+val+'\',this)"><div class="dd-box"></div>'+lbl+'</div>';
+function saveColumnState(side) {
+    var slots = [];
+    var container = document.getElementById('slots-'+side);
+    var kids = container.getElementsByClassName('slot');
+    for(var i=0; i<kids.length; i++) {
+        var img = kids[i].querySelector('img');
+        var txt = kids[i].querySelector('.slot-txt');
+        if(img && txt) slots.push({ img: img.src, name: txt.innerText, id: txt.dataset.id });
+        else slots.push(null);
     }
-    document.getElementById(id).innerHTML = h;
-  }
-  function toggleDD(cat){ var el=document.getElementById('dd-'+cat); var s=el.classList.contains('show'); closeAllDD(); if(!s)el.classList.add('show'); } 
-  function closeAllDD(){ var els=document.querySelectorAll('.dd-menu'); for(var i=0;i<els.length;i++) els[i].classList.remove('show'); }
-  
-  // SYNC ACTION 1: TOGGLE FILTER
-  function toggleTag(cat, val, el){
-    var idx = FILTERS[cat].indexOf(val);
-    if(idx===-1){ FILTERS[cat].push(val); }
-    else { FILTERS[cat].splice(idx,1); }
-    
-    // Sync to DB immediately
-    db.ref('gen/filters').set(FILTERS);
-  }
+    db.ref('dashboard/slots' + (side==='alb'?'Alb':'Biu')).set(slots);
+}
 
-  // SYNC ACTION 2: REMOVE FILTER TAG
-  function removeTag(cat, val){
-    var idx = FILTERS[cat].indexOf(val);
-    if(idx>-1) FILTERS[cat].splice(idx,1);
-    
-    // Sync to DB immediately
-    db.ref('gen/filters').set(FILTERS);
-  }
-
-  // VISUAL SYNC HELPERS
-  function renderTags(){
-    var c=document.getElementById('active-tags'); c.innerHTML='';
-    var cats=['gen','type','color'];
-    for(var i=0;i<cats.length;i++){
-      var cat=cats[i];
-      var vals=FILTERS[cat];
-      for(var j=0;j<vals.length;j++){
-        var val=vals[j];
-        var txt=val;
-        if(cat==='gen') txt=GENS.find(function(x){return x.v===val}).t.split(' - ')[0];
-        if(cat==='type') txt=TYPES.find(function(x){return x.v===val}).t; 
-        if(cat==='color') txt=val;
-        var d=document.createElement('div'); d.className='tag';
-        d.innerHTML='<span>'+txt+'</span><span class="tag-x" onclick="removeTag(\''+cat+'\',\''+val+'\')"></span>';
-        c.appendChild(d);
-      }
+function renderColumn(side, data) {
+    if(!data) return;
+    var container = document.getElementById('slots-'+side);
+    var kids = container.getElementsByClassName('slot');
+    for(var i=0; i<kids.length; i++) {
+        if(data[i]) {
+            if(!kids[i].classList.contains('filled') || kids[i].innerText !== data[i].name) {
+                kids[i].innerHTML = `<img src="${data[i].img}" onerror="this.src='https://play.pokemonshowdown.com/sprites/gen5/${data[i].id}.png'"><div class="slot-txt" data-id="${data[i].id}">${data[i].name}</div>`;
+                kids[i].classList.add('filled');
+                kids[i].draggable = true;
+                let pid = data[i].id; 
+                let idx = i; 
+                kids[i].ondragstart = function(e) { slotDragStart(e, pid, idx); };
+            }
+        } else {
+            if(kids[i].classList.contains('filled')) {
+                kids[i].innerHTML = "";
+                kids[i].classList.remove('filled');
+                kids[i].draggable = false;
+            }
+        }
     }
-  }
+    // Update Mini Icons if Collapsed
+    if(window.isCollapsed) generateMiniIcons(side);
+}
 
-  function updateDropdownVisuals() {
-      // Loop through all dropdown items and check if they are in FILTERS
-      var menus = document.querySelectorAll('.dd-menu');
-      menus.forEach(menu => {
-          var cat = menu.id.replace('dd-', '');
-          var items = menu.children;
-          for (var i = 0; i < items.length; i++) {
-              var val = items[i].getAttribute('data-val');
-              if (FILTERS[cat] && FILTERS[cat].includes(val)) {
-                  items[i].classList.add('selected');
-              } else {
-                  items[i].classList.remove('selected');
-              }
-          }
-      });
-  }
 
-  // SYNC ACTION 3: AMOUNT
-  function modAmt(n){ 
-      AMT_IDX+=n; 
-      if(AMT_IDX<0)AMT_IDX=AMT_OPTS.length-1; 
-      if(AMT_IDX>=AMT_OPTS.length)AMT_IDX=0; 
-      // Sync to DB
-      db.ref('gen/amount').set(AMT_IDX);
-  }
+/* --- COLLAPSE / EXPAND LOGIC (PLAYERS) --- */
+window.isCollapsed = false;
 
-  // SYNC ACTION 4: SETTINGS
-  function toggleSetting(k){ 
-      SETTINGS[k]=!SETTINGS[k]; 
-      // Sync to DB
-      db.ref('gen/settings').set(SETTINGS);
-  }
+window.toggleCollapse = function() {
+    window.isCollapsed = !window.isCollapsed;
+    
+    // Update Button Icons
+    const icons = document.querySelectorAll('.collapse-btn i');
+    icons.forEach(icon => {
+        icon.className = window.isCollapsed ? "fas fa-expand-alt" : "fas fa-compress-alt";
+    });
 
-  function updateSettingVisuals() {
-      for (var k in SETTINGS) {
-          var b = document.getElementById('btn-' + k);
-          if (b) {
-              if (SETTINGS[k]) b.classList.add('active'); 
-              else b.classList.remove('active');
-          }
-      }
-  }
-  
-  // HISTORY NAV (UPDATED: SYNCS VIEW FOR EVERYONE)
-  function goHistory(d){ 
-      var n = HIST_PTR + d; 
-      if(n >= 0 && n < HISTORY.length){ 
-          HIST_PTR = n; 
-          renderGrid(HISTORY[n]);
-          // Sync this view to everyone
-          db.ref('gen/team').set(HISTORY[n]); 
-      } 
-  }
-  
-  // CLEAR ACTIONS (Reset Memory ONLY, no column clear)
-  function doClear(){ 
-      FILTERS = { gen:[], type:[], color:[] };
-      // Sync Filters Clear
-      db.ref('gen/filters').set(FILTERS);
-      
-      document.getElementById('gen-grid').innerHTML = '';
-      db.ref('gen/team').set(null); 
-      document.getElementById('search-input').value = ""; 
-      // REMOVED: window.parent.postMessage({ type: 'requestClearCols' }, '*');
-  }
-  
-  function doReset(){ 
-      GLOBAL_SEEN = []; 
-      document.getElementById('gen-grid').innerHTML = ''; 
-      db.ref('gen/team').set(null); 
-      db.ref('gen/used').set(null); 
-      // REMOVED: window.parent.postMessage({ type: 'requestClearCols' }, '*');
-  }
-</script>
-</body>
-</html>
+    // Handle Animation & Mini Row Generation for BOTH sides
+    ['alb', 'biu'].forEach(side => {
+        // Target the container directly using the IDs added to index.html
+        const col = document.getElementById('col-' + side);
+        const list = document.getElementById('slots-' + side);
+        const miniRow = document.getElementById('mini-' + side);
+        
+        if (window.isCollapsed) {
+            // 1. Generate Mini Icons from current slots
+            generateMiniIcons(side);
+            
+            // 2. Hide List, Show Mini, Shrink Container
+            list.classList.add('collapsed');
+            miniRow.classList.add('active');
+            col.classList.add('collapsed-view'); // Shrinks the glass pane
+        } else {
+            // 1. Show List, Hide Mini, Expand Container
+            list.classList.remove('collapsed');
+            miniRow.classList.remove('active');
+            col.classList.remove('collapsed-view'); // Restores size
+        }
+    });
+};
+
+window.generateMiniIcons = function(side) {
+    const miniRow = document.getElementById('mini-' + side);
+    const slots = document.getElementById('slots-' + side).getElementsByClassName('slot');
+    
+    let html = '';
+    
+    // Loop through existing slots to grab images
+    for(let i=0; i < slots.length; i++) {
+        const img = slots[i].querySelector('img');
+        if (img) {
+            html += `<div class="mini-slot"><img src="${img.src}"></div>`;
+        } else {
+            html += `<div class="mini-slot empty"></div>`;
+        }
+    }
+    
+    miniRow.innerHTML = html;
+}
+
+/* --- COLLAPSE / EXPAND LOGIC (CENTER WINDOW) --- */
+window.centerCollapsed = false;
+
+window.toggleCenterCollapse = function() {
+    window.centerCollapsed = !window.centerCollapsed;
+    
+    const colC = document.querySelector('.col-c');
+    const icon = document.getElementById('c-collapse-icon');
+    
+    if(window.centerCollapsed) {
+        colC.classList.add('minimized');
+        if(icon) icon.className = "fas fa-expand-alt"; 
+    } else {
+        colC.classList.remove('minimized');
+        if(icon) icon.className = "fas fa-compress-alt"; 
+    }
+};
+
+window.switchTab = function(viewId, btn) { 
+    // TOGGLE LOGIC:
+    // 1. If currently OPEN and click SAME tab -> Close it (Minimize)
+    if (currentTabId === 'tab-' + viewId && !window.centerCollapsed) {
+        window.toggleCenterCollapse();
+        return;
+    }
+
+    // 2. If minimized -> Open it
+    if (window.centerCollapsed) {
+        window.toggleCenterCollapse();
+    }
+
+    // 3. Switch active view
+    currentTabId = 'tab-' + viewId;
+    updatePresence();
+
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); 
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); 
+    document.getElementById('view-'+viewId).classList.add('active'); 
+    btn.classList.add('active'); 
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    window.initSlots('slots-alb'); window.initSlots('slots-biu'); 
+    
+    // Init Presence
+    initPresenceSystem();
+
+    // START MINIMIZED (Both Columns and Center)
+    window.toggleCollapse();       // Collapse Side Columns
+    window.toggleCenterCollapse(); // Collapse Center Window
+    
+    // --- LIBRARY LOADER (DATA ONLY) ---
+    // This fetches data so other tabs like Generator/Play can use it
+    db.ref('library').once('value').then(snap => {
+        window.appData = snap.val() || {};
+        ['frame-play', 'frame-gen'].forEach(id => {
+            let el = document.getElementById(id);
+            if(el && el.contentWindow) {
+                try { el.contentWindow.appData = window.appData; } catch(e) {}
+            }
+        });
+    });
+});
