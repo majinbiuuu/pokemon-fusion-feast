@@ -1,6 +1,7 @@
 window.GEN_DRAG_PAYLOAD = null;
 var lastTopVol = 100;
 window.returningIndex = -1;
+window.SETDEX_CACHE = null; 
 window.myRole = localStorage.getItem('myRole') || 'spectator';
 
 // --- SETTINGS LOGIC ---
@@ -14,9 +15,9 @@ window.saveConfig = function(key, val) {
     db.ref('config/' + key).set(val);
 };
 
-// --- IDENTITY LOGIC ---
+// --- IDENTITY LOGIC & GHOST FIX ---
 window.setIdentity = function(role) {
-    // 1. Remove old presence if exists
+    // 1. Clean up old presence
     if(window.myRole && window.myRole !== 'spectator') {
         db.ref('presence/' + window.myRole).remove();
         db.ref('presence/' + window.myRole).onDisconnect().cancel(); 
@@ -27,12 +28,17 @@ window.setIdentity = function(role) {
     localStorage.setItem('myRole', role);
     updateIdentityUI();
     
-    // 3. Setup New Presence (with Disconnect Handler)
-    if(role !== 'spectator') {
-        db.ref('presence/' + role).onDisconnect().remove();
+    // 3. Setup New Presence immediately
+    setupPresenceDisconnect();
+};
+
+function setupPresenceDisconnect() {
+    if(window.myRole !== 'spectator') {
+        // This ensures the dot disappears if the user closes the tab
+        db.ref('presence/' + window.myRole).onDisconnect().remove();
         updatePresence();
     }
-};
+}
 
 function updateIdentityUI() {
     document.querySelectorAll('.who-btn').forEach(b => b.classList.remove('active'));
@@ -40,18 +46,16 @@ function updateIdentityUI() {
     if(btn) btn.classList.add('active');
 }
 
-// --- SYNC CONFIG (Updated for P1/P2) ---
+// --- SYNC CONFIG ---
 db.ref('config').on('value', snap => {
     const c = snap.val() || {};
     
-    // 1. Theme Color & Sync
     if(c.theme) {
         document.documentElement.style.setProperty('--accent', c.theme);
         document.getElementById('st-theme-color').value = c.theme;
         broadcastToIframes({ type: 'THEME_UPDATE', color: c.theme });
     }
 
-    // 2. Background Image
     if(c.bgUrl) {
         document.body.style.backgroundImage = `url('${c.bgUrl}')`;
         document.getElementById('st-bg-url').value = c.bgUrl;
@@ -60,16 +64,14 @@ db.ref('config').on('value', snap => {
         document.getElementById('st-bg-url').value = '';
     }
 
-    // 3. Background Color
     if(c.bgColor) {
         document.body.style.backgroundColor = c.bgColor;
         document.getElementById('st-bg-color').value = c.bgColor;
     }
 
-    // 4. Saved Wallpapers
     renderSavedWallpapers(c.savedWallpapers || []);
 
-    // 5. Player 1 Config
+    // Player Configs
     const p1Name = c.p1Name || "ALB";
     const p1Color = c.p1Color || "#ff4444";
     document.documentElement.style.setProperty('--p1-color', p1Color);
@@ -80,7 +82,6 @@ db.ref('config').on('value', snap => {
         document.getElementById('st-p1-name').value = p1Name;
     document.getElementById('st-p1-color').value = p1Color;
 
-    // 6. Player 2 Config
     const p2Name = c.p2Name || "BIU";
     const p2Color = c.p2Color || "#4488ff";
     document.documentElement.style.setProperty('--p2-color', p2Color);
@@ -91,7 +92,6 @@ db.ref('config').on('value', snap => {
         document.getElementById('st-p2-name').value = p2Name;
     document.getElementById('st-p2-color').value = p2Color;
 
-    // Broadcast Config Update to Iframes (so they can update names/colors)
     broadcastToIframes({ 
         type: 'CONFIG_UPDATE', 
         p1Name, p1Color, p2Name, p2Color 
@@ -139,16 +139,8 @@ function renderSavedWallpapers(list) {
     });
 }
 
-// --- SETTINGS DRAG DROP ---
-window.dragOverHandler = function(ev) {
-    ev.preventDefault();
-    document.getElementById('drop-zone').classList.add('drag-over');
-}
-
-window.dragLeaveHandler = function(ev) {
-    document.getElementById('drop-zone').classList.remove('drag-over');
-}
-
+window.dragOverHandler = function(ev) { ev.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+window.dragLeaveHandler = function(ev) { document.getElementById('drop-zone').classList.remove('drag-over'); }
 window.dropHandler = function(ev) {
     ev.preventDefault();
     document.getElementById('drop-zone').classList.remove('drag-over');
@@ -156,9 +148,7 @@ window.dropHandler = function(ev) {
         const file = ev.dataTransfer.files[0];
         if(file.type.startsWith('image/')) {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                saveConfig('bgUrl', e.target.result);
-            };
+            reader.onload = function(e) { saveConfig('bgUrl', e.target.result); };
             reader.readAsDataURL(file);
         }
     }
@@ -167,13 +157,9 @@ window.dropHandler = function(ev) {
 // --- FULLSCREEN LOGIC ---
 window.toggleFullScreen = function() {
     if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch((e) => {
-            console.log(`Error attempting to enable fullscreen: ${e.message}`);
-        });
+        document.documentElement.requestFullscreen().catch((e) => { console.log(`Error: ${e.message}`); });
     } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        }
+        if (document.exitFullscreen) document.exitFullscreen();
     }
 };
 
@@ -187,12 +173,13 @@ if (!myId) {
 var presenceRef = db.ref('presence');
 var connectedRef = db.ref('.info/connected');
 
-// Standard "Online Count" Logic
 connectedRef.on('value', function(snap) {
     if (snap.val() === true) {
         var userRef = presenceRef.child('list/' + myId);
         userRef.onDisconnect().remove();
         userRef.set(true);
+        // Re-establish role disconnect on reconnect
+        setupPresenceDisconnect();
     }
 });
 
@@ -202,25 +189,34 @@ presenceRef.child('list').on('value', function(snap) {
     document.getElementById('presence-count').innerHTML = `<i class="fas fa-users" style="font-size: 11px;"></i> ${count}`;
 });
 
-// --- NEW: TAB PRESENCE SYSTEM (Glow Removed) ---
+// --- TAB & HOVER PRESENCE ---
 let currentTabId = 'tab-play';
+let currentHoverId = null;
 
 function initPresenceSystem() {
-    // 2. Listen for OTHER players
+    // 1. Mouse Listeners
+    document.querySelectorAll('.track-hover').forEach(el => {
+        el.addEventListener('mouseenter', () => { currentHoverId = el.getAttribute('data-id'); updatePresence(); });
+        el.addEventListener('mouseleave', () => { currentHoverId = null; updatePresence(); });
+    });
+
+    // 2. Database Listeners
     db.ref('presence').on('value', snap => {
         const p = snap.val() || {};
         const roles = ['p1', 'p2'];
         
-        // Clear old indicators in Shell
+        // Clear old indicators
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
+        document.querySelectorAll('.track-hover').forEach(el => {
+            el.classList.remove('peer-hover-p1', 'peer-hover-p2');
+        });
 
         roles.forEach(role => {
-            if(role === window.myRole) return; // Don't show self
-            
+            if(role === window.myRole) return; 
             const data = p[role];
-            if(!data) return;
+            if(!data) return; // User is offline, no ghosting
 
-            // Show "Present in Tab" Dot ONLY
+            // Tab Dot
             if(data.tab) {
                 const targetTab = document.querySelector(`.tab[data-id="tab-${data.tab}"]`);
                 if(targetTab) {
@@ -232,84 +228,103 @@ function initPresenceSystem() {
                     }
                 }
             }
+
+            // Hover Glow
+            if(data.hover) {
+                const targetEl = document.querySelector(`[data-id="${data.hover}"]`);
+                if(targetEl) targetEl.classList.add(`peer-hover-${role}`);
+                broadcastToIframes({ type: 'PEER_HOVER', id: data.hover, role: role });
+            }
         });
     });
 }
 
 function updatePresence() {
     if(window.myRole === 'spectator') return;
-    
     let tabShort = currentTabId.replace('tab-', '');
-    
-    // We do NOT send hover data anymore as requested
     db.ref('presence/' + window.myRole).update({
         tab: tabShort,
+        hover: currentHoverId,
         timestamp: Date.now()
     });
 }
 
-
-// --- DASHBOARD SYNC ---
+// --- DATA SYNC & GHOST POKEMON FIX ---
 db.ref('dashboard').on('value', snap => {
     if(window.syncLock) return; 
     const s = snap.val() || {};
     window.scores.alb = s.scoreAlb || 0; window.scores.biu = s.scoreBiu || 0;
     document.getElementById('score-alb').innerText = window.scores.alb;
     document.getElementById('score-biu').innerText = window.scores.biu;
-    if(s.slotsAlb) renderColumn('alb', s.slotsAlb);
-    if(s.slotsBiu) renderColumn('biu', s.slotsBiu);
+    
+    renderColumn('alb', s.slotsAlb);
+    renderColumn('biu', s.slotsBiu);
 });
 
+function renderColumn(side, data) {
+    var container = document.getElementById('slots-'+side);
+    if(!container) return;
+    var kids = container.getElementsByClassName('slot');
+    
+    // FIX: Force empty array if null to ensure clearing
+    if(!data) data = []; 
+
+    for(var i=0; i<kids.length; i++) {
+        if(data[i]) {
+            if(!kids[i].classList.contains('filled') || kids[i].innerText !== data[i].name) {
+                kids[i].innerHTML = `<img src="${data[i].img}" onerror="this.src='https://play.pokemonshowdown.com/sprites/gen5/${data[i].id}.png'"><div class="slot-txt" data-id="${data[i].id}">${data[i].name}</div>`;
+                kids[i].classList.add('filled');
+                kids[i].draggable = true;
+                let pid = data[i].id; 
+                let idx = i; 
+                kids[i].ondragstart = function(e) { slotDragStart(e, pid, idx); };
+            }
+        } else {
+            // Explicitly clear slot if data is missing
+            if(kids[i].classList.contains('filled')) {
+                kids[i].innerHTML = "";
+                kids[i].classList.remove('filled');
+                kids[i].draggable = false;
+            }
+        }
+    }
+    if(window.isCollapsed) generateMiniIcons(side);
+}
+
+// --- MEDIA & VOLUME ---
 db.ref('music/status').on('value', snap => {
     const m = snap.val() || {};
     const titleEl = document.getElementById('np-title-top');
     if(titleEl) titleEl.innerText = m.currentTitle || "System Ready";
-
     const imgEl = document.getElementById('np-img-top');
     if(imgEl) {
         imgEl.src = m.currentId ? `https://img.youtube.com/vi/${m.currentId}/mqdefault.jpg` : "";
         imgEl.style.display = m.currentId ? 'block' : 'none';
     }
-
     const playBtn = document.getElementById('top-play-btn');
-    if(playBtn) {
-        let isPlaying = (m.state === 'PLAYING');
-        playBtn.innerHTML = isPlaying ? '<span class="material-icons">pause</span>' : '<span class="material-icons">play_arrow</span>';
-    }
+    if(playBtn) playBtn.innerHTML = (m.state === 'PLAYING') ? '<span class="material-icons">pause</span>' : '<span class="material-icons">play_arrow</span>';
 });
 
 window.mediaAction = function(action) {
     if(action === 'play') {
         db.ref('music/status/state').once('value', snap => {
-            let current = snap.val() || 'PAUSED'; 
-            let next = (current === 'PLAYING') ? 'PAUSED' : 'PLAYING';
+            let next = (snap.val() === 'PLAYING') ? 'PAUSED' : 'PLAYING';
             db.ref('music/status/state').set(next);
         });
-    } 
-    else {
-         db.ref('music/cmd').set({ action: action, time: Date.now() });
-    }
+    } else db.ref('music/cmd').set({ action: action, time: Date.now() });
 };
 
 window.sendVolume = function(val) {
     let frame = document.getElementById('frame-music');
-    if(frame && frame.contentWindow) {
-        frame.contentWindow.postMessage({ type: 'setVolume', value: val }, '*');
-    }
+    if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'setVolume', value: val }, '*');
     updateTopVolIcon(val);
     if(val > 0) lastTopVol = val;
 }
 
 window.toggleTopMute = function() {
     let slider = document.getElementById('top-vol-slider');
-    let current = slider.value;
-    if(current > 0) {
-        sendVolume(0);
-        slider.value = 0;
-    } else {
-        sendVolume(lastTopVol);
-        slider.value = lastTopVol;
-    }
+    if(slider.value > 0) { sendVolume(0); slider.value = 0; } 
+    else { sendVolume(lastTopVol); slider.value = lastTopVol; }
 }
 
 function updateTopVolIcon(val) {
@@ -320,12 +335,9 @@ function updateTopVolIcon(val) {
 }
 
 window.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'requestClearCols') {
-        clearCol('alb'); clearCol('biu');
-    }
-    if (event.data && event.data.type === 'GENERATOR_DROP') {
-        handleReturnLogic();
-    }
+    if (event.data && event.data.type === 'requestClearCols') { clearCol('alb'); clearCol('biu'); }
+    if (event.data && event.data.type === 'GENERATOR_DROP') { handleReturnLogic(); }
+    if (event.data && event.data.type === 'HOVER_REPORT') { currentHoverId = event.data.id; updatePresence(); }
 });
 
 function handleReturnLogic() {
@@ -342,11 +354,12 @@ function handleReturnLogic() {
          
          if(window.returningIndex !== -1) {
              var dbKey = side === 'alb' ? 'slotsAlb' : 'slotsBiu';
-             db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
+             // FIX: use update so listener catches it, but set null explicitly
+             var updateObj = {}; updateObj[window.returningIndex] = null;
+             db.ref('dashboard/' + dbKey).update(updateObj);
          } else {
              saveColumnState(side);
          }
-         
          window.returningId = null; window.returningElement = null; window.returningIndex = -1;
     }
 }
@@ -369,8 +382,7 @@ window.allowDrop = function(ev) { ev.preventDefault(); ev.currentTarget.classLis
 window.leaveDrop = function(ev) { ev.currentTarget.classList.remove('drag-over'); };
 
 window.drop = function(ev) { 
-    ev.preventDefault(); 
-    ev.currentTarget.classList.remove('drag-over'); 
+    ev.preventDefault(); ev.currentTarget.classList.remove('drag-over'); 
     var data = window.GEN_DRAG_PAYLOAD;
     if(!data) { try { data = JSON.parse(ev.dataTransfer.getData("text/plain")); } catch(e){} }
     if(data) { 
@@ -387,8 +399,6 @@ window.drop = function(ev) {
         if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'markUsed', id: data.id }, '*');
         window.GEN_DRAG_PAYLOAD = null;
         setTimeout(() => window.syncLock = false, 1000);
-        
-        // Refresh Icons if collapsed
         if(window.isCollapsed) generateMiniIcons(side);
     } 
 };
@@ -396,17 +406,11 @@ window.drop = function(ev) {
 function slotDragStart(e, id, idx) {
     e.dataTransfer.setData("text/return", id);
     e.dataTransfer.effectAllowed = "move";
-    window.returningId = id; 
-    window.returningElement = e.target;
-    window.returningIndex = idx;
+    window.returningId = id; window.returningElement = e.target; window.returningIndex = idx;
 }
 
 window.allowReturnDrop = function(ev) { if(window.returningId) ev.preventDefault(); };
-
-window.returnDrop = function(ev) {
-    ev.preventDefault();
-    handleReturnLogic();
-};
+window.returnDrop = function(ev) { ev.preventDefault(); handleReturnLogic(); };
 
 window.clearCol = function(p) { 
     window.syncLock = true;
@@ -422,120 +426,40 @@ window.clearCol = function(p) {
     window.initSlots('slots-'+p); 
     saveColumnState(p);
     setTimeout(() => window.syncLock = false, 1000);
-    
-    // Refresh Icons if collapsed
     if(window.isCollapsed) generateMiniIcons(p);
 };
 
-// --- EXPORT WITH SETDEX DATA (Showdown Calc) ---
-// MOVED TO export.js - Logic stub remains here to ensure no errors if called before load
-if (!window.exportTeam) {
-    window.exportTeam = function() { console.log("Export module not loaded."); };
-}
-
-function saveColumnState(side) {
-    var slots = [];
-    var container = document.getElementById('slots-'+side);
-    var kids = container.getElementsByClassName('slot');
-    for(var i=0; i<kids.length; i++) {
-        var img = kids[i].querySelector('img');
-        var txt = kids[i].querySelector('.slot-txt');
-        if(img && txt) slots.push({ img: img.src, name: txt.innerText, id: txt.dataset.id });
-        else slots.push(null);
-    }
-    db.ref('dashboard/slots' + (side==='alb'?'Alb':'Biu')).set(slots);
-}
-
-function renderColumn(side, data) {
-    // FIX: Handle null/undefined data by forcing empty check loop
-    var container = document.getElementById('slots-'+side);
-    var kids = container.getElementsByClassName('slot');
-    
-    for(var i=0; i<kids.length; i++) {
-        // If data exists AND data[i] exists, fill. Otherwise clear.
-        if(data && data[i]) {
-            if(!kids[i].classList.contains('filled') || kids[i].innerText !== data[i].name) {
-                kids[i].innerHTML = `<img src="${data[i].img}" onerror="this.src='https://play.pokemonshowdown.com/sprites/gen5/${data[i].id}.png'"><div class="slot-txt" data-id="${data[i].id}">${data[i].name}</div>`;
-                kids[i].classList.add('filled');
-                kids[i].draggable = true;
-                let pid = data[i].id; 
-                let idx = i; 
-                kids[i].ondragstart = function(e) { slotDragStart(e, pid, idx); };
-            }
-        } else {
-            if(kids[i].classList.contains('filled')) {
-                kids[i].innerHTML = "";
-                kids[i].classList.remove('filled');
-                kids[i].draggable = false;
-            }
-        }
-    }
-    // Update Mini Icons if Collapsed
-    if(window.isCollapsed) generateMiniIcons(side);
-}
-
-
-/* --- COLLAPSE / EXPAND LOGIC (PLAYERS) --- */
+// --- LAYOUT LOGIC (REFACTORED) ---
 window.isCollapsed = false;
+window.centerCollapsed = false;
 
+// 1. Column Buttons: ONLY toggle side columns
 window.toggleCollapse = function() {
     window.isCollapsed = !window.isCollapsed;
-    
-    // Update Button Icons
     const icons = document.querySelectorAll('.collapse-btn i');
-    icons.forEach(icon => {
-        icon.className = window.isCollapsed ? "fas fa-expand-alt" : "fas fa-compress-alt";
-    });
+    icons.forEach(icon => { icon.className = window.isCollapsed ? "fas fa-expand-alt" : "fas fa-compress-alt"; });
 
-    // Handle Animation & Mini Row Generation for BOTH sides
     ['alb', 'biu'].forEach(side => {
-        // Target the container directly using the IDs added to index.html
         const col = document.getElementById('col-' + side);
         const list = document.getElementById('slots-' + side);
         const miniRow = document.getElementById('mini-' + side);
         
         if (window.isCollapsed) {
-            // 1. Generate Mini Icons from current slots
             generateMiniIcons(side);
-            
-            // 2. Hide List, Show Mini, Shrink Container
             list.classList.add('collapsed');
             miniRow.classList.add('active');
-            col.classList.add('collapsed-view'); // Shrinks the glass pane
+            col.classList.add('collapsed-view');
         } else {
-            // 1. Show List, Hide Mini, Expand Container
             list.classList.remove('collapsed');
             miniRow.classList.remove('active');
-            col.classList.remove('collapsed-view'); // Restores size
+            col.classList.remove('collapsed-view');
         }
     });
 };
 
-window.generateMiniIcons = function(side) {
-    const miniRow = document.getElementById('mini-' + side);
-    const slots = document.getElementById('slots-' + side).getElementsByClassName('slot');
-    
-    let html = '';
-    
-    // Loop through existing slots to grab images
-    for(let i=0; i < slots.length; i++) {
-        const img = slots[i].querySelector('img');
-        if (img) {
-            html += `<div class="mini-slot"><img src="${img.src}"></div>`;
-        } else {
-            html += `<div class="mini-slot empty"></div>`;
-        }
-    }
-    
-    miniRow.innerHTML = html;
-}
-
-/* --- COLLAPSE / EXPAND LOGIC (CENTER WINDOW) --- */
-window.centerCollapsed = false;
-
+// 2. Center Button: Toggles BOTH center window and columns
 window.toggleCenterCollapse = function() {
     window.centerCollapsed = !window.centerCollapsed;
-    
     const colC = document.querySelector('.col-c');
     const icon = document.getElementById('c-collapse-icon');
     
@@ -547,28 +471,31 @@ window.toggleCenterCollapse = function() {
         if(icon) icon.className = "fas fa-compress-alt"; 
     }
 
-    // --- NEW: SYNC COLUMNS WITH CENTER ---
-    // If center is collapsed, ensure columns are collapsed.
-    // If center is expanded, ensure columns are expanded.
+    // Force columns to match center state
     if (window.centerCollapsed !== window.isCollapsed) {
         window.toggleCollapse();
     }
 };
 
+// 3. Tab Clicks: ONLY toggle center window
 window.switchTab = function(viewId, btn) { 
-    // TOGGLE LOGIC:
-    // 1. If currently OPEN and click SAME tab -> Close it (Minimize)
+    // Logic: If clicking SAME tab that is open, minimize center.
     if (currentTabId === 'tab-' + viewId && !window.centerCollapsed) {
-        window.toggleCenterCollapse();
+        window.centerCollapsed = true;
+        document.querySelector('.col-c').classList.add('minimized');
+        const icon = document.getElementById('c-collapse-icon');
+        if(icon) icon.className = "fas fa-expand-alt";
         return;
     }
 
-    // 2. If minimized -> Open it
+    // Logic: If minimized, open center (but don't touch columns)
     if (window.centerCollapsed) {
-        window.toggleCenterCollapse();
+        window.centerCollapsed = false;
+        document.querySelector('.col-c').classList.remove('minimized');
+        const icon = document.getElementById('c-collapse-icon');
+        if(icon) icon.className = "fas fa-compress-alt";
     }
 
-    // 3. Switch active view
     currentTabId = 'tab-' + viewId;
     updatePresence();
 
@@ -578,25 +505,33 @@ window.switchTab = function(viewId, btn) {
     btn.classList.add('active'); 
 };
 
+// --- INIT ---
 document.addEventListener('DOMContentLoaded', function() {
     window.initSlots('slots-alb'); window.initSlots('slots-biu'); 
-    
-    // Init Presence
     initPresenceSystem();
+    setupPresenceDisconnect(); // Init ghost fix
 
-    // START MINIMIZED (Both Columns and Center)
-    window.toggleCollapse();       // Collapse Side Columns
-    window.toggleCenterCollapse(); // Collapse Center Window
+    // START MINIMIZED (Programmatically collapse)
+    window.centerCollapsed = true;
+    document.querySelector('.col-c').classList.add('minimized');
+    const icon = document.getElementById('c-collapse-icon');
+    if(icon) icon.className = "fas fa-expand-alt";
     
-    // --- LIBRARY LOADER (DATA ONLY) ---
-    // This fetches data so other tabs like Generator/Play can use it
+    window.isCollapsed = true;
+    const icons = document.querySelectorAll('.collapse-btn i');
+    icons.forEach(icon => { icon.className = "fas fa-expand-alt"; });
+    ['alb', 'biu'].forEach(side => {
+        document.getElementById('col-' + side).classList.add('collapsed-view');
+        document.getElementById('slots-' + side).classList.add('collapsed');
+        document.getElementById('mini-' + side).classList.add('active');
+        generateMiniIcons(side);
+    });
+    
     db.ref('library').once('value').then(snap => {
         window.appData = snap.val() || {};
         ['frame-play', 'frame-gen'].forEach(id => {
             let el = document.getElementById(id);
-            if(el && el.contentWindow) {
-                try { el.contentWindow.appData = window.appData; } catch(e) {}
-            }
+            if(el && el.contentWindow) try { el.contentWindow.appData = window.appData; } catch(e) {}
         });
     });
 });
