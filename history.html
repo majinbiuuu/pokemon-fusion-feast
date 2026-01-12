@@ -28,7 +28,11 @@
     overflow-y: auto;
   }
 
-  /* --- STATS SECTION (NEW) --- */
+  /* PEER HOVER STYLES */
+  .peer-hover-alb { border-color: #ff4444 !important; box-shadow: 0 0 15px #ff4444 !important; z-index: 100; position:relative; }
+  .peer-hover-biu { border-color: #4488ff !important; box-shadow: 0 0 15px #4488ff !important; z-index: 100; position:relative; }
+
+  /* --- STATS SECTION --- */
   .stats-overview {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -328,7 +332,7 @@
   </div>
 
   <div class="header-actions">
-    <button class="btn-add" onclick="openModal()">
+    <button class="btn-add" id="btn-manual-add" onclick="openModal()">
       <i class="fas fa-plus"></i> Manual Add
     </button>
   </div>
@@ -406,8 +410,22 @@
       if (event.data && event.data.type === 'THEME_UPDATE') {
           document.documentElement.style.setProperty('--theme-green', event.data.color);
       }
+      // --- PRESENCE SYNC ---
+      if(event.data.type === 'PEER_HOVER') {
+          document.querySelectorAll('.peer-hover-alb, .peer-hover-biu').forEach(el=>el.classList.remove('peer-hover-alb','peer-hover-biu'));
+          if(event.data.id && event.data.role) {
+              let el = document.getElementById(event.data.id);
+              if(el) el.classList.add('peer-hover-'+event.data.role);
+          }
+      }
   });
   if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
+
+  // --- HOVER REPORTING ---
+  document.addEventListener('mouseover', e => {
+      let t = e.target.closest('[id]'); 
+      if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
+  });
 
   // --- 2. RENDER LOGIC ---
   db.ref('history').limitToLast(50).on('value', snap => {
