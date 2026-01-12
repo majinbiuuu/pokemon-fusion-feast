@@ -175,12 +175,22 @@
   });
 
   // Use corsproxy.io to bypass the browser security block
-fetch("https://corsproxy.io/?https://play.pokemonshowdown.com/data/pokedex.json").then(res => res.json()).then(data => {
-      RAW_DB = data;
-      ALL_KEYS = Object.keys(data).filter(k => data[k].num > 0);
-      document.getElementById('gen-overlay').style.display = 'none';
-      startSync();
-  }).catch(e => { document.getElementById('gen-msg').innerText = "DATA ERROR"; });
+// Use allorigins.win as a more reliable backup proxy
+fetch("https://api.allorigins.win/raw?url=https://play.pokemonshowdown.com/data/pokedex.json")
+.then(res => {
+    if (!res.ok) throw new Error("Proxy failed with status: " + res.status);
+    return res.json();
+})
+.then(data => {
+    RAW_DB = data;
+    ALL_KEYS = Object.keys(data).filter(k => data[k].num > 0);
+    document.getElementById('gen-overlay').style.display = 'none';
+    startSync();
+})
+.catch(e => { 
+    console.error("GEN ERROR:", e); // THIS will print the real error to your console
+    document.getElementById('gen-msg').innerText = "DATA ERROR: " + e.message; 
+});
 
   window.addEventListener('message', (event) => {
       if (event.data && event.data.type === 'THEME_UPDATE') {
@@ -654,4 +664,5 @@ fetch("https://corsproxy.io/?https://play.pokemonshowdown.com/data/pokedex.json"
 </script>
 </body>
 </html>
+
 
