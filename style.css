@@ -289,33 +289,11 @@ body::before {
     color: #666; cursor: pointer; transition: 0.3s; 
     text-transform: uppercase; letter-spacing: 2px; 
     font-size: 1.2rem; /* Bigger Font */
-    display: flex; align-items: center;
 }
 
 .tab:hover { color: #ccc; }
 .tab.active { color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.3); }
 .tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 3px; background: var(--accent); border-radius: 2px; box-shadow: 0 -2px 10px var(--accent); }
-
-/* --- PRESENCE MARKERS --- */
-.tab-badges {
-    display: flex; gap: 4px; position: absolute; top: 4px; right: 4px;
-}
-.p-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    box-shadow: 0 0 5px currentColor;
-    animation: pulseDot 2s infinite;
-}
-.p-dot.p1 { background-color: var(--p1-color); color: var(--p1-color); }
-.p-dot.p2 { background-color: var(--p2-color); color: var(--p2-color); }
-
-@keyframes pulseDot { 0% { opacity: 0.6; } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0.6; } }
-
-/* --- DYNAMIC PEER HOVER GLOWS --- */
-.peer-hover-p1 { border-color: var(--p1-color) !important; box-shadow: 0 0 15px var(--p1-color) !important; z-index: 100; position:relative; }
-.peer-hover-p2 { border-color: var(--p2-color) !important; box-shadow: 0 0 15px var(--p2-color) !important; z-index: 100; position:relative; }
-
-/* Settings Buttons */
-.st-btn.selected { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 900; }
 
 /* New Tab Button (Collapse) */
 .tab-btn-collapse {
@@ -330,7 +308,7 @@ body::before {
 @keyframes spin { to { transform: rotate(360deg); } }
 .fa-spinner { animation: spin 1s linear infinite; }
 
-/* --- SETTINGS MODAL (REVAMPED) --- */
+/* --- SETTINGS MODAL (CLEAN & COMPACT) --- */
 #settings-modal {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.85); z-index: 5000;
@@ -424,237 +402,88 @@ body::before {
 }
 .saved-thumb:hover .del-thumb { opacity: 1; }
 
-/* --- LIBRARY LAYOUT --- */
-.lib-container {
-    display: flex;
-    height: 100%;
-    gap: 0;
+/* --- PRESENCE MARKERS (DOT ONLY) --- */
+.tab-badges {
+    display: flex; gap: 4px; position: absolute; top: 4px; right: 4px;
+}
+.p-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    box-shadow: 0 0 5px currentColor;
+    animation: pulseDot 2s infinite;
+}
+.p-dot.p1 { background-color: var(--p1-color); color: var(--p1-color); }
+.p-dot.p2 { background-color: var(--p2-color); color: var(--p2-color); }
+
+@keyframes pulseDot { 0% { opacity: 0.6; } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0.6; } }
+
+/* --- MOBILE RESPONSIVE OVERRIDES --- */
+@media (max-width: 800px) {
+    /* 1. Hide the desktop Top Bar to save space */
+    .top-bar {
+        height: 50px;
+        padding: 0 10px;
+        grid-template-columns: 1fr auto;
+    }
+    .top-center { display: none; } /* Hide music widget on mobile top */
+
+    /* 2. Change Stage from Grid to Single Column */
+    .stage {
+        display: block;
+        padding: 10px;
+        height: calc(100vh - 110px); /* Account for top bar and bottom nav */
+        overflow-y: auto;
+    }
+
+    /* 3. Make Player Columns stack and take full width */
+    .col-p {
+        width: 100%;
+        margin-bottom: 20px;
+        min-height: auto;
+    }
+
+    /* 4. Center Window takes full width */
+    .col-c {
+        width: 100%;
+        height: 600px; /* Give it a fixed height on mobile */
+    }
+
+    /* 5. Adjust Tab Bar for touch */
+    .tab-bar {
+        overflow-x: auto;
+        justify-content: flex-start;
+        gap: 10px;
+    }
+    .tab {
+        font-size: 1rem;
+        padding: 10px 15px;
+    }
+
+    /* 6. Bottom Mobile Navigation */
+    .mobile-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        background: #0a0a0a;
+        border-top: 1px solid #333;
+        justify-content: space-around;
+        align-items: center;
+        z-index: 2000;
+    }
+    .mobile-nav button {
+        background: none;
+        border: none;
+        color: #666;
+        font-size: 1.5rem;
+    }
+    .mobile-nav button.active { color: var(--accent); }
 }
 
-/* SIDEBAR */
-.lib-sidebar {
-    width: 200px;
-    background: rgba(0, 0, 0, 0.3);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    flex-direction: column;
-    padding: 15px;
+/* Hide mobile nav on Desktop */
+@media (min-width: 801px) {
+    .mobile-nav { display: none; }
 }
 
-.lib-sidebar h3 {
-    margin-top: 15px;
-    color: #666;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    margin-bottom: 5px;
-    font-weight: 800;
-}
-.lib-sidebar h3:first-child { margin-top: 0; }
-
-
-.lib-sidebar ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    overflow-y: auto;
-}
-
-.lib-cat-item {
-    padding: 8px 12px;
-    margin-bottom: 2px;
-    background: transparent;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: #aaa;
-    font-weight: 600;
-    font-size: 13px;
-    text-transform: uppercase;
-    border-left: 3px solid transparent;
-}
-
-.lib-cat-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
-}
-
-.lib-cat-item.active {
-    background: rgba(255,255,255,0.1);
-    color: var(--accent);
-    border-left-color: var(--accent);
-}
-
-/* LIBRARY THEME OVERRIDES (based on container data-attribute) */
-.lib-container[data-theme="purple"] .lib-cat-item.active {
-    color: var(--theme-purple); border-left-color: var(--theme-purple);
-}
-.lib-container[data-theme="purple"] .lib-btn.action {
-    border-color: var(--theme-purple); color: var(--theme-purple);
-}
-.lib-container[data-theme="purple"] .lib-btn.action:hover {
-    background: var(--theme-purple); color: #fff;
-}
-.lib-container[data-theme="purple"] .lib-input:focus {
-    border-color: var(--theme-purple);
-}
-
-.lib-container[data-theme="red"] .lib-cat-item.active {
-    color: var(--theme-red); border-left-color: var(--theme-red);
-}
-.lib-container[data-theme="red"] .lib-btn.action {
-    border-color: var(--theme-red); color: var(--theme-red);
-}
-.lib-container[data-theme="red"] .lib-btn.action:hover {
-    background: var(--theme-red); color: #fff;
-}
-.lib-container[data-theme="red"] .lib-input:focus {
-    border-color: var(--theme-red);
-}
-
-
-/* EDITOR AREA */
-.lib-editor {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 20px 30px;
-    background: rgba(0,0,0,0.1);
-}
-
-.lib-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.lib-header h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    color: #fff;
-    font-weight: 900;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-
-.lib-header-labels {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 5px;
-    padding: 0 8px;
-    padding-right: 40px; /* Make room for delete buttons */
-}
-
-.lib-header-labels span {
-    font-size: 10px;
-    font-weight: 800;
-    color: #555;
-    text-transform: uppercase;
-    flex: 1;
-}
-
-.lib-scroll-area {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 5px;
-}
-
-/* ITEM ROW - UPDATED SPACING */
-.lib-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 5px; /* Reduced spacing between rows */
-    animation: fadeIn 0.3s ease;
-    background: rgba(255,255,255,0.02);
-    padding: 6px;
-    border-radius: 6px;
-    border: 1px solid transparent;
-    align-items: center;
-}
-.lib-row:hover {
-    border-color: rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.04);
-}
-
-/* UPDATED INPUTS - TALLER */
-.lib-input {
-    flex: 1;
-    background: #111;
-    border: 1px solid #333;
-    padding: 10px 12px; /* Taller padding */
-    border-radius: 4px;
-    color: #fff;
-    font-size: 14px;
-    outline: none;
-    transition: 0.2s;
-    font-family: inherit;
-}
-
-.lib-input:focus {
-    border-color: var(--accent);
-    background: #000;
-}
-
-.lib-btn {
-    padding: 8px 16px;
-    background: #222;
-    border: 1px solid #444;
-    color: #ccc;
-    font-weight: 700;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: 0.2s;
-    text-transform: uppercase;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.lib-btn:hover {
-    background: #333;
-    color: #fff;
-}
-
-.lib-btn.action {
-    border-color: var(--accent);
-    color: var(--accent);
-}
-.lib-btn.action:hover {
-    background: var(--accent);
-    color: #000;
-}
-
-/* UPDATED DELETE BUTTON - SMALLER */
-.del-btn {
-    background: rgba(255, 68, 68, 0.05);
-    border: 1px solid rgba(255, 68, 68, 0.2);
-    color: #d32f2f;
-    width: 28px; /* Smaller width */
-    height: 28px; /* Fixed height */
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px; /* Smaller icon */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: 0.2s;
-    flex-shrink: 0;
-    padding: 0;
-}
-
-.del-btn:hover {
-    background: #d32f2f;
-    color: #fff;
-    border-color: #d32f2f;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
 }
