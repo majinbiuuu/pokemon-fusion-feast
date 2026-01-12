@@ -40,7 +40,6 @@
 .slot.drag-over { border-color: var(--accent); background: rgba(255,255,255, 0.05); }
 
 /* --- DYNAMIC PEER HOVER GLOWS (GLOBAL) --- */
-/* These classes are toggled by JS when a peer hovers an element */
 .peer-hover-p1 { 
     border-color: var(--p1-color) !important; 
     box-shadow: 0 0 15px var(--p1-color) !important; 
