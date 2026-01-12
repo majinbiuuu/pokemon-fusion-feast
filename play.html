@@ -18,6 +18,9 @@
     --card-dark: rgba(0, 0, 0, 0.4); 
     --text-main: #eee;
     --text-dim: #888;
+    
+    --p1-color: #ff4444;
+    --p2-color: #4488ff;
   }
 
   html { box-sizing: border-box; }
@@ -36,8 +39,8 @@
   }
 
   /* PEER HOVER STYLES */
-  .peer-hover-alb { border-color: #ff4444 !important; box-shadow: 0 0 15px #ff4444 !important; z-index: 100; position:relative; }
-  .peer-hover-biu { border-color: #4488ff !important; box-shadow: 0 0 15px #4488ff !important; z-index: 100; position:relative; }
+  .peer-hover-p1 { border-color: var(--p1-color) !important; box-shadow: 0 0 15px var(--p1-color) !important; z-index: 100; position:relative; }
+  .peer-hover-p2 { border-color: var(--p2-color) !important; box-shadow: 0 0 15px var(--p2-color) !important; z-index: 100; position:relative; }
 
   .glass-box {
     background: var(--glass-bg);
@@ -206,8 +209,7 @@
     cursor: pointer; display: flex; align-items: center; justify-content: center; 
     font-weight: 900; font-size: 2rem; transition: 0.1s; 
   }
-  .g-dot.A { border-color: #ff4444; color: #ff4444; background: rgba(255,68,68,0.1); }
-  .g-dot.B { border-color: #4488ff; color: #4488ff; background: rgba(68,136,255,0.1); }
+  /* Dynamic styles injected via JS */
   
   .g-input { 
     background: #111; border: 1px solid #333; color: #aaa; border-radius: 4px; padding: 8px; 
@@ -363,14 +365,14 @@
       <div style="flex:1; display:flex; gap:5px;">
         <button class="reroll anim-click" id="btn-reroll-alb" onclick="safeCall('localReroll', 'alb')">↻</button>
         <div class="qg-box">
-          <div class="qg-box-label" style="left:10px; color:#ff4444" id="lbl-qg-a">ALB</div>
+          <div class="qg-box-label" style="left:10px; color:var(--p1-color)" id="lbl-qg-a">P1</div>
           <div class="qg-box-val" id="qg-alb">-</div>
         </div>
       </div>
       
       <div style="flex:1; display:flex; gap:5px;">
         <div class="qg-box">
-          <div class="qg-box-label" style="right:10px; color:#4488ff" id="lbl-qg-b">BIU</div>
+          <div class="qg-box-label" style="right:10px; color:var(--p2-color)" id="lbl-qg-b">P2</div>
           <div class="qg-box-val" id="qg-biu">-</div>
         </div>
         <button class="reroll anim-click" id="btn-reroll-biu" onclick="safeCall('localReroll', 'biu')">↻</button>
@@ -419,7 +421,7 @@
       <div class="claw-header">Token Center</div>
       <div class="token-row">
           <div class="token-player">
-              <div class="token-name" style="color:#ff4444">ALB</div>
+              <div class="token-name" style="color:var(--p1-color)" id="tk-lbl-a">P1</div>
               <div class="token-ctrls">
                   <button class="tk-btn" id="btn-tk-alb-sub" onclick="safeCall('modToken', 'alb', -1)">-</button>
                   <div class="tk-val" id="tk-alb">0</div>
@@ -438,7 +440,7 @@
           </div>
 
           <div class="token-player">
-              <div class="token-name" style="color:#4488ff">BIU</div>
+              <div class="token-name" style="color:var(--p2-color)" id="tk-lbl-b">P2</div>
               <div class="token-ctrls">
                   <button class="tk-btn" id="btn-tk-biu-sub" onclick="safeCall('modToken', 'biu', -1)">-</button>
                   <div class="tk-val" id="tk-biu">0</div>
@@ -464,18 +466,27 @@
     const db = firebase.database();
     
     var appData = {};
+    window.p1Name = "ALB"; window.p2Name = "BIU";
 
     window.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'THEME_UPDATE') {
-            document.documentElement.style.setProperty('--accent', event.data.color);
-            document.documentElement.style.setProperty('--theme-green', event.data.color);
-        }
-        // --- PRESENCE SYNC ---
-        if(event.data.type === 'PEER_HOVER') {
-            document.querySelectorAll('.peer-hover-alb, .peer-hover-biu').forEach(el=>el.classList.remove('peer-hover-alb','peer-hover-biu'));
-            if(event.data.id && event.data.role) {
-                let el = document.getElementById(event.data.id);
-                if(el) el.classList.add('peer-hover-'+event.data.role);
+        if (event.data) {
+            if (event.data.type === 'THEME_UPDATE') {
+                document.documentElement.style.setProperty('--accent', event.data.color);
+                document.documentElement.style.setProperty('--theme-green', event.data.color);
+            }
+            if (event.data.type === 'CONFIG_UPDATE') {
+                if(event.data.p1Color) document.documentElement.style.setProperty('--p1-color', event.data.p1Color);
+                if(event.data.p2Color) document.documentElement.style.setProperty('--p2-color', event.data.p2Color);
+                if(event.data.p1Name) window.p1Name = event.data.p1Name;
+                if(event.data.p2Name) window.p2Name = event.data.p2Name;
+                updateDynamicLabels();
+            }
+            if(event.data.type === 'PEER_HOVER') {
+                document.querySelectorAll('.peer-hover-p1, .peer-hover-p2').forEach(el=>el.classList.remove('peer-hover-p1','peer-hover-p2'));
+                if(event.data.id && event.data.role) {
+                    let el = document.getElementById(event.data.id);
+                    if(el) el.classList.add('peer-hover-'+event.data.role);
+                }
             }
         }
     });
@@ -504,6 +515,33 @@
         window.appData = snap.val() || {};
         populateDropdowns();
     });
+    
+    // --- LOAD CONFIG FOR NAMES ---
+    db.ref('config').on('value', snap => {
+        const c = snap.val() || {};
+        if(c.p1Name) window.p1Name = c.p1Name;
+        if(c.p2Name) window.p2Name = c.p2Name;
+        if(c.p1Color) document.documentElement.style.setProperty('--p1-color', c.p1Color);
+        if(c.p2Color) document.documentElement.style.setProperty('--p2-color', c.p2Color);
+        updateDynamicLabels();
+    });
+
+    function updateDynamicLabels() {
+        // Quick Gen Labels
+        const lblA = document.getElementById('lbl-qg-a');
+        const lblB = document.getElementById('lbl-qg-b');
+        if(lblA && lblA.innerText !== 'NAME') lblA.innerText = window.p1Name;
+        if(lblB && lblB.innerText !== 'NOTE') lblB.innerText = window.p2Name;
+        
+        // Token Labels
+        const tkA = document.getElementById('tk-lbl-a');
+        const tkB = document.getElementById('tk-lbl-b');
+        if(tkA) tkA.innerText = window.p1Name;
+        if(tkB) tkB.innerText = window.p2Name;
+        
+        // Redraw dots to update initials/colors
+        if(window.recState) renderDots(window.recState.dots || {});
+    }
 
     db.ref('dashboard').on('value', snap => {
         window.dashState = snap.val() || {}; 
@@ -533,8 +571,8 @@
             lblA.innerText = "NAME";
             lblB.innerText = "NOTE";
         } else {
-            lblA.innerText = "ALB";
-            lblB.innerText = "BIU";
+            lblA.innerText = window.p1Name;
+            lblB.innerText = window.p2Name;
         }
 
         window.lastQType = g.t || "";
@@ -561,13 +599,9 @@
         const links = r.links || {};
         const details = r.details || {}; 
 
+        renderDots(dots);
+
         for(let i=0; i<5; i++) {
-            let d = document.getElementById('dot-'+i);
-            if(d) {
-                let val = dots[i] || '';
-                d.className = 'g-dot anim-click ' + val;
-                d.innerText = val;
-            }
             let l = document.getElementById('lnk-'+i);
             if(l && document.activeElement !== l) l.value = links[i] || '';
             
@@ -580,6 +614,32 @@
         }
         calculateWinner(dots, r.settings ? r.settings.format : 'BO3');
     });
+    
+    function renderDots(dots) {
+        for(let i=0; i<5; i++) {
+            let d = document.getElementById('dot-'+i);
+            if(d) {
+                let val = dots[i] || '';
+                // Logic: A=P1, B=P2. Display Initials.
+                d.style.backgroundColor = '';
+                d.style.color = '';
+                d.style.borderColor = '';
+                d.innerText = '';
+                
+                if (val === 'A') {
+                    d.innerText = window.p1Name.charAt(0);
+                    d.style.color = 'var(--p1-color)';
+                    d.style.borderColor = 'var(--p1-color)';
+                    d.style.backgroundColor = 'rgba(255,255,255,0.05)';
+                } else if (val === 'B') {
+                    d.innerText = window.p2Name.charAt(0);
+                    d.style.color = 'var(--p2-color)';
+                    d.style.borderColor = 'var(--p2-color)';
+                    d.style.backgroundColor = 'rgba(255,255,255,0.05)';
+                }
+            }
+        }
+    }
 
     window.roll = function(key, listKey, noteKey) {
         const lib = window.appData || {};
@@ -777,17 +837,43 @@
     };
 
     window.togDot = function(i) {
-        let curr = document.getElementById('dot-'+i).innerText;
-        db.ref(`record/dots/${i}`).set(curr === 'A' ? 'B' : (curr === 'B' ? '' : 'A'));
+        let d = document.getElementById('dot-'+i);
+        let currVal = 'EMPTY';
+        // Check current state based on color or text, but data stored as A/B
+        // Simpler: Read from window.recState
+        let dbVal = window.recState?.dots?.[i] || '';
+        
+        let nextVal = '';
+        if(dbVal === '') nextVal = 'A';
+        else if(dbVal === 'A') nextVal = 'B';
+        else nextVal = '';
+        
+        db.ref(`record/dots/${i}`).set(nextVal);
     };
 
     function calculateWinner(dots, format) {
         let a = 0; let b = 0;
         let max = format === 'BO3' ? 3 : 5;
         for(let i=0; i<max; i++) { if(dots[i] === 'A') a++; if(dots[i] === 'B') b++; }
-        let winner = (a >= (format === 'BO3' ? 2 : 3)) ? "ALB" : ((b >= (format === 'BO3' ? 2 : 3)) ? "BIU" : "-");
+        let winner = (a >= (format === 'BO3' ? 2 : 3)) ? window.p1Name : ((b >= (format === 'BO3' ? 2 : 3)) ? window.p2Name : "-");
+        
         let wEl = document.getElementById('win-res');
-        if(wEl) { wEl.innerText = winner; wEl.className = 'g-dot ' + (winner === 'ALB' ? 'A' : (winner === 'BIU' ? 'B' : '')); }
+        if(wEl) { 
+            wEl.innerText = winner;
+            wEl.style.color = '';
+            wEl.style.borderColor = '#333';
+            wEl.style.background = '';
+            
+            if (winner === window.p1Name) {
+                wEl.style.color = 'var(--p1-color)';
+                wEl.style.borderColor = 'var(--p1-color)';
+                wEl.style.background = 'rgba(255,255,255,0.05)';
+            } else if (winner === window.p2Name) {
+                wEl.style.color = 'var(--p2-color)';
+                wEl.style.borderColor = 'var(--p2-color)';
+                wEl.style.background = 'rgba(255,255,255,0.05)';
+            }
+        }
     }
 
     window.broadcastRec = function() {
@@ -801,17 +887,23 @@
         let winner = document.getElementById('win-res').innerText;
         if(winner === '-' || winner === '') return alert("No winner yet.");
         let settings = window.recState?.settings || { mode: 'Regular', format: 'BO3' };
+        
+        // Save using current Names
+        let winnerCode = (winner === window.p1Name) ? 'ALB' : 'BIU'; // Fallback for data consistency if needed, but lets use names
+        
         let payload = { timestamp: Date.now(), winner, settings, record: [], links: [] };
         let count = settings.format === 'BO3' ? 3 : 5;
         for(let i=0; i<count; i++) {
-            let dVal = document.getElementById('dot-'+i).innerText || '-';
+            // Get Result as A/B from state
+            let dbVal = window.recState?.dots?.[i] || '';
+            let resName = (dbVal === 'A') ? window.p1Name : (dbVal === 'B' ? window.p2Name : '-');
+            
             let lVal = document.getElementById('lnk-'+i).value || '';
-            let gameInfo = { result: dVal };
+            let gameInfo = { result: resName };
             if(settings.mode === 'Challenge') {
                 gameInfo.mode = document.getElementById('sel-m-'+i).value;
                 gameInfo.side = document.getElementById('sel-s-'+i).value;
                 gameInfo.sp = "4";
-                // --- REFACTORED: Add Points to History ---
                 gameInfo.points = window.dashState.points; 
             } else payload.dashSnapshot = window.dashState;
             payload.record.push(gameInfo);
