@@ -15,7 +15,6 @@
     --theme-green: var(--accent);
     --glass-bg: rgba(20, 20, 20, 0.85);
     --glass-border: rgba(255, 255, 255, 0.15);
-    /* UPDATED: More transparent background for cards */
     --card-dark: rgba(0, 0, 0, 0.4); 
     --text-main: #eee;
     --text-dim: #888;
@@ -35,6 +34,10 @@
     overflow-y: auto; 
     width: 100%;
   }
+
+  /* PEER HOVER STYLES */
+  .peer-hover-alb { border-color: #ff4444 !important; box-shadow: 0 0 15px #ff4444 !important; z-index: 100; position:relative; }
+  .peer-hover-biu { border-color: #4488ff !important; box-shadow: 0 0 15px #4488ff !important; z-index: 100; position:relative; }
 
   .glass-box {
     background: var(--glass-bg);
@@ -218,7 +221,7 @@
   }
   .save-btn:hover { background: var(--theme-green); color: #000; border-color: var(--theme-green); }
 
-  /* --- UPDATED: TOKEN CENTER --- */
+  /* --- TOKEN CENTER --- */
   .token-center {
     display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 15px;
     background: var(--glass-bg); border: 1px solid var(--glass-border);
@@ -233,13 +236,11 @@
       border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; width: 100%; text-align: center;
   }
   
-  /* UPDATED: Aligns controls with center icon */
   .token-row { display: flex; justify-content: space-between; align-items: center; gap: 20px; width: 100%; }
   
   .token-player { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
   .token-name { font-weight: 800; font-size: 0.8rem; letter-spacing: 1px; opacity: 0.7; }
   
-  /* UPDATED: Increased padding and removed fixed height to prevent clipping */
   .token-ctrls { 
       display: flex; align-items: center; gap: 10px; 
       background: rgba(0,0,0,0.4); padding: 8px 15px; 
@@ -254,7 +255,6 @@
   
   .tk-val { font-size: 1.3rem; font-weight: 900; color: #fff; min-width: 25px; text-align: center; line-height: 1.2; }
 
-  /* New Middle Section for Coin & Output */
   .token-mid-section {
       flex: 1.5;
       display: flex;
@@ -276,11 +276,10 @@
   
   .token-icon { font-size: 1.8rem; filter: drop-shadow(0 0 2px var(--theme-green)); }
   
-  /* UPDATED: Persistent Token Output with Wrapping */
   .token-output-wrapper {
       position: relative;
       width: 100%;
-      height: auto; /* Allow growth */
+      height: auto; 
       min-height: 34px;
       display: flex; align-items: center;
   }
@@ -291,8 +290,8 @@
       border-radius: 6px; color: #fff;
       font-size: 0.85rem; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
-      text-align: center; padding: 6px 25px 6px 10px; /* Right padding for clear btn */
-      white-space: normal; /* Allow text to wrap */
+      text-align: center; padding: 6px 25px 6px 10px; 
+      white-space: normal; 
       word-break: break-word;
       line-height: 1.3;
   }
@@ -313,31 +312,31 @@
 <body>
 
   <div class="play-header">
-    <button class="btn-big btn-accent anim-click" onclick="safeCall('rollAll')">PLAY</button>
-    <button class="btn-big anim-click" onclick="safeCall('clearBoard')">CLEAR</button>
+    <button class="btn-big btn-accent anim-click" id="btn-roll-all" onclick="safeCall('rollAll')">PLAY</button>
+    <button class="btn-big anim-click" id="btn-clear" onclick="safeCall('clearBoard')">CLEAR</button>
   </div>
 
   <div class="glass-box">
     <div class="card-grid">
-      <div class="p-card anim-hover anim-click" onclick="safeCall('roll', 'mode', 'gameModes', 'modeNote')">
+      <div class="p-card anim-hover anim-click" id="card-mode" onclick="safeCall('roll', 'mode', 'gameModes', 'modeNote')">
         <div class="c-lbl">Game Mode</div>
         <div class="c-val" id="val-mode">-</div>
         <div class="c-note" id="note-mode"></div>
       </div>
       
-      <div class="p-card anim-hover anim-click" onclick="safeCall('roll', 'side', 'sides', 'sideNote')">
+      <div class="p-card anim-hover anim-click" id="card-side" onclick="safeCall('roll', 'side', 'sides', 'sideNote')">
         <div class="c-lbl">Side Quest</div>
         <div class="c-val" id="val-side">-</div>
         <div class="c-note" id="note-side"></div>
       </div>
       
-      <div class="p-card anim-hover anim-click" onclick="safeCall('roll', 'points', 'points', 'pointsNote')" style="min-height:80px">
+      <div class="p-card anim-hover anim-click" id="card-points" onclick="safeCall('roll', 'points', 'points', 'pointsNote')" style="min-height:80px">
         <div class="c-lbl">Points</div>
         <div class="c-val" id="val-points">-</div>
         <div class="c-note" id="note-points"></div>
       </div>
       
-      <div class="p-card anim-hover anim-click" onclick="safeCall('roll', 'sp', 'sp', 'spNote')" style="min-height:80px">
+      <div class="p-card anim-hover anim-click" id="card-sp" onclick="safeCall('roll', 'sp', 'sp', 'spNote')" style="min-height:80px">
         <div class="c-lbl">SP</div>
         <div class="c-val" id="val-sp">-</div>
         <div class="c-note" id="note-sp"></div>
@@ -348,21 +347,21 @@
   <div class="glass-box">
     <div class="qg-controls">
       <div class="qg-row">
-        <button class="qg-btn anim-click" onclick="safeCall('runQGen', 'Type')">Type</button>
-        <button class="qg-btn anim-click" onclick="safeCall('runQGen', 'Legendary Trio')">Legendary Trio</button>
-        <button class="qg-btn anim-click" onclick="safeCall('runQGen', 'Colour')">Colour</button>
-        <button class="qg-btn anim-click" onclick="safeCall('runQGen', 'RNG (1-9)')">RNG (1-9)</button>
-        <button class="qg-btn btn-shit anim-click" onclick="safeCall('runShitWheel')">SHIT WHEEL 💩</button>
+        <button class="qg-btn anim-click" id="btn-qg-type" onclick="safeCall('runQGen', 'Type')">Type</button>
+        <button class="qg-btn anim-click" id="btn-qg-leg" onclick="safeCall('runQGen', 'Legendary Trio')">Legendary Trio</button>
+        <button class="qg-btn anim-click" id="btn-qg-col" onclick="safeCall('runQGen', 'Colour')">Colour</button>
+        <button class="qg-btn anim-click" id="btn-qg-rng" onclick="safeCall('runQGen', 'RNG (1-9)')">RNG (1-9)</button>
+        <button class="qg-btn btn-shit anim-click" id="btn-qg-shit" onclick="safeCall('runShitWheel')">SHIT WHEEL 💩</button>
       </div>
       
-      <div class="x3-switch-container anim-click" id="x3-btn" onclick="safeCall('toggleX3')">
+      <div class="x3-switch-container anim-click" id="btn-qg-x3" onclick="safeCall('toggleX3')">
         <span class="x3-lbl">x3</span>
       </div>
     </div>
 
     <div class="qg-display">
       <div style="flex:1; display:flex; gap:5px;">
-        <button class="reroll anim-click" onclick="safeCall('localReroll', 'alb')">↻</button>
+        <button class="reroll anim-click" id="btn-reroll-alb" onclick="safeCall('localReroll', 'alb')">↻</button>
         <div class="qg-box">
           <div class="qg-box-label" style="left:10px; color:#ff4444" id="lbl-qg-a">ALB</div>
           <div class="qg-box-val" id="qg-alb">-</div>
@@ -374,7 +373,7 @@
           <div class="qg-box-label" style="right:10px; color:#4488ff" id="lbl-qg-b">BIU</div>
           <div class="qg-box-val" id="qg-biu">-</div>
         </div>
-        <button class="reroll anim-click" onclick="safeCall('localReroll', 'biu')">↻</button>
+        <button class="reroll anim-click" id="btn-reroll-biu" onclick="safeCall('localReroll', 'biu')">↻</button>
       </div>
     </div>
   </div>
@@ -411,7 +410,7 @@
       <div class="rec-winner-box">
          <div class="g-head" style="text-align:center">WINNER</div>
          <div class="g-dot" id="win-res" style="cursor:default">-</div>
-         <button class="save-btn anim-click" onclick="safeCall('saveMatch')">SAVE</button>
+         <button class="save-btn anim-click" id="btn-save-match" onclick="safeCall('saveMatch')">SAVE</button>
       </div>
     </div>
   </div>
@@ -422,28 +421,28 @@
           <div class="token-player">
               <div class="token-name" style="color:#ff4444">ALB</div>
               <div class="token-ctrls">
-                  <button class="tk-btn" onclick="safeCall('modToken', 'alb', -1)">-</button>
+                  <button class="tk-btn" id="btn-tk-alb-sub" onclick="safeCall('modToken', 'alb', -1)">-</button>
                   <div class="tk-val" id="tk-alb">0</div>
-                  <button class="tk-btn" onclick="safeCall('modToken', 'alb', 1)">+</button>
+                  <button class="tk-btn" id="btn-tk-alb-add" onclick="safeCall('modToken', 'alb', 1)">+</button>
               </div>
           </div>
 
           <div class="token-mid-section">
-              <div class="machine-display" onclick="safeCall('rollToken')">
+              <div class="machine-display" id="btn-roll-token" onclick="safeCall('rollToken')">
                   <div class="token-icon">🪙</div>
               </div>
               <div class="token-output-wrapper">
                   <div id="token-result-display" class="token-result-text">-</div>
-                  <button class="token-clear-btn" onclick="safeCall('clearToken')">×</button>
+                  <button class="token-clear-btn" id="btn-clear-token" onclick="safeCall('clearToken')">×</button>
               </div>
           </div>
 
           <div class="token-player">
               <div class="token-name" style="color:#4488ff">BIU</div>
               <div class="token-ctrls">
-                  <button class="tk-btn" onclick="safeCall('modToken', 'biu', -1)">-</button>
+                  <button class="tk-btn" id="btn-tk-biu-sub" onclick="safeCall('modToken', 'biu', -1)">-</button>
                   <div class="tk-val" id="tk-biu">0</div>
-                  <button class="tk-btn" onclick="safeCall('modToken', 'biu', 1)">+</button>
+                  <button class="tk-btn" id="btn-tk-biu-add" onclick="safeCall('modToken', 'biu', 1)">+</button>
               </div>
           </div>
       </div>
@@ -471,9 +470,23 @@
             document.documentElement.style.setProperty('--accent', event.data.color);
             document.documentElement.style.setProperty('--theme-green', event.data.color);
         }
+        // --- PRESENCE SYNC ---
+        if(event.data.type === 'PEER_HOVER') {
+            document.querySelectorAll('.peer-hover-alb, .peer-hover-biu').forEach(el=>el.classList.remove('peer-hover-alb','peer-hover-biu'));
+            if(event.data.id && event.data.role) {
+                let el = document.getElementById(event.data.id);
+                if(el) el.classList.add('peer-hover-'+event.data.role);
+            }
+        }
     });
 
     if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
+
+    // --- HOVER REPORTING ---
+    document.addEventListener('mouseover', e => {
+        let t = e.target.closest('[id]'); 
+        if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
+    });
 
     window.safeCall = function(fnName, ...args) {
         if (typeof window[fnName] === 'function') window[fnName](...args);
@@ -526,7 +539,7 @@
 
         window.lastQType = g.t || "";
         window.isX3 = g.x3 || false;
-        const x3Btn = document.getElementById('x3-btn');
+        const x3Btn = document.getElementById('btn-qg-x3');
         if(window.isX3) x3Btn.classList.add('active'); else x3Btn.classList.remove('active');
     });
 
