@@ -14,10 +14,6 @@
   :root { --theme-green: var(--accent); }
   body { font-family: 'Segoe UI', sans-serif; color: #eee; text-align: center; margin: 0; padding: 10px; box-sizing: border-box; background: transparent; user-select: none; min-height: 100vh; }
 
-  /* PEER HOVER STYLES */
-  .peer-hover-alb { border-color: #ff4444 !important; box-shadow: 0 0 15px #ff4444 !important; z-index: 100; position:relative; }
-  .peer-hover-biu { border-color: #4488ff !important; box-shadow: 0 0 15px #4488ff !important; z-index: 100; position:relative; }
-
   /* PANEL */
   .control-panel { background: rgba(8, 8, 8, 0.95); border: 1px solid #333; border-radius: 12px; padding: 10px 15px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); backdrop-filter: blur(10px); position: relative; z-index: 10; margin-bottom: 20px; }
   .cp-row { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; position: relative; }
@@ -166,6 +162,35 @@
 
   initDropdowns();
   document.addEventListener('click', function(e){ if(!e.target.closest('.dd-wrapper')) closeAllDD(); });
+  
+  // --- LISTENERS FOR HOVER GLOWS ---
+  document.addEventListener('mouseover', e => {
+      let t = e.target.closest('[id]'); 
+      if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
+  });
+
+  window.addEventListener('message', (event) => {
+      if(event.data) {
+          if (event.data.type === 'THEME_UPDATE') {
+              document.documentElement.style.setProperty('--accent', event.data.color);
+          }
+          if (event.data.type === 'markUsed') { markUsedLocal(event.data.id); }
+          if (event.data.type === 'freePokemon') { freePokemonLocal(event.data.id); }
+          
+          if (event.data.type === 'CONFIG_UPDATE') {
+              if(event.data.p1Color) document.documentElement.style.setProperty('--p1-color', event.data.p1Color);
+              if(event.data.p2Color) document.documentElement.style.setProperty('--p2-color', event.data.p2Color);
+          }
+          if(event.data.type === 'PEER_HOVER') {
+              let el = document.getElementById(event.data.id);
+              if(el) {
+                  document.querySelectorAll('.peer-hover-p1, .peer-hover-p2').forEach(e=>e.classList.remove('peer-hover-p1','peer-hover-p2'));
+                  if(event.data.role) el.classList.add('peer-hover-'+event.data.role);
+              }
+          }
+      }
+  });
+  if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
 
   // --- FIX: DRAG & DROP RETURN LISTENER ---
   document.body.addEventListener('dragover', function(e) { e.preventDefault(); });
@@ -180,33 +205,6 @@
       document.getElementById('gen-overlay').style.display = 'none';
       startSync();
   }).catch(e => { document.getElementById('gen-msg').innerText = "DATA ERROR"; });
-
-  window.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'THEME_UPDATE') {
-          document.documentElement.style.setProperty('--accent', event.data.color);
-      }
-      if (event.data && event.data.type === 'markUsed') {
-          markUsedLocal(event.data.id);
-      }
-      if (event.data && event.data.type === 'freePokemon') {
-          freePokemonLocal(event.data.id);
-      }
-      // --- PRESENCE SYNC ---
-      if(event.data.type === 'PEER_HOVER') {
-          document.querySelectorAll('.peer-hover-alb, .peer-hover-biu').forEach(el=>el.classList.remove('peer-hover-alb','peer-hover-biu'));
-          if(event.data.id && event.data.role) {
-              let el = document.getElementById(event.data.id);
-              if(el) el.classList.add('peer-hover-'+event.data.role);
-          }
-      }
-  });
-  if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
-
-  // --- HOVER REPORTING ---
-  document.addEventListener('mouseover', e => {
-      let t = e.target.closest('[id]'); 
-      if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
-  });
 
   function isSameTeam(a, b) {
       return JSON.stringify(a) === JSON.stringify(b);
