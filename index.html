@@ -80,6 +80,7 @@
               </div>
               <div class="saved-grid" id="saved-bg-list"></div>
           </div>
+
       </div>
   </div>
 
@@ -100,11 +101,13 @@
                     <div class="np-text" id="np-title-top">System Ready</div>
                 </div>
             </div>
+            
             <div class="np-controls">
                 <button class="media-tiny-btn" onclick="mediaAction('prev')"><span class="material-icons">skip_previous</span></button>
                 <button class="media-tiny-btn" onclick="mediaAction('play')" id="top-play-btn"><span class="material-icons">play_arrow</span></button>
                 <button class="media-tiny-btn" onclick="mediaAction('next')"><span class="material-icons">skip_next</span></button>
             </div>
+
             <div class="top-vol">
                 <button class="media-tiny-btn" onclick="toggleTopMute()" style="width:24px;"><span class="material-icons" id="top-vol-icon" style="font-size:18px;">volume_up</span></button>
                 <input type="range" class="top-vol-slider" id="top-vol-slider" min="0" max="100" value="100" oninput="sendVolume(this.value)">
@@ -132,30 +135,63 @@
               <div class="tiny-btn" onclick="modScore('alb', 'sub')">-</div>
           </div>
       </div>
+      
       <div class="ctrl-row">
-          <button class="col-btn collapse-btn" onclick="toggleCollapse()" title="Collapse/Expand"><i class="fas fa-compress-alt"></i></button>
-          <button class="col-btn export" id="export-alb" onclick="exportTeam('alb')" title="Export to Showdown"><i class="fas fa-file-export"></i> Export Team</button>
+          <button class="col-btn collapse-btn" onclick="toggleCollapse()" title="Collapse/Expand">
+              <i class="fas fa-compress-alt"></i>
+          </button>
+          <button class="col-btn export" id="export-alb" onclick="exportTeam('alb')" title="Export to Showdown">
+              <i class="fas fa-file-export"></i> Export Team
+          </button>
       </div>
+
       <div class="mini-row" id="mini-alb"></div>
+
       <div class="slot-list" id="slots-alb"></div>
       <button class="col-btn clear-btn" onclick="clearCol('alb')">Clear</button>
     </div>
 
     <div class="col-c">
       <div class="tab-bar">
-        <button class="tab-btn-collapse" onclick="toggleCenterCollapse()" title="Collapse/Expand Window"><i class="fas fa-compress-alt" id="c-collapse-icon"></i></button>
-        <div class="tab active track-hover" data-id="tab-play" onclick="switchTab('play', this)">Play<div class="tab-badges"></div></div>
-        <div class="tab track-hover" data-id="tab-gen" onclick="switchTab('gen', this)">Generator<div class="tab-badges"></div></div>
-        <div class="tab track-hover" data-id="tab-music" onclick="switchTab('music', this)">Music<div class="tab-badges"></div></div>
-        <div class="tab track-hover" data-id="tab-hist" onclick="switchTab('hist', this)">History<div class="tab-badges"></div></div>
-        <div class="tab track-hover" data-id="tab-lib" onclick="switchTab('lib', this)">Library<div class="tab-badges"></div></div>
+        <button class="tab-btn-collapse" onclick="toggleCenterCollapse()" title="Collapse/Expand Window">
+            <i class="fas fa-compress-alt" id="c-collapse-icon"></i>
+        </button>
+
+        <div class="tab active track-hover" data-id="tab-play" onclick="switchTab('play', this)">
+            Play
+            <div class="tab-badges"></div>
+        </div>
+        <div class="tab track-hover" data-id="tab-gen" onclick="switchTab('gen', this)">
+            Generator
+            <div class="tab-badges"></div>
+        </div>
+        <div class="tab track-hover" data-id="tab-music" onclick="switchTab('music', this)">
+            Music
+            <div class="tab-badges"></div>
+        </div>
+        <div class="tab track-hover" data-id="tab-hist" onclick="switchTab('hist', this)">
+            History
+            <div class="tab-badges"></div>
+        </div>
+        <div class="tab track-hover" data-id="tab-lib" onclick="switchTab('lib', this)">
+            Library
+            <div class="tab-badges"></div>
+        </div>
       </div>
       
       <div id="view-play" class="tab-content active"><iframe id="frame-play" src="play.html" style="width:100%;height:100%;border:none;"></iframe></div>
-      <div id="view-gen" class="tab-content" ondragover="allowReturnDrop(event)" ondrop="returnDrop(event)"><iframe id="frame-gen" src="gen.html" style="width:100%;height:100%;border:none; pointer-events:all;"></iframe></div>
+      
+      <div id="view-gen" class="tab-content" ondragover="allowReturnDrop(event)" ondrop="returnDrop(event)">
+        <iframe id="frame-gen" src="gen.html" style="width:100%;height:100%;border:none; pointer-events:all;"></iframe>
+      </div>
+      
       <div id="view-music" class="tab-content"><iframe id="frame-music" src="music.html" style="width:100%;height:100%;border:none;"></iframe></div>
+      
       <div id="view-hist" class="tab-content"><iframe id="frame-hist" src="history.html" style="width:100%;height:100%;border:none;"></iframe></div>
-      <div id="view-lib" class="tab-content"><iframe id="frame-lib" src="library.html" style="width:100%;height:100%;border:none;"></iframe></div>
+
+      <div id="view-lib" class="tab-content">
+          <iframe id="frame-lib" src="library.html" style="width:100%;height:100%;border:none;"></iframe>
+      </div>
     </div>
 
     <div class="col-p" id="col-biu">
@@ -167,11 +203,18 @@
               <div class="tiny-btn" onclick="modScore('biu', 'sub')">-</div>
           </div>
       </div>
+
       <div class="ctrl-row">
-          <button class="col-btn collapse-btn" onclick="toggleCollapse()" title="Collapse/Expand"><i class="fas fa-compress-alt"></i></button>
-          <button class="col-btn export" id="export-biu" onclick="exportTeam('biu')" title="Export to Showdown"><i class="fas fa-file-export"></i> Export Team</button>
+          <button class="col-btn collapse-btn" onclick="toggleCollapse()" title="Collapse/Expand">
+              <i class="fas fa-compress-alt"></i>
+          </button>
+          <button class="col-btn export" id="export-biu" onclick="exportTeam('biu')" title="Export to Showdown">
+              <i class="fas fa-file-export"></i> Export Team
+          </button>
       </div>
+
       <div class="mini-row" id="mini-biu"></div>
+
       <div class="slot-list" id="slots-biu"></div>
       <button class="col-btn clear-btn" onclick="clearCol('biu')">Clear</button>
     </div>
