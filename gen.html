@@ -14,10 +14,6 @@
   :root { --theme-green: var(--accent); }
   body { font-family: 'Segoe UI', sans-serif; color: #eee; text-align: center; margin: 0; padding: 10px; box-sizing: border-box; background: transparent; user-select: none; min-height: 100vh; }
 
-  /* PEER HOVER STYLES */
-  .peer-hover-alb { border-color: #ff4444 !important; box-shadow: 0 0 15px #ff4444 !important; z-index: 100; position:relative; }
-  .peer-hover-biu { border-color: #4488ff !important; box-shadow: 0 0 15px #4488ff !important; z-index: 100; position:relative; }
-
   /* PANEL */
   .control-panel { background: rgba(8, 8, 8, 0.95); border: 1px solid #333; border-radius: 12px; padding: 10px 15px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); backdrop-filter: blur(10px); position: relative; z-index: 10; margin-bottom: 20px; }
   .cp-row { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; position: relative; }
@@ -109,10 +105,10 @@
 
   <div class="control-panel">
     <div class="cp-row">
-      <div class="dd-wrapper"><div class="dd-btn" id="dd-btn-gen" onclick="toggleDD('gen')">GENERATIONS <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-gen"></div></div>
-      <div class="dd-wrapper"><div class="dd-btn" id="dd-btn-type" onclick="toggleDD('type')">TYPES <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-type"></div></div>
-      <div class="dd-wrapper"><div class="dd-btn" id="dd-btn-color" onclick="toggleDD('color')">COLORS <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-color"></div></div>
-      <div class="amount-box"><button class="amt-btn" id="btn-amt-sub" onclick="modAmt(-1)">-</button><span class="amt-val" id="amt-display">6</span><button class="amt-btn" id="btn-amt-add" onclick="modAmt(1)">+</button></div>
+      <div class="dd-wrapper" id="dd-wrapper-gen"><div class="dd-btn" id="dd-btn-gen" onclick="toggleDD('gen')">GENERATIONS <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-gen"></div></div>
+      <div class="dd-wrapper" id="dd-wrapper-type"><div class="dd-btn" id="dd-btn-type" onclick="toggleDD('type')">TYPES <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-type"></div></div>
+      <div class="dd-wrapper" id="dd-wrapper-color"><div class="dd-btn" id="dd-btn-color" onclick="toggleDD('color')">COLORS <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-color"></div></div>
+      <div class="amount-box" id="amt-box"><button class="amt-btn" id="btn-amt-sub" onclick="modAmt(-1)">-</button><span class="amt-val" id="amt-display">6</span><button class="amt-btn" id="btn-amt-add" onclick="modAmt(1)">+</button></div>
     </div>
 
     <div class="cp-row">
@@ -120,7 +116,7 @@
       <button class="toggle-btn active" id="btn-dupes" onclick="toggleSetting('dupes')"><span>&ne;</span> NO DUPES</button>
       <button class="toggle-btn active" id="btn-evolved" onclick="toggleSetting('evolved')"><span>&#11014;</span> EVOLVED</button>
       
-      <div class="search-wrapper">
+      <div class="search-wrapper" id="search-bar">
           <span class="search-icon"><i class="fas fa-search"></i></span>
           <input type="text" class="search-input" id="search-input" placeholder="Search..." oninput="handleSearch(this.value)">
       </div>
@@ -167,7 +163,37 @@
   initDropdowns();
   document.addEventListener('click', function(e){ if(!e.target.closest('.dd-wrapper')) closeAllDD(); });
 
-  // --- FIX: DRAG & DROP RETURN LISTENER ---
+  // --- HOVER REPORTING ---
+  document.addEventListener('mouseover', e => {
+      let t = e.target.closest('[id]'); 
+      if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
+  });
+
+  window.addEventListener('message', (event) => {
+      if (event.data) {
+          if (event.data.type === 'THEME_UPDATE') {
+              document.documentElement.style.setProperty('--accent', event.data.color);
+          }
+          if (event.data.type === 'markUsed') { markUsedLocal(event.data.id); }
+          if (event.data.type === 'freePokemon') { freePokemonLocal(event.data.id); }
+          
+          if (event.data.type === 'CONFIG_UPDATE') {
+              if(event.data.p1Color) document.documentElement.style.setProperty('--p1-color', event.data.p1Color);
+              if(event.data.p2Color) document.documentElement.style.setProperty('--p2-color', event.data.p2Color);
+          }
+          // --- SHOW PEER HOVER GLOWS ---
+          if(event.data.type === 'PEER_HOVER') {
+              document.querySelectorAll('.peer-hover-p1, .peer-hover-p2').forEach(el=>el.classList.remove('peer-hover-p1','peer-hover-p2'));
+              if(event.data.id && event.data.role) {
+                  let el = document.getElementById(event.data.id);
+                  if(el) el.classList.add('peer-hover-'+event.data.role);
+              }
+          }
+      }
+  });
+
+  if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
+
   document.body.addEventListener('dragover', function(e) { e.preventDefault(); });
   document.body.addEventListener('drop', function(e) {
       e.preventDefault();
@@ -181,39 +207,11 @@
       startSync();
   }).catch(e => { document.getElementById('gen-msg').innerText = "DATA ERROR"; });
 
-  window.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'THEME_UPDATE') {
-          document.documentElement.style.setProperty('--accent', event.data.color);
-      }
-      if (event.data && event.data.type === 'markUsed') {
-          markUsedLocal(event.data.id);
-      }
-      if (event.data && event.data.type === 'freePokemon') {
-          freePokemonLocal(event.data.id);
-      }
-      // --- PRESENCE SYNC ---
-      if(event.data.type === 'PEER_HOVER') {
-          document.querySelectorAll('.peer-hover-alb, .peer-hover-biu').forEach(el=>el.classList.remove('peer-hover-alb','peer-hover-biu'));
-          if(event.data.id && event.data.role) {
-              let el = document.getElementById(event.data.id);
-              if(el) el.classList.add('peer-hover-'+event.data.role);
-          }
-      }
-  });
-  if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
-
-  // --- HOVER REPORTING ---
-  document.addEventListener('mouseover', e => {
-      let t = e.target.closest('[id]'); 
-      if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
-  });
-
   function isSameTeam(a, b) {
       return JSON.stringify(a) === JSON.stringify(b);
   }
 
   function startSync() {
-      // 1. SYNC GENERATED TEAM WITH INTELLIGENT NAVIGATION CHECK
       db.ref('gen/team').on('value', snap => {
           if(document.getElementById('search-input').value.trim() !== '') return;
           var team = snap.val() || [];
@@ -222,50 +220,37 @@
               renderGrid([]);
               return;
           }
-
-          // Check if this update matches our current state (no action needed)
           if (isSameTeam(team, HISTORY[HIST_PTR])) return;
-
-          // Check if this update is a "Back" navigation
           if (HIST_PTR > 0 && isSameTeam(team, HISTORY[HIST_PTR - 1])) {
               HIST_PTR--;
               renderGrid(team);
               return;
           }
-
-          // Check if this update is a "Forward" navigation
           if (HIST_PTR < HISTORY.length - 1 && isSameTeam(team, HISTORY[HIST_PTR + 1])) {
               HIST_PTR++;
               renderGrid(team);
               return;
           }
-
-          // Otherwise, it's a completely new generation
           showFinal(team, true); 
       });
 
-      // 2. SYNC USED POKEMON
       db.ref('gen/used').on('value', snap => {
           var map = snap.val() || {};
           USED_IDS = Object.keys(map);
           updateUsedVisuals();
       });
 
-      // 3. SYNC FILTERS (NEW)
       db.ref('gen/filters').on('value', snap => {
           var val = snap.val();
           if(!val) val = { gen:[], type:[], color:[] };
           FILTERS = val;
-          // Ensure arrays exist to prevent errors
           if(!FILTERS.gen) FILTERS.gen = [];
           if(!FILTERS.type) FILTERS.type = [];
           if(!FILTERS.color) FILTERS.color = [];
-          
-          renderTags(); // Update chips
-          updateDropdownVisuals(); // Update dropdown checkmarks
+          renderTags(); 
+          updateDropdownVisuals();
       });
 
-      // 4. SYNC SETTINGS (NEW)
       db.ref('gen/settings').on('value', snap => {
           var val = snap.val();
           if(val) {
@@ -274,7 +259,6 @@
           }
       });
 
-      // 5. SYNC AMOUNT (NEW)
       db.ref('gen/amount').on('value', snap => {
           var val = snap.val();
           if(val !== null && val !== undefined) {
@@ -284,35 +268,26 @@
       });
   }
 
-  // --- LOGIC ---
   function runGen() {
     document.getElementById('search-input').value = "";
-    
     var amount = AMT_OPTS[AMT_IDX];
     if(ALL_KEYS.length===0) return;
-
     var pool = [];
     var activeColors = FILTERS.color.map(c => c.toLowerCase());
     var allowedForms = ["alola","galar","hisui","paldea"];
-
     for(var i=0; i<ALL_KEYS.length; i++){
       var key = ALL_KEYS[i];
       var p = RAW_DB[key];
       if(key.includes('totem') || key.includes('eternamax') || key.includes('starter') || key.includes('gmax')) continue;
-
       var root = p.baseSpecies || p.name;
-      
       if(SETTINGS.dupes) {
           if(GLOBAL_SEEN.includes(root)) continue;
           if(USED_IDS.includes(key)) continue; 
       }
-
       var forme = (p.forme || "").toLowerCase();
       var isMega = forme.includes("mega");
-
       if(SETTINGS.mega && !isMega) continue;
       if(!SETTINGS.mega && isMega) continue;
-
       if(FILTERS.gen.length > 0) {
          var effectiveGen = p.gen || getGenByNum(p.num || p.id);
          if(forme.includes('alola')) effectiveGen = 7;
@@ -321,21 +296,17 @@
          else if(forme.includes('paldea')) effectiveGen = 9;
          if(!FILTERS.gen.includes(effectiveGen.toString())) continue;
       }
-      
       if(!SETTINGS.mega) {
          var isRegional = allowedForms.includes(forme);
          var isBase = !p.forme; 
          if(!isBase && !isRegional) continue; 
       }
-
       if(SETTINGS.evolved && p.evos) continue;
-
       if(FILTERS.type.length > 0) {
          var tMatch = false;
          for(var t=0; t<p.types.length; t++) { if(FILTERS.type.indexOf(p.types[t].toLowerCase()) > -1) tMatch=true; }
          if(!tMatch) continue;
       }
-
       var shiny = false;
       if(activeColors.length > 0) {
          var colorMatch = false;
@@ -349,21 +320,14 @@
       }
       pool.push({ key: key, data: p, shiny: shiny });
     }
-
-    if(pool.length === 0) { 
-        document.getElementById('gen-grid').innerHTML = '<div class="empty-msg" onclick="doReset()">POOL EMPTY - RESET MEMORY</div>'; 
-        return; 
-    }
-
+    if(pool.length === 0) { document.getElementById('gen-grid').innerHTML = '<div class="empty-msg" onclick="doReset()">POOL EMPTY - RESET MEMORY</div>'; return; }
     var picked = [];
     var batchSpecies = []; 
-    
     for(var k=0; k<amount; k++) {
        if(pool.length===0) break;
        var r = Math.floor(Math.random() * pool.length);
        var candidate = pool[r];
        var root = candidate.data.baseSpecies || candidate.data.name;
-       
        if(SETTINGS.dupes) {
            if(batchSpecies.includes(root)) { pool.splice(r,1); k--; continue; }
            batchSpecies.push(root);
@@ -372,41 +336,29 @@
        picked.push(candidate);
        if(!SETTINGS.dupes) pool.splice(r,1); 
     }
-    
-    // Only update DB. The listener handles the history push and rendering for everyone.
     db.ref('gen/team').set(picked);
   }
 
-  // --- SEARCH LOGIC ---
   function handleSearch(term) {
       term = term.trim().toLowerCase();
       var g = document.getElementById('gen-grid'); 
-      
       if(term === "") {
           g.innerHTML = "";
-          db.ref('gen/team').once('value', snap => {
-              showFinal(snap.val() || [], false);
-          });
+          db.ref('gen/team').once('value', snap => { showFinal(snap.val() || [], false); });
           return;
       }
-
       var results = [];
       var limit = 50; 
-      
       for(var i=0; i<ALL_KEYS.length; i++) {
           if(results.length >= limit) break;
           var key = ALL_KEYS[i];
           var p = RAW_DB[key];
-          
           if(key.includes('totem') || key.includes('starter') || key.includes('gmax')) continue;
-          
           var nameLow = p.name.toLowerCase();
-          
           if(nameLow.includes(term) || key.includes(term)) {
               results.push({ key: key, data: p, shiny: false });
           }
       }
-      
       renderGrid(results);
   }
 
@@ -421,11 +373,8 @@
 
   function showFinal(team, pushHist) {
     if(!team) team = []; 
-    
     if(pushHist && team.length > 0) {
-        if(HIST_PTR < HISTORY.length - 1) {
-            HISTORY = HISTORY.slice(0, HIST_PTR + 1);
-        }
+        if(HIST_PTR < HISTORY.length - 1) { HISTORY = HISTORY.slice(0, HIST_PTR + 1); }
         HISTORY.push(team); 
         HIST_PTR = HISTORY.length - 1;
     }
@@ -443,7 +392,6 @@
        if(shiny === undefined || shiny === false) {
            if(activeColorsLength() === 0 && Math.random() < 0.01) shiny = true;
        }
-       
        var displayName = p.name.replace(/-/g, ' '); 
        var types = p.types; 
        var rawBase = p.baseSpecies || p.name;
@@ -463,7 +411,6 @@
        var d=document.createElement('div'); d.className='poke-card';
        d.draggable=true; 
        d.id = 'pk-'+spriteName; 
-       
        if(USED_IDS.includes(spriteName)) d.classList.add('used');
 
        var payload = {id: spriteName, name: displayName, img: mainImg};
@@ -480,7 +427,6 @@
           e.dataTransfer.effectAllowed = "copy";
           e.dataTransfer.setDragImage(d, 75, 75);
        });
-       
        g.appendChild(d);
     });
   }
@@ -489,7 +435,6 @@
       if(!USED_IDS.includes(id)) {
           USED_IDS.push(id);
           db.ref('gen/used/' + id).set(true);
-          
           var p = RAW_DB[id];
           if(p) {
               var root = p.baseSpecies || p.name;
@@ -519,7 +464,6 @@
   
   function activeColorsLength() { return FILTERS.color.length; }
 
-  // --- ACTIONS (SYNCED) ---
   function initDropdowns() {
     buildDD('dd-gen', GENS, 'gen', function(v){ return v.t; }, true);
     buildDD('dd-type', TYPES, 'type', function(v){ return v.t; }, true);
@@ -530,7 +474,6 @@
     for(var i=0;i<list.length;i++){
       var val = isObj?list[i].v:list[i];
       var lbl = isObj?list[i].t:lblFn(val);
-      // Added data-val for easier sync updates
       h+='<div class="dd-item" data-val="'+val+'" onclick="toggleTag(\''+cat+'\',\''+val+'\',this)"><div class="dd-box"></div>'+lbl+'</div>';
     }
     document.getElementById(id).innerHTML = h;
@@ -538,26 +481,19 @@
   function toggleDD(cat){ var el=document.getElementById('dd-'+cat); var s=el.classList.contains('show'); closeAllDD(); if(!s)el.classList.add('show'); } 
   function closeAllDD(){ var els=document.querySelectorAll('.dd-menu'); for(var i=0;i<els.length;i++) els[i].classList.remove('show'); }
   
-  // SYNC ACTION 1: TOGGLE FILTER
   function toggleTag(cat, val, el){
     var idx = FILTERS[cat].indexOf(val);
     if(idx===-1){ FILTERS[cat].push(val); }
     else { FILTERS[cat].splice(idx,1); }
-    
-    // Sync to DB immediately
     db.ref('gen/filters').set(FILTERS);
   }
 
-  // SYNC ACTION 2: REMOVE FILTER TAG
   function removeTag(cat, val){
     var idx = FILTERS[cat].indexOf(val);
     if(idx>-1) FILTERS[cat].splice(idx,1);
-    
-    // Sync to DB immediately
     db.ref('gen/filters').set(FILTERS);
   }
 
-  // VISUAL SYNC HELPERS
   function renderTags(){
     var c=document.getElementById('active-tags'); c.innerHTML='';
     var cats=['gen','type','color'];
@@ -578,78 +514,41 @@
   }
 
   function updateDropdownVisuals() {
-      // Loop through all dropdown items and check if they are in FILTERS
       var menus = document.querySelectorAll('.dd-menu');
       menus.forEach(menu => {
           var cat = menu.id.replace('dd-', '');
           var items = menu.children;
           for (var i = 0; i < items.length; i++) {
               var val = items[i].getAttribute('data-val');
-              if (FILTERS[cat] && FILTERS[cat].includes(val)) {
-                  items[i].classList.add('selected');
-              } else {
-                  items[i].classList.remove('selected');
-              }
+              if (FILTERS[cat] && FILTERS[cat].includes(val)) { items[i].classList.add('selected'); } else { items[i].classList.remove('selected'); }
           }
       });
   }
 
-  // SYNC ACTION 3: AMOUNT
-  function modAmt(n){ 
-      AMT_IDX+=n; 
-      if(AMT_IDX<0)AMT_IDX=AMT_OPTS.length-1; 
-      if(AMT_IDX>=AMT_OPTS.length)AMT_IDX=0; 
-      // Sync to DB
-      db.ref('gen/amount').set(AMT_IDX);
-  }
-
-  // SYNC ACTION 4: SETTINGS
-  function toggleSetting(k){ 
-      SETTINGS[k]=!SETTINGS[k]; 
-      // Sync to DB
-      db.ref('gen/settings').set(SETTINGS);
-  }
+  function modAmt(n){ AMT_IDX+=n; if(AMT_IDX<0)AMT_IDX=AMT_OPTS.length-1; if(AMT_IDX>=AMT_OPTS.length)AMT_IDX=0; db.ref('gen/amount').set(AMT_IDX); }
+  function toggleSetting(k){ SETTINGS[k]=!SETTINGS[k]; db.ref('gen/settings').set(SETTINGS); }
 
   function updateSettingVisuals() {
       for (var k in SETTINGS) {
           var b = document.getElementById('btn-' + k);
-          if (b) {
-              if (SETTINGS[k]) b.classList.add('active'); 
-              else b.classList.remove('active');
-          }
+          if (b) { if (SETTINGS[k]) b.classList.add('active'); else b.classList.remove('active'); }
       }
   }
   
-  // HISTORY NAV (UPDATED: SYNCS VIEW FOR EVERYONE)
   function goHistory(d){ 
       var n = HIST_PTR + d; 
-      if(n >= 0 && n < HISTORY.length){ 
-          HIST_PTR = n; 
-          renderGrid(HISTORY[n]);
-          // Sync this view to everyone
-          db.ref('gen/team').set(HISTORY[n]); 
-      } 
+      if(n >= 0 && n < HISTORY.length){ HIST_PTR = n; renderGrid(HISTORY[n]); db.ref('gen/team').set(HISTORY[n]); } 
   }
   
-  // CLEAR ACTIONS (Reset Memory ONLY, no column clear)
   function doClear(){ 
       FILTERS = { gen:[], type:[], color:[] };
-      // Sync Filters Clear
       db.ref('gen/filters').set(FILTERS);
-      
       document.getElementById('gen-grid').innerHTML = '';
       db.ref('gen/team').set(null); 
       document.getElementById('search-input').value = ""; 
-      // REMOVED: window.parent.postMessage({ type: 'requestClearCols' }, '*');
   }
   
-  function doReset(){ 
-      GLOBAL_SEEN = []; 
-      document.getElementById('gen-grid').innerHTML = ''; 
-      db.ref('gen/team').set(null); 
-      db.ref('gen/used').set(null); 
-      // REMOVED: window.parent.postMessage({ type: 'requestClearCols' }, '*');
-  }
+  function doReset(){ GLOBAL_SEEN = []; document.getElementById('gen-grid').innerHTML = ''; db.ref('gen/team').set(null); db.ref('gen/used').set(null); }
 </script>
 </body>
 </html>
