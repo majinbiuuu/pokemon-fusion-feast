@@ -15,26 +15,20 @@ window.saveConfig = function(key, val) {
     db.ref('config/' + key).set(val);
 };
 
-// --- IDENTITY LOGIC ---
+// --- IDENTITY LOGIC & GHOST FIX ---
 window.setIdentity = function(role) {
-    // 1. Clean up old presence
     if(window.myRole && window.myRole !== 'spectator') {
         db.ref('presence/' + window.myRole).remove();
         db.ref('presence/' + window.myRole).onDisconnect().cancel(); 
     }
-
-    // 2. Set New Role
     window.myRole = role;
     localStorage.setItem('myRole', role);
     updateIdentityUI();
-    
-    // 3. Setup New Presence immediately
     setupPresenceDisconnect();
 };
 
 function setupPresenceDisconnect() {
     if(window.myRole !== 'spectator') {
-        // This ensures the dot disappears if the user closes the tab
         db.ref('presence/' + window.myRole).onDisconnect().remove();
         updatePresence();
     }
@@ -55,7 +49,6 @@ db.ref('config').on('value', snap => {
         document.getElementById('st-theme-color').value = c.theme;
         broadcastToIframes({ type: 'THEME_UPDATE', color: c.theme });
     }
-
     if(c.bgUrl) {
         document.body.style.backgroundImage = `url('${c.bgUrl}')`;
         document.getElementById('st-bg-url').value = c.bgUrl;
@@ -63,7 +56,6 @@ db.ref('config').on('value', snap => {
         document.body.style.backgroundImage = 'none';
         document.getElementById('st-bg-url').value = '';
     }
-
     if(c.bgColor) {
         document.body.style.backgroundColor = c.bgColor;
         document.getElementById('st-bg-color').value = c.bgColor;
@@ -71,15 +63,12 @@ db.ref('config').on('value', snap => {
 
     renderSavedWallpapers(c.savedWallpapers || []);
 
-    // Player Configs
     const p1Name = c.p1Name || "ALB";
     const p1Color = c.p1Color || "#ff4444";
     document.documentElement.style.setProperty('--p1-color', p1Color);
     document.getElementById('disp-p1-name').innerText = p1Name;
     document.getElementById('disp-p1-name').style.color = p1Color;
-    
-    if(document.activeElement !== document.getElementById('st-p1-name')) 
-        document.getElementById('st-p1-name').value = p1Name;
+    if(document.activeElement !== document.getElementById('st-p1-name')) document.getElementById('st-p1-name').value = p1Name;
     document.getElementById('st-p1-color').value = p1Color;
 
     const p2Name = c.p2Name || "BIU";
@@ -87,15 +76,10 @@ db.ref('config').on('value', snap => {
     document.documentElement.style.setProperty('--p2-color', p2Color);
     document.getElementById('disp-p2-name').innerText = p2Name;
     document.getElementById('disp-p2-name').style.color = p2Color;
-
-    if(document.activeElement !== document.getElementById('st-p2-name')) 
-        document.getElementById('st-p2-name').value = p2Name;
+    if(document.activeElement !== document.getElementById('st-p2-name')) document.getElementById('st-p2-name').value = p2Name;
     document.getElementById('st-p2-color').value = p2Color;
 
-    broadcastToIframes({ 
-        type: 'CONFIG_UPDATE', 
-        p1Name, p1Color, p2Name, p2Color 
-    });
+    broadcastToIframes({ type: 'CONFIG_UPDATE', p1Name, p1Color, p2Name, p2Color });
 });
 
 function broadcastToIframes(msg) {
@@ -105,7 +89,6 @@ function broadcastToIframes(msg) {
     });
 }
 
-// --- WALLPAPER MANAGER ---
 function addCurrentToSaved() {
     let current = document.getElementById('st-bg-url').value;
     if(!current) return;
@@ -154,16 +137,14 @@ window.dropHandler = function(ev) {
     }
 }
 
-// --- FULLSCREEN LOGIC ---
 window.toggleFullScreen = function() {
     if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch((e) => { console.log(`Error: ${e.message}`); });
+        document.documentElement.requestFullscreen().catch((e) => { console.log(e.message); });
     } else {
         if (document.exitFullscreen) document.exitFullscreen();
     }
 };
 
-// --- PRESENCE LOGIC ---
 var myId = localStorage.getItem('presenceId');
 if (!myId) {
     myId = Date.now().toString() + Math.random().toString().slice(2,5);
@@ -178,7 +159,6 @@ connectedRef.on('value', function(snap) {
         var userRef = presenceRef.child('list/' + myId);
         userRef.onDisconnect().remove();
         userRef.set(true);
-        // Re-establish role disconnect on reconnect
         setupPresenceDisconnect();
     }
 });
@@ -189,36 +169,30 @@ presenceRef.child('list').on('value', function(snap) {
     document.getElementById('presence-count').innerHTML = `<i class="fas fa-users" style="font-size: 11px;"></i> ${count}`;
 });
 
-// --- TAB & HOVER PRESENCE ---
 let currentTabId = 'tab-play';
 let currentHoverId = null;
 
 function initPresenceSystem() {
-    // 1. Mouse Listeners (Hover)
     document.querySelectorAll('.track-hover').forEach(el => {
         el.addEventListener('mouseenter', () => { currentHoverId = el.getAttribute('data-id'); updatePresence(); });
         el.addEventListener('mouseleave', () => { currentHoverId = null; updatePresence(); });
     });
 
-    // 2. Database Listeners
     db.ref('presence').on('value', snap => {
         const p = snap.val() || {};
         const roles = ['p1', 'p2'];
         
-        // Clear old indicators
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
         document.querySelectorAll('.track-hover').forEach(el => {
             el.classList.remove('peer-hover-p1', 'peer-hover-p2');
         });
-        // Clear Iframe Glows too (broadcast clear first)
         broadcastToIframes({ type: 'PEER_HOVER', id: null, role: null });
 
         roles.forEach(role => {
             if(role === window.myRole) return; 
             const data = p[role];
-            if(!data) return; // User offline, no ghosting
+            if(!data) return;
 
-            // Tab Dot
             if(data.tab) {
                 const targetTab = document.querySelector(`.tab[data-id="tab-${data.tab}"]`);
                 if(targetTab) {
@@ -231,7 +205,6 @@ function initPresenceSystem() {
                 }
             }
 
-            // Hover Glow
             if(data.hover) {
                 const targetEl = document.querySelector(`[data-id="${data.hover}"]`);
                 if(targetEl) targetEl.classList.add(`peer-hover-${role}`);
@@ -251,7 +224,6 @@ function updatePresence() {
     });
 }
 
-// --- DATA SYNC & GHOST POKEMON FIX ---
 db.ref('dashboard').on('value', snap => {
     if(window.syncLock) return; 
     const s = snap.val() || {};
@@ -268,11 +240,12 @@ function renderColumn(side, data) {
     if(!container) return;
     var kids = container.getElementsByClassName('slot');
     
-    // FIX: Force empty array if null to ensure clearing
-    if(!data) data = []; 
+    // Default to empty array if null
+    if(!data) data = [];
 
     for(var i=0; i<kids.length; i++) {
         if(data[i]) {
+            // Fill slot
             if(!kids[i].classList.contains('filled') || kids[i].innerText !== data[i].name) {
                 kids[i].innerHTML = `<img src="${data[i].img}" onerror="this.src='https://play.pokemonshowdown.com/sprites/gen5/${data[i].id}.png'"><div class="slot-txt" data-id="${data[i].id}">${data[i].name}</div>`;
                 kids[i].classList.add('filled');
@@ -282,7 +255,7 @@ function renderColumn(side, data) {
                 kids[i].ondragstart = function(e) { slotDragStart(e, pid, idx); };
             }
         } else {
-            // Explicitly clear slot if data is missing
+            // Empty slot
             if(kids[i].classList.contains('filled')) {
                 kids[i].innerHTML = "";
                 kids[i].classList.remove('filled');
@@ -293,7 +266,6 @@ function renderColumn(side, data) {
     if(window.isCollapsed) generateMiniIcons(side);
 }
 
-// --- MEDIA & VOLUME ---
 db.ref('music/status').on('value', snap => {
     const m = snap.val() || {};
     const titleEl = document.getElementById('np-title-top');
@@ -356,7 +328,6 @@ function handleReturnLogic() {
          
          if(window.returningIndex !== -1) {
              var dbKey = side === 'alb' ? 'slotsAlb' : 'slotsBiu';
-             // FIX: use update so listener catches it, but set null explicitly
              var updateObj = {}; updateObj[window.returningIndex] = null;
              db.ref('dashboard/' + dbKey).update(updateObj);
          } else {
@@ -481,7 +452,7 @@ window.toggleCenterCollapse = function() {
 
 // 3. Tab Clicks: ONLY toggle center window
 window.switchTab = function(viewId, btn) { 
-    // Logic: If clicking SAME tab that is open, minimize center.
+    // If clicking same active tab, toggle center window visibility
     if (currentTabId === 'tab-' + viewId && !window.centerCollapsed) {
         window.centerCollapsed = true;
         document.querySelector('.col-c').classList.add('minimized');
@@ -490,7 +461,7 @@ window.switchTab = function(viewId, btn) {
         return;
     }
 
-    // Logic: If minimized, open center (but don't touch columns)
+    // If minimized, open only the center window
     if (window.centerCollapsed) {
         window.centerCollapsed = false;
         document.querySelector('.col-c').classList.remove('minimized');
@@ -511,14 +482,14 @@ window.switchTab = function(viewId, btn) {
 document.addEventListener('DOMContentLoaded', function() {
     window.initSlots('slots-alb'); window.initSlots('slots-biu'); 
     initPresenceSystem();
-    setupPresenceDisconnect(); // Init ghost fix
+    setupPresenceDisconnect(); // FIX GHOST INDICATOR
 
-    // START MINIMIZED (Programmatically collapse)
+    // START MINIMIZED
     window.centerCollapsed = true;
     document.querySelector('.col-c').classList.add('minimized');
     const icon = document.getElementById('c-collapse-icon');
     if(icon) icon.className = "fas fa-expand-alt";
-    
+
     window.isCollapsed = true;
     const icons = document.querySelectorAll('.collapse-btn i');
     icons.forEach(icon => { icon.className = "fas fa-expand-alt"; });
@@ -528,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('mini-' + side).classList.add('active');
         generateMiniIcons(side);
     });
-    
+
     db.ref('library').once('value').then(snap => {
         window.appData = snap.val() || {};
         ['frame-play', 'frame-gen'].forEach(id => {
