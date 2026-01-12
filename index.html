@@ -4,11 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Season 3 - Fusion Feast</title>
+  
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;800;900&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  
   <link href="style-global.css" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
+
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="global.js"></script>
@@ -65,7 +68,11 @@
           
           <div class="section-box">
               <div class="setting-label">Background Wallpaper</div>
-              <div id="drop-zone" ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)" ondrop="dropHandler(event)">DROP IMAGE HERE</div>
+              
+              <div id="drop-zone" ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)" ondrop="dropHandler(event)">
+                  DROP IMAGE HERE
+              </div>
+
               <div class="flex-row">
                   <input type="text" id="st-bg-url" class="st-input" placeholder="Paste URL..." onchange="saveConfig('bgUrl', this.value)">
                   <button class="st-btn action" onclick="addCurrentToSaved()">Save</button>
