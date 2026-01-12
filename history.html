@@ -16,6 +16,9 @@
     --glass-bg: rgba(20, 20, 20, 0.95);
     --border-color: rgba(255, 255, 255, 0.15);
     --text-dim: #888;
+    
+    --p1-color: #ff4444;
+    --p2-color: #4488ff;
   }
 
   body { 
@@ -29,8 +32,8 @@
   }
 
   /* PEER HOVER STYLES */
-  .peer-hover-alb { border-color: #ff4444 !important; box-shadow: 0 0 15px #ff4444 !important; z-index: 100; position:relative; }
-  .peer-hover-biu { border-color: #4488ff !important; box-shadow: 0 0 15px #4488ff !important; z-index: 100; position:relative; }
+  .peer-hover-p1 { border-color: var(--p1-color) !important; box-shadow: 0 0 15px var(--p1-color) !important; z-index: 100; position:relative; }
+  .peer-hover-p2 { border-color: var(--p2-color) !important; box-shadow: 0 0 15px var(--p2-color) !important; z-index: 100; position:relative; }
 
   /* --- STATS SECTION --- */
   .stats-overview {
@@ -57,8 +60,8 @@
   .stat-card::before {
       content: ''; position: absolute; top:0; left:0; width:100%; height:4px;
   }
-  .sc-alb::before { background: #ff4444; box-shadow: 0 0 10px #ff4444; }
-  .sc-biu::before { background: #4488ff; box-shadow: 0 0 10px #4488ff; }
+  .sc-alb::before { background: var(--p1-color); box-shadow: 0 0 10px var(--p1-color); }
+  .sc-biu::before { background: var(--p2-color); box-shadow: 0 0 10px var(--p2-color); }
 
   .stat-header {
       font-size: 1.4rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;
@@ -181,9 +184,7 @@
   .match-data:hover { background: rgba(255,255,255,0.02); }
 
   .col-winner { font-weight: 900; font-size: 1rem; }
-  .win-ALB { color: #ff4444; text-shadow: 0 0 8px rgba(255,68,68,0.3); }
-  .win-BIU { color: #4488ff; text-shadow: 0 0 8px rgba(68,136,255,0.3); }
-
+  
   .col-links { display: flex; gap: 6px; flex-wrap: wrap; }
   .link-chip {
     background: #222; border: 1px solid #444; color: #ccc;
@@ -200,9 +201,7 @@
       border-radius: 4px; font-weight: 900; font-size: 0.8rem;
       border: 1px solid rgba(255,255,255,0.1);
   }
-  .rec-badge.res-A { background: rgba(255, 68, 68, 0.2); border-color: #ff4444; color: #ff4444; }
-  .rec-badge.res-B { background: rgba(68, 136, 255, 0.2); border-color: #4488ff; color: #4488ff; }
-
+  
   /* Actions */
   .col-actions { display: flex; gap: 15px; justify-content: flex-end; align-items: center; }
   .act-btn {
@@ -283,8 +282,8 @@
 
   <div class="stats-overview">
       <div class="stat-card sc-alb">
-          <div class="stat-header" style="color:#ff4444">
-              ALB
+          <div class="stat-header" style="color:var(--p1-color)" id="stat-hdr-p1">
+              P1
               <i class="fas fa-chart-bar" style="font-size:1rem; opacity:0.5"></i>
           </div>
           <div class="stat-row">
@@ -307,8 +306,8 @@
       </div>
 
       <div class="stat-card sc-biu">
-          <div class="stat-header" style="color:#4488ff">
-              BIU
+          <div class="stat-header" style="color:var(--p2-color)" id="stat-hdr-p2">
+              P2
               <i class="fas fa-chart-bar" style="font-size:1rem; opacity:0.5"></i>
           </div>
           <div class="stat-row">
@@ -368,8 +367,8 @@
         <div style="flex:1">
             <label class="form-lbl">Winner</label>
             <select class="form-in" id="in-winner">
-                <option value="ALB">ALB</option>
-                <option value="BIU">BIU</option>
+                <option value="ALB">P1</option>
+                <option value="BIU">P2</option>
             </select>
         </div>
         <div style="flex:1">
@@ -405,17 +404,36 @@
   if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
+  window.p1Name = "ALB";
+  window.p2Name = "BIU";
+
   // --- THEME SYNC ---
   window.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'THEME_UPDATE') {
-          document.documentElement.style.setProperty('--theme-green', event.data.color);
-      }
-      // --- PRESENCE SYNC ---
-      if(event.data.type === 'PEER_HOVER') {
-          document.querySelectorAll('.peer-hover-alb, .peer-hover-biu').forEach(el=>el.classList.remove('peer-hover-alb','peer-hover-biu'));
-          if(event.data.id && event.data.role) {
-              let el = document.getElementById(event.data.id);
-              if(el) el.classList.add('peer-hover-'+event.data.role);
+      if(event.data) {
+          if (event.data.type === 'THEME_UPDATE') {
+              document.documentElement.style.setProperty('--theme-green', event.data.color);
+          }
+          if (event.data.type === 'CONFIG_UPDATE') {
+              if(event.data.p1Color) document.documentElement.style.setProperty('--p1-color', event.data.p1Color);
+              if(event.data.p2Color) document.documentElement.style.setProperty('--p2-color', event.data.p2Color);
+              if(event.data.p1Name) window.p1Name = event.data.p1Name;
+              if(event.data.p2Name) window.p2Name = event.data.p2Name;
+              
+              document.getElementById('stat-hdr-p1').innerText = window.p1Name;
+              document.getElementById('stat-hdr-p2').innerText = window.p2Name;
+              
+              // Refresh matches to update names
+              db.ref('history').limitToLast(50).once('value', snap => {
+                  if(snap.val()) updateStats(snap.val());
+              });
+          }
+          // --- PRESENCE SYNC ---
+          if(event.data.type === 'PEER_HOVER') {
+              document.querySelectorAll('.peer-hover-p1, .peer-hover-p2').forEach(el=>el.classList.remove('peer-hover-p1','peer-hover-p2'));
+              if(event.data.id && event.data.role) {
+                  let el = document.getElementById(event.data.id);
+                  if(el) el.classList.add('peer-hover-'+event.data.role);
+              }
           }
       }
   });
@@ -425,6 +443,18 @@
   document.addEventListener('mouseover', e => {
       let t = e.target.closest('[id]'); 
       if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
+  });
+
+  // --- INITIAL CONFIG LOAD ---
+  db.ref('config').once('value', snap => {
+      let c = snap.val() || {};
+      if(c.p1Name) window.p1Name = c.p1Name;
+      if(c.p2Name) window.p2Name = c.p2Name;
+      if(c.p1Color) document.documentElement.style.setProperty('--p1-color', c.p1Color);
+      if(c.p2Color) document.documentElement.style.setProperty('--p2-color', c.p2Color);
+      
+      document.getElementById('stat-hdr-p1').innerText = window.p1Name;
+      document.getElementById('stat-hdr-p2').innerText = window.p2Name;
   });
 
   // --- 2. RENDER LOGIC ---
@@ -465,16 +495,14 @@
           let w = match.winner;
           let isChal = (match.settings && match.settings.mode === 'Challenge');
           
-          if(w === 'ALB' || w === 'BIU') {
-              totalGames++;
-              if(w === 'ALB') albWins++;
-              if(w === 'BIU') biuWins++;
-              
-              if(isChal) {
-                  chalTotal++;
-                  if(w === 'ALB') albChalWins++;
-                  if(w === 'BIU') biuChalWins++;
-              }
+          // Match winner by actual name stored or by fallback
+          if(w === window.p1Name || w === 'ALB') {
+              albWins++; totalGames++;
+              if(isChal) { albChalWins++; chalTotal++; }
+          }
+          else if(w === window.p2Name || w === 'BIU') {
+              biuWins++; totalGames++;
+              if(isChal) { biuChalWins++; chalTotal++; }
           }
       });
 
@@ -512,17 +540,29 @@
 
       if(showDetails) { mode = "Various"; side = "Various"; }
 
+      // Map Winner to Color/Name
+      let winColor = '#fff';
+      if(data.winner === window.p1Name || data.winner === 'ALB') winColor = 'var(--p1-color)';
+      else if(data.winner === window.p2Name || data.winner === 'BIU') winColor = 'var(--p2-color)';
+
       // --- NEW RECORD RENDERING (BOXES) ---
       let recordHtml = `<div class="rec-container">`;
       if(Array.isArray(data.record)) {
           data.record.forEach(r => {
-              recordHtml += `<div class="rec-badge res-${r.result}">${r.result}</div>`;
-          });
-      } else if(typeof data.record === 'string') {
-          // Attempt to parse "A - B - A" strings into boxes
-          let parts = data.record.split(/[\s-]+/);
-          parts.forEach(p => {
-              if(p) recordHtml += `<div class="rec-badge res-${p}">${p}</div>`;
+              // Convert A/B or Names to Initials
+              let txt = r.result;
+              let col = '#555';
+              let bg = 'rgba(255,255,255,0.1)';
+              
+              if(txt === 'ALB' || txt === 'A' || txt === window.p1Name) {
+                  txt = window.p1Name.charAt(0);
+                  col = 'var(--p1-color)';
+              } else if(txt === 'BIU' || txt === 'B' || txt === window.p2Name) {
+                  txt = window.p2Name.charAt(0);
+                  col = 'var(--p2-color)';
+              }
+              
+              recordHtml += `<div class="rec-badge" style="color:${col}; border-color:${col}; background:${bg}">${txt}</div>`;
           });
       }
       recordHtml += `</div>`;
@@ -534,11 +574,6 @@
              let url = urlMatch ? urlMatch[0] : '#';
              linkHtml += `<a href="${url}" target="_blank" class="link-chip">G${idx+1}</a>`;
          });
-      } else if (typeof data.links === 'string' && data.links.length > 0) {
-          let urls = data.links.split(',');
-          urls.forEach((u, idx) => {
-              if(u.trim()) linkHtml += `<a href="${u.trim()}" target="_blank" class="link-chip">G${idx+1}</a>`;
-          });
       }
 
       let detailsHtml = "";
@@ -549,12 +584,17 @@
           data.record.forEach((game, i) => {
              let gMode = game.mode || "-";
              let gSide = game.side || "-";
+             let gRes = game.result;
+             let gCol = '#fff';
+             if(gRes === window.p1Name || gRes === 'ALB' || gRes === 'A') { gRes = window.p1Name + " Win"; gCol = 'var(--p1-color)'; }
+             else if(gRes === window.p2Name || gRes === 'BIU' || gRes === 'B') { gRes = window.p2Name + " Win"; gCol = 'var(--p2-color)'; }
+             
              cards += `
              <div class="det-card">
                 <div class="det-head">Game ${i+1}</div>
                 <div class="det-val"><span class="det-label">Mode:</span> ${gMode}</div>
                 <div class="det-val"><span class="det-label">Side:</span> ${gSide}</div>
-                <div class="det-val" style="margin-top:auto; color:${game.result==='A'?'var(--red)':'var(--blue)'}; font-weight:bold">${game.result} Win</div>
+                <div class="det-val" style="margin-top:auto; color:${gCol}; font-weight:bold">${gRes}</div>
              </div>`;
           });
           
@@ -598,7 +638,7 @@
             <div>${points}</div>
             <div>${sp}</div>
             <div>${recordHtml}</div>
-            <div class="col-winner win-${data.winner}">${data.winner}</div>
+            <div class="col-winner" style="color:${winColor}; text-shadow:0 0 10px ${winColor}">${data.winner}</div>
             <div class="col-links">${linkHtml}</div>
             <div class="col-actions">
                 ${expandBtn}
@@ -639,12 +679,8 @@
       let targetId = targetEl.getAttribute('data-id');
       if (draggedId === targetId) return;
 
-      // 1. Get Timestamps of neighbors to calculate new time
       let targetTime = parseFloat(targetEl.getAttribute('data-ts'));
-      
-      // Find the element *before* the target in the DOM (Visually above it)
       let prevEl = targetEl.previousElementSibling; 
-      
       let newTime;
       
       if (prevEl) {
@@ -655,7 +691,6 @@
           if(newTime <= Date.now()) newTime = Date.now() + 1000;
       }
 
-      // 2. Update Firebase
       db.ref('history/' + draggedId).update({ timestamp: newTime });
   }
 
@@ -689,6 +724,13 @@
       document.getElementById('modal-title').innerText = "Add Manual Match";
       document.getElementById('edit-id').value = "";
       clearInputs();
+      
+      // Update Winner Dropdown Options
+      let sel = document.getElementById('in-winner');
+      sel.innerHTML = `
+        <option value="${window.p1Name}">${window.p1Name}</option>
+        <option value="${window.p2Name}">${window.p2Name}</option>
+      `;
   }
 
   function editEntry(key) {
@@ -697,6 +739,12 @@
           document.getElementById('edit-modal').style.display = 'flex';
           document.getElementById('modal-title').innerText = "Edit Match";
           document.getElementById('edit-id').value = key;
+          
+          let sel = document.getElementById('in-winner');
+          sel.innerHTML = `
+            <option value="${window.p1Name}">${window.p1Name}</option>
+            <option value="${window.p2Name}">${window.p2Name}</option>
+          `;
           
           let mode = d.dashSnapshot ? d.dashSnapshot.mode : (d.mode || "");
           let side = d.dashSnapshot ? d.dashSnapshot.side : (d.side || "");
