@@ -52,29 +52,24 @@ window.saveConfig = function(key, val) {
 
 // --- IDENTITY LOGIC ---
 window.setIdentity = function(role) {
+    // role is 'p1', 'p2', or 'spectator'
     window.myRole = role;
     localStorage.setItem('myRole', role);
     updateIdentityUI();
     
-    // Clear old presence if switching
-    if(role === 'spectator') {
-        // Stop tracking logic here if needed
-    } else {
-        // Update presence immediately
-        updatePresence();
-    }
+    // Clear old presence
+    // In a real app we'd remove the old node, but overwriting is fine for now
+    updatePresence();
 };
 
 function updateIdentityUI() {
-    document.querySelectorAll('.st-btn').forEach(b => b.classList.remove('selected'));
-    const btn = document.getElementById('id-btn-' + (window.myRole === 'spectator' ? 'spec' : window.myRole));
-    if(btn) btn.classList.add('selected');
-    
-    const disp = document.getElementById('current-id-display');
-    if(disp) disp.innerText = window.myRole.toUpperCase();
+    // Highlight selected role
+    document.querySelectorAll('.who-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById('role-' + (window.myRole === 'spectator' ? 'spec' : window.myRole));
+    if(btn) btn.classList.add('active');
 }
 
-// --- SYNC CONFIG ---
+// --- SYNC CONFIG (Updated for P1/P2) ---
 db.ref('config').on('value', snap => {
     const c = snap.val() || {};
     
@@ -82,11 +77,7 @@ db.ref('config').on('value', snap => {
     if(c.theme) {
         document.documentElement.style.setProperty('--accent', c.theme);
         document.getElementById('st-theme-color').value = c.theme;
-        // SYNC IFRAMES
-        ['frame-play', 'frame-gen', 'frame-music', 'frame-hist', 'frame-lib'].forEach(id => {
-            let el = document.getElementById(id);
-            if(el && el.contentWindow) el.contentWindow.postMessage({ type: 'THEME_UPDATE', color: c.theme }, '*');
-        });
+        broadcastToIframes({ type: 'THEME_UPDATE', color: c.theme });
     }
 
     // 2. Background Image
@@ -107,24 +98,41 @@ db.ref('config').on('value', snap => {
     // 4. Saved Wallpapers
     renderSavedWallpapers(c.savedWallpapers || []);
 
-    // 5. Player 1
+    // 5. Player 1 Config
     const p1Name = c.p1Name || "ALB";
     const p1Color = c.p1Color || "#ff4444";
+    document.documentElement.style.setProperty('--p1-color', p1Color);
     document.getElementById('disp-p1-name').innerText = p1Name;
     document.getElementById('disp-p1-name').style.color = p1Color;
+    
     if(document.activeElement !== document.getElementById('st-p1-name')) 
         document.getElementById('st-p1-name').value = p1Name;
     document.getElementById('st-p1-color').value = p1Color;
 
-    // 6. Player 2
+    // 6. Player 2 Config
     const p2Name = c.p2Name || "BIU";
     const p2Color = c.p2Color || "#4488ff";
+    document.documentElement.style.setProperty('--p2-color', p2Color);
     document.getElementById('disp-p2-name').innerText = p2Name;
     document.getElementById('disp-p2-name').style.color = p2Color;
+
     if(document.activeElement !== document.getElementById('st-p2-name')) 
         document.getElementById('st-p2-name').value = p2Name;
     document.getElementById('st-p2-color').value = p2Color;
+
+    // Broadcast Config Update to Iframes (so they can update names/colors)
+    broadcastToIframes({ 
+        type: 'CONFIG_UPDATE', 
+        p1Name, p1Color, p2Name, p2Color 
+    });
 });
+
+function broadcastToIframes(msg) {
+    ['frame-play', 'frame-gen', 'frame-music', 'frame-hist', 'frame-lib'].forEach(id => {
+        let el = document.getElementById(id);
+        if(el && el.contentWindow) el.contentWindow.postMessage(msg, '*');
+    });
+}
 
 // --- WALLPAPER MANAGER ---
 function addCurrentToSaved() {
@@ -230,12 +238,12 @@ function initPresenceSystem() {
     // 2. Listen for OTHER players
     db.ref('presence').on('value', snap => {
         const p = snap.val() || {};
-        const roles = ['alb', 'biu'];
+        const roles = ['p1', 'p2'];
         
         // Clear old indicators in Shell
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
         document.querySelectorAll('.track-hover').forEach(el => {
-            el.classList.remove('peer-hover-alb', 'peer-hover-biu');
+            el.classList.remove('peer-hover-p1', 'peer-hover-p2');
         });
 
         roles.forEach(role => {
@@ -265,12 +273,7 @@ function initPresenceSystem() {
                 }
                 
                 // BROADCAST TO IFRAMES
-                ['frame-play', 'frame-gen', 'frame-music', 'frame-hist', 'frame-lib'].forEach(fid => {
-                    let f = document.getElementById(fid);
-                    if(f && f.contentWindow) {
-                        f.contentWindow.postMessage({ type: 'PEER_HOVER', id: data.hover, role: role }, '*');
-                    }
-                });
+                broadcastToIframes({ type: 'PEER_HOVER', id: data.hover, role: role });
             }
         });
     });
