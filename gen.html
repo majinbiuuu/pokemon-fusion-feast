@@ -174,8 +174,7 @@
       window.parent.postMessage({ type: 'GENERATOR_DROP' }, '*');
   });
 
-  // Use corsproxy.io to bypass the browser security block
-fetch("https://corsproxy.io/?https://play.pokemonshowdown.com/data/pokedex.json").then(res => res.json()).then(data => {
+  fetch("https://play.pokemonshowdown.com/data/pokedex.json").then(res => res.json()).then(data => {
       RAW_DB = data;
       ALL_KEYS = Object.keys(data).filter(k => data[k].num > 0);
       document.getElementById('gen-overlay').style.display = 'none';
@@ -654,4 +653,3 @@ fetch("https://corsproxy.io/?https://play.pokemonshowdown.com/data/pokedex.json"
 </script>
 </body>
 </html>
-
