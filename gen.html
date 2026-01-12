@@ -14,6 +14,10 @@
   :root { --theme-green: var(--accent); }
   body { font-family: 'Segoe UI', sans-serif; color: #eee; text-align: center; margin: 0; padding: 10px; box-sizing: border-box; background: transparent; user-select: none; min-height: 100vh; }
 
+  /* PEER HOVER STYLES */
+  .peer-hover-alb { border-color: #ff4444 !important; box-shadow: 0 0 15px #ff4444 !important; z-index: 100; position:relative; }
+  .peer-hover-biu { border-color: #4488ff !important; box-shadow: 0 0 15px #4488ff !important; z-index: 100; position:relative; }
+
   /* PANEL */
   .control-panel { background: rgba(8, 8, 8, 0.95); border: 1px solid #333; border-radius: 12px; padding: 10px 15px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); backdrop-filter: blur(10px); position: relative; z-index: 10; margin-bottom: 20px; }
   .cp-row { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; position: relative; }
@@ -105,10 +109,10 @@
 
   <div class="control-panel">
     <div class="cp-row">
-      <div class="dd-wrapper"><div class="dd-btn" onclick="toggleDD('gen')">GENERATIONS <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-gen"></div></div>
-      <div class="dd-wrapper"><div class="dd-btn" onclick="toggleDD('type')">TYPES <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-type"></div></div>
-      <div class="dd-wrapper"><div class="dd-btn" onclick="toggleDD('color')">COLORS <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-color"></div></div>
-      <div class="amount-box"><button class="amt-btn" onclick="modAmt(-1)">-</button><span class="amt-val" id="amt-display">6</span><button class="amt-btn" onclick="modAmt(1)">+</button></div>
+      <div class="dd-wrapper"><div class="dd-btn" id="dd-btn-gen" onclick="toggleDD('gen')">GENERATIONS <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-gen"></div></div>
+      <div class="dd-wrapper"><div class="dd-btn" id="dd-btn-type" onclick="toggleDD('type')">TYPES <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-type"></div></div>
+      <div class="dd-wrapper"><div class="dd-btn" id="dd-btn-color" onclick="toggleDD('color')">COLORS <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-color"></div></div>
+      <div class="amount-box"><button class="amt-btn" id="btn-amt-sub" onclick="modAmt(-1)">-</button><span class="amt-val" id="amt-display">6</span><button class="amt-btn" id="btn-amt-add" onclick="modAmt(1)">+</button></div>
     </div>
 
     <div class="cp-row">
@@ -124,13 +128,13 @@
 
     <div class="cp-row bottom">
       <div class="left-actions">
-        <button class="action-btn" onclick="doClear()"><span>&#10006;</span> CLEAR ALL</button>
-        <button class="action-btn" onclick="doReset()"><span>&#10227;</span> RESET MEMORY</button>
+        <button class="action-btn" id="btn-clear" onclick="doClear()"><span>&#10006;</span> CLEAR ALL</button>
+        <button class="action-btn" id="btn-reset" onclick="doReset()"><span>&#10227;</span> RESET MEMORY</button>
       </div>
       <div class="gen-wrapper-center">
-        <button class="nav-arrow" onclick="goHistory(-1)">&#10094;</button>
-        <button class="big-gen-btn" onclick="runGen()">GENERATE</button>
-        <button class="nav-arrow" onclick="goHistory(1)">&#10095;</button>
+        <button class="nav-arrow" id="btn-hist-back" onclick="goHistory(-1)">&#10094;</button>
+        <button class="big-gen-btn" id="btn-run-gen" onclick="runGen()">GENERATE</button>
+        <button class="nav-arrow" id="btn-hist-fwd" onclick="goHistory(1)">&#10095;</button>
       </div>
       <div id="active-tags"></div>
     </div>
@@ -187,8 +191,22 @@
       if (event.data && event.data.type === 'freePokemon') {
           freePokemonLocal(event.data.id);
       }
+      // --- PRESENCE SYNC ---
+      if(event.data.type === 'PEER_HOVER') {
+          document.querySelectorAll('.peer-hover-alb, .peer-hover-biu').forEach(el=>el.classList.remove('peer-hover-alb','peer-hover-biu'));
+          if(event.data.id && event.data.role) {
+              let el = document.getElementById(event.data.id);
+              if(el) el.classList.add('peer-hover-'+event.data.role);
+          }
+      }
   });
   if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
+
+  // --- HOVER REPORTING ---
+  document.addEventListener('mouseover', e => {
+      let t = e.target.closest('[id]'); 
+      if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
+  });
 
   function isSameTeam(a, b) {
       return JSON.stringify(a) === JSON.stringify(b);
