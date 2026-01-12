@@ -58,7 +58,7 @@ window.setIdentity = function(role) {
     
     // Clear old presence if switching
     if(role === 'spectator') {
-        // Stop tracking
+        // Stop tracking logic here if needed
     } else {
         // Update presence immediately
         updatePresence();
@@ -82,7 +82,7 @@ db.ref('config').on('value', snap => {
     if(c.theme) {
         document.documentElement.style.setProperty('--accent', c.theme);
         document.getElementById('st-theme-color').value = c.theme;
-        // SYNC IFRAMES (UPDATED TO INCLUDE FRAME-LIB)
+        // SYNC IFRAMES
         ['frame-play', 'frame-gen', 'frame-music', 'frame-hist', 'frame-lib'].forEach(id => {
             let el = document.getElementById(id);
             if(el && el.contentWindow) el.contentWindow.postMessage({ type: 'THEME_UPDATE', color: c.theme }, '*');
@@ -232,7 +232,7 @@ function initPresenceSystem() {
         const p = snap.val() || {};
         const roles = ['alb', 'biu'];
         
-        // Clear old indicators
+        // Clear old indicators in Shell
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
         document.querySelectorAll('.track-hover').forEach(el => {
             el.classList.remove('peer-hover-alb', 'peer-hover-biu');
@@ -257,12 +257,20 @@ function initPresenceSystem() {
                 }
             }
 
-            // Show "Hovering" Glow
+            // Show "Hovering" Glow in Shell
             if(data.hover) {
                 const targetEl = document.querySelector(`[data-id="${data.hover}"]`);
                 if(targetEl) {
                     targetEl.classList.add(`peer-hover-${role}`);
                 }
+                
+                // BROADCAST TO IFRAMES
+                ['frame-play', 'frame-gen', 'frame-music', 'frame-hist', 'frame-lib'].forEach(fid => {
+                    let f = document.getElementById(fid);
+                    if(f && f.contentWindow) {
+                        f.contentWindow.postMessage({ type: 'PEER_HOVER', id: data.hover, role: role }, '*');
+                    }
+                });
             }
         });
     });
@@ -274,7 +282,7 @@ function updatePresence() {
     // We send just the suffix 'play', 'gen' etc for tab, and the full ID for hover
     let tabShort = currentTabId.replace('tab-', '');
     
-    db.ref('presence/' + window.myRole).set({
+    db.ref('presence/' + window.myRole).update({
         tab: tabShort,
         hover: currentHoverId,
         timestamp: Date.now()
@@ -352,12 +360,19 @@ function updateTopVolIcon(val) {
     else icon.innerText = "volume_up";
 }
 
+// --- MESSAGE LISTENER (UPDATED) ---
 window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'requestClearCols') {
         clearCol('alb'); clearCol('biu');
     }
     if (event.data && event.data.type === 'GENERATOR_DROP') {
         handleReturnLogic();
+    }
+    
+    // HANDLE HOVER REPORTS FROM IFRAMES
+    if (event.data && event.data.type === 'HOVER_REPORT') {
+        currentHoverId = event.data.id;
+        updatePresence();
     }
 });
 
