@@ -174,14 +174,23 @@
       window.parent.postMessage({ type: 'GENERATOR_DROP' }, '*');
   });
 
-  // --- FIX: USE JACOBWOLF MIRROR FOR JSON DATA (Bypasses CORS & Missing File issues) ---
-  fetch("https://raw.githubusercontent.com/JacobWolf/pokemon-showdown-data/master/pokedex.json").then(res => res.json()).then(data => {
+  // --- FIX: USE ALLORIGINS PROXY FOR OFFICIAL DATA ---
+  // This fetches the official 'play.pokemonshowdown.com' file but routes it through allorigins.win to bypass CORS.
+  const proxyUrl = "https://api.allorigins.win/raw?url=";
+  const targetUrl = "https://play.pokemonshowdown.com/data/pokedex.json";
+
+  fetch(proxyUrl + encodeURIComponent(targetUrl))
+  .then(res => {
+      if(!res.ok) throw new Error("Network response was not ok");
+      return res.json();
+  })
+  .then(data => {
       RAW_DB = data;
       ALL_KEYS = Object.keys(data).filter(k => data[k].num > 0);
       document.getElementById('gen-overlay').style.display = 'none';
       startSync();
   }).catch(e => { 
-      console.error(e);
+      console.error("Data Fetch Error:", e);
       document.getElementById('gen-msg').innerText = "DATA ERROR - CHECK CONSOLE"; 
   });
 
