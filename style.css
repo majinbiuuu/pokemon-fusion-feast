@@ -289,7 +289,6 @@ body::before {
     color: #666; cursor: pointer; transition: 0.3s; 
     text-transform: uppercase; letter-spacing: 2px; 
     font-size: 1.2rem; /* Bigger Font */
-    display: flex; align-items: center;
 }
 
 .tab:hover { color: #ccc; }
@@ -305,15 +304,15 @@ body::before {
     box-shadow: 0 0 5px currentColor;
     animation: pulseDot 2s infinite;
 }
-/* DYNAMIC DOT COLORS */
 .p-dot.p1 { background-color: var(--p1-color); color: var(--p1-color); }
 .p-dot.p2 { background-color: var(--p2-color); color: var(--p2-color); }
 
 @keyframes pulseDot { 0% { opacity: 0.6; } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0.6; } }
 
-/* DYNAMIC PEER HOVER GLOWS (For Shell Tabs) */
-.peer-hover-p1 { border-color: var(--p1-color) !important; box-shadow: 0 0 15px var(--p1-color) !important; z-index: 1000; position:relative; }
-.peer-hover-p2 { border-color: var(--p2-color) !important; box-shadow: 0 0 15px var(--p2-color) !important; z-index: 1000; position:relative; }
+/* DYNAMIC PEER HOVER GLOWS (Restored for interaction visibility) */
+.peer-hover-p1 { border-color: var(--p1-color) !important; box-shadow: 0 0 15px var(--p1-color) !important; z-index: 100; position:relative; }
+.peer-hover-p2 { border-color: var(--p2-color) !important; box-shadow: 0 0 15px var(--p2-color) !important; z-index: 100; position:relative; }
+
 
 /* New Tab Button (Collapse) */
 .tab-btn-collapse {
