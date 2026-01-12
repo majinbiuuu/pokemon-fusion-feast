@@ -48,7 +48,7 @@ body::before {
 .status-dot.active { background: #ff0044; box-shadow: 0 0 10px #ff0044; }
 .online-count { font-size: 0.8rem; color: #aaa; border-left: 1px solid #555; padding-left: 10px; display: flex; align-items: center; gap: 5px; }
 
-/* NOW PLAYING WIDGET */
+/* NOW PLAYING WIDGET (UPDATED FOR SCROLLING) */
 .np-widget { 
     width: 650px; 
     height: 60px; 
@@ -56,8 +56,37 @@ body::before {
     display: flex; align-items: center; overflow: hidden; padding-right: 15px; 
 }
 .np-thumb-mini { width: 90px; height: 100%; background: #111; object-fit: cover; border-right: 1px solid #333; }
-.np-info { flex: 1; overflow: hidden; padding: 0 15px; white-space: nowrap; mask-image: linear-gradient(90deg, transparent, #fff 5%, #fff 95%, transparent); }
-.np-text { font-size: 1.1rem; font-weight: 700; display: inline-block; color: var(--accent); }
+
+.np-info { 
+    flex: 1; 
+    overflow: hidden; 
+    padding: 0 15px; 
+    white-space: nowrap; 
+    position: relative;
+    mask-image: linear-gradient(90deg, transparent, #fff 5%, #fff 95%, transparent); 
+}
+
+.np-scroll-wrapper {
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 100%;
+}
+
+.np-text { 
+    font-size: 1.1rem; 
+    font-weight: 700; 
+    display: inline-block; 
+    color: var(--accent);
+    /* SCROLLING ANIMATION */
+    padding-left: 100%;
+    animation: marquee 15s linear infinite;
+}
+
+@keyframes marquee {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-100%, 0); }
+}
 
 .np-controls { display: flex; align-items: center; gap: 8px; margin-right: 12px; border-right: 1px solid #333; padding-right: 12px; }
 .media-tiny-btn { width: 32px; height: 32px; border-radius: 6px; border: none; background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
@@ -284,6 +313,9 @@ body::before {
 /* --- DYNAMIC PEER HOVER GLOWS --- */
 .peer-hover-p1 { border-color: var(--p1-color) !important; box-shadow: 0 0 15px var(--p1-color) !important; z-index: 100; position:relative; }
 .peer-hover-p2 { border-color: var(--p2-color) !important; box-shadow: 0 0 15px var(--p2-color) !important; z-index: 100; position:relative; }
+
+/* Settings Buttons */
+.st-btn.selected { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 900; }
 
 /* New Tab Button (Collapse) */
 .tab-btn-collapse {
