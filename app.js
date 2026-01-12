@@ -2,6 +2,7 @@ window.GEN_DRAG_PAYLOAD = null;
 var lastTopVol = 100;
 window.returningIndex = -1;
 window.SETDEX_CACHE = null; 
+window.myRole = localStorage.getItem('myRole') || 'spectator';
 
 /* --- CONFIGURATION & DATA --- */
 const MEGA_STONE_EXCEPTIONS = {
@@ -42,11 +43,36 @@ const COMPETITIVE_SETS = {
 window.toggleSettings = function() {
     let el = document.getElementById('settings-modal');
     el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
+    if(el.style.display === 'flex') updateIdentityUI();
 };
 
 window.saveConfig = function(key, val) {
     db.ref('config/' + key).set(val);
 };
+
+// --- IDENTITY LOGIC ---
+window.setIdentity = function(role) {
+    window.myRole = role;
+    localStorage.setItem('myRole', role);
+    updateIdentityUI();
+    
+    // Clear old presence if switching
+    if(role === 'spectator') {
+        // Stop tracking
+    } else {
+        // Update presence immediately
+        updatePresence();
+    }
+};
+
+function updateIdentityUI() {
+    document.querySelectorAll('.st-btn').forEach(b => b.classList.remove('selected'));
+    const btn = document.getElementById('id-btn-' + (window.myRole === 'spectator' ? 'spec' : window.myRole));
+    if(btn) btn.classList.add('selected');
+    
+    const disp = document.getElementById('current-id-display');
+    if(disp) disp.innerText = window.myRole.toUpperCase();
+}
 
 // --- SYNC CONFIG ---
 db.ref('config').on('value', snap => {
@@ -169,19 +195,91 @@ if (!myId) {
 var presenceRef = db.ref('presence');
 var connectedRef = db.ref('.info/connected');
 
+// Standard "Online Count" Logic
 connectedRef.on('value', function(snap) {
     if (snap.val() === true) {
-        var userRef = presenceRef.child(myId);
+        var userRef = presenceRef.child('list/' + myId);
         userRef.onDisconnect().remove();
         userRef.set(true);
     }
 });
 
-presenceRef.on('value', function(snap) {
+presenceRef.child('list').on('value', function(snap) {
     var val = snap.val() || {};
     var count = Object.keys(val).length;
     document.getElementById('presence-count').innerHTML = `<i class="fas fa-users" style="font-size: 11px;"></i> ${count}`;
 });
+
+// --- NEW: TAB & HOVER PRESENCE SYSTEM ---
+let currentTabId = 'tab-play';
+let currentHoverId = null;
+
+function initPresenceSystem() {
+    // 1. Listen for mouseover on trackable elements in Shell
+    document.querySelectorAll('.track-hover').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+            currentHoverId = el.getAttribute('data-id');
+            updatePresence();
+        });
+        el.addEventListener('mouseleave', () => {
+            currentHoverId = null;
+            updatePresence();
+        });
+    });
+
+    // 2. Listen for OTHER players
+    db.ref('presence').on('value', snap => {
+        const p = snap.val() || {};
+        const roles = ['alb', 'biu'];
+        
+        // Clear old indicators
+        document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
+        document.querySelectorAll('.track-hover').forEach(el => {
+            el.classList.remove('peer-hover-alb', 'peer-hover-biu');
+        });
+
+        roles.forEach(role => {
+            if(role === window.myRole) return; // Don't show self
+            
+            const data = p[role];
+            if(!data) return;
+
+            // Show "Present in Tab" Dot
+            if(data.tab) {
+                const targetTab = document.querySelector(`.tab[data-id="tab-${data.tab}"]`);
+                if(targetTab) {
+                    const badgeContainer = targetTab.querySelector('.tab-badges');
+                    if(badgeContainer) {
+                        const dot = document.createElement('div');
+                        dot.className = `p-dot ${role}`;
+                        badgeContainer.appendChild(dot);
+                    }
+                }
+            }
+
+            // Show "Hovering" Glow
+            if(data.hover) {
+                const targetEl = document.querySelector(`[data-id="${data.hover}"]`);
+                if(targetEl) {
+                    targetEl.classList.add(`peer-hover-${role}`);
+                }
+            }
+        });
+    });
+}
+
+function updatePresence() {
+    if(window.myRole === 'spectator') return;
+    
+    // We send just the suffix 'play', 'gen' etc for tab, and the full ID for hover
+    let tabShort = currentTabId.replace('tab-', '');
+    
+    db.ref('presence/' + window.myRole).set({
+        tab: tabShort,
+        hover: currentHoverId,
+        timestamp: Date.now()
+    });
+}
 
 
 // --- DASHBOARD SYNC ---
@@ -713,6 +811,10 @@ window.switchTab = function(viewId, btn) {
         window.toggleCenterCollapse();
     }
 
+    // UPDATE TAB PRESENCE
+    currentTabId = 'tab-' + viewId;
+    updatePresence();
+
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); 
     document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); 
     document.getElementById('view-'+viewId).classList.add('active'); 
@@ -721,6 +823,9 @@ window.switchTab = function(viewId, btn) {
 
 document.addEventListener('DOMContentLoaded', function() {
     window.initSlots('slots-alb'); window.initSlots('slots-biu'); 
+    
+    // Init Presence
+    initPresenceSystem();
     
     // --- LIBRARY LOADER (DATA ONLY) ---
     // This fetches data so other tabs like Generator/Play can use it
