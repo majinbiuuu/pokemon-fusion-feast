@@ -15,7 +15,7 @@ window.saveConfig = function(key, val) {
     db.ref('config/' + key).set(val);
 };
 
-// --- IDENTITY LOGIC & GHOST FIX ---
+// --- IDENTITY LOGIC ---
 window.setIdentity = function(role) {
     // 1. Clean up old presence
     if(window.myRole && window.myRole !== 'spectator') {
@@ -194,7 +194,7 @@ let currentTabId = 'tab-play';
 let currentHoverId = null;
 
 function initPresenceSystem() {
-    // 1. Mouse Listeners
+    // 1. Mouse Listeners (Hover)
     document.querySelectorAll('.track-hover').forEach(el => {
         el.addEventListener('mouseenter', () => { currentHoverId = el.getAttribute('data-id'); updatePresence(); });
         el.addEventListener('mouseleave', () => { currentHoverId = null; updatePresence(); });
@@ -210,11 +210,13 @@ function initPresenceSystem() {
         document.querySelectorAll('.track-hover').forEach(el => {
             el.classList.remove('peer-hover-p1', 'peer-hover-p2');
         });
+        // Clear Iframe Glows too (broadcast clear first)
+        broadcastToIframes({ type: 'PEER_HOVER', id: null, role: null });
 
         roles.forEach(role => {
             if(role === window.myRole) return; 
             const data = p[role];
-            if(!data) return; // User is offline, no ghosting
+            if(!data) return; // User offline, no ghosting
 
             // Tab Dot
             if(data.tab) {
