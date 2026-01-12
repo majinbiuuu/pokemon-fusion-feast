@@ -25,28 +25,25 @@
               <div class="modal-close" onclick="toggleSettings()">&times;</div>
           </div>
           
-          <div class="setting-group" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:6px; border:1px solid #444; margin-bottom:15px;">
-              <div class="setting-label" style="color:#fff; font-size:0.9rem; margin-bottom:8px;">WHO ARE YOU?</div>
+          <div class="section-box">
+              <div class="setting-label">WHO ARE YOU?</div>
               <div class="flex-row">
-                  <button class="st-btn" id="id-btn-alb" onclick="setIdentity('alb')" style="flex:1">ALB</button>
-                  <button class="st-btn" id="id-btn-biu" onclick="setIdentity('biu')" style="flex:1">BIU</button>
-                  <button class="st-btn" id="id-btn-spec" onclick="setIdentity('spectator')" style="flex:1">SPECTATOR</button>
-              </div>
-              <div style="font-size:0.7rem; color:#888; margin-top:5px; text-align:center;">
-                  Current Identity: <span id="current-id-display" style="color:#fff; font-weight:bold">Spectator</span>
+                  <button class="who-btn" id="role-p1" onclick="setIdentity('p1')">Player 1</button>
+                  <button class="who-btn" id="role-p2" onclick="setIdentity('p2')">Player 2</button>
+                  <button class="who-btn" id="role-spec" onclick="setIdentity('spectator')">Spectator</button>
               </div>
           </div>
 
-          <div class="row-grid">
-              <div class="setting-group">
-                  <div class="setting-label">Player 1 (Left)</div>
+          <div class="player-grid">
+              <div class="section-box">
+                  <div class="setting-label">PLAYER 1 CONFIG</div>
                   <div class="flex-row">
                       <input type="text" id="st-p1-name" class="st-input" placeholder="Name" onchange="saveConfig('p1Name', this.value)">
                       <input type="color" id="st-p1-color" class="st-color" onchange="saveConfig('p1Color', this.value)">
                   </div>
               </div>
-              <div class="setting-group">
-                  <div class="setting-label">Player 2 (Right)</div>
+              <div class="section-box">
+                  <div class="setting-label">PLAYER 2 CONFIG</div>
                   <div class="flex-row">
                       <input type="text" id="st-p2-name" class="st-input" placeholder="Name" onchange="saveConfig('p2Name', this.value)">
                       <input type="color" id="st-p2-color" class="st-color" onchange="saveConfig('p2Color', this.value)">
@@ -69,7 +66,7 @@
               </div>
           </div>
           
-          <div class="setting-group">
+          <div class="section-box">
               <div class="setting-label">Background Wallpaper</div>
               
               <div id="drop-zone" ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)" ondrop="dropHandler(event)">
@@ -81,8 +78,7 @@
                   <button class="st-btn action" onclick="addCurrentToSaved()">Save</button>
                   <button class="st-btn" onclick="saveConfig('bgUrl', '')">Clear</button>
               </div>
-              <div class="saved-grid" id="saved-bg-list">
-                  </div>
+              <div class="saved-grid" id="saved-bg-list"></div>
           </div>
 
       </div>
@@ -127,7 +123,7 @@
   <div class="stage">
     <div class="col-p" id="col-alb">
       <div class="p-header">
-          <div class="p-name" id="disp-p1-name" style="color:var(--red)">ALB</div>
+          <div class="p-name" id="disp-p1-name" style="color:var(--p1-color)">P1</div>
           <div class="p-score" id="score-alb">0</div>
           <div class="p-ctrls">
               <div class="tiny-btn" onclick="modScore('alb', 'add')">+</div>
@@ -195,7 +191,7 @@
 
     <div class="col-p" id="col-biu">
       <div class="p-header">
-          <div class="p-name" id="disp-p2-name" style="color:var(--blue)">BIU</div>
+          <div class="p-name" id="disp-p2-name" style="color:var(--p2-color)">P2</div>
           <div class="p-score" id="score-biu">0</div>
           <div class="p-ctrls">
               <div class="tiny-btn" onclick="modScore('biu', 'add')">+</div>
