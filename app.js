@@ -52,18 +52,25 @@ window.saveConfig = function(key, val) {
 
 // --- IDENTITY LOGIC ---
 window.setIdentity = function(role) {
-    // role is 'p1', 'p2', or 'spectator'
+    // 1. Remove old presence if exists
+    if(window.myRole && window.myRole !== 'spectator') {
+        db.ref('presence/' + window.myRole).remove();
+        db.ref('presence/' + window.myRole).onDisconnect().cancel(); 
+    }
+
+    // 2. Set New Role
     window.myRole = role;
     localStorage.setItem('myRole', role);
     updateIdentityUI();
     
-    // Clear old presence
-    // In a real app we'd remove the old node, but overwriting is fine for now
-    updatePresence();
+    // 3. Setup New Presence (with Disconnect Handler)
+    if(role !== 'spectator') {
+        db.ref('presence/' + role).onDisconnect().remove();
+        updatePresence();
+    }
 };
 
 function updateIdentityUI() {
-    // Highlight selected role
     document.querySelectorAll('.who-btn').forEach(b => b.classList.remove('active'));
     const btn = document.getElementById('role-' + (window.myRole === 'spectator' ? 'spec' : window.myRole));
     if(btn) btn.classList.add('active');
@@ -231,23 +238,10 @@ presenceRef.child('list').on('value', function(snap) {
     document.getElementById('presence-count').innerHTML = `<i class="fas fa-users" style="font-size: 11px;"></i> ${count}`;
 });
 
-// --- NEW: TAB & HOVER PRESENCE SYSTEM ---
+// --- NEW: TAB PRESENCE SYSTEM (Glow Removed) ---
 let currentTabId = 'tab-play';
-let currentHoverId = null;
 
 function initPresenceSystem() {
-    // 1. Listen for mouseover on trackable elements in Shell
-    document.querySelectorAll('.track-hover').forEach(el => {
-        el.addEventListener('mouseenter', () => {
-            currentHoverId = el.getAttribute('data-id');
-            updatePresence();
-        });
-        el.addEventListener('mouseleave', () => {
-            currentHoverId = null;
-            updatePresence();
-        });
-    });
-
     // 2. Listen for OTHER players
     db.ref('presence').on('value', snap => {
         const p = snap.val() || {};
@@ -255,9 +249,6 @@ function initPresenceSystem() {
         
         // Clear old indicators in Shell
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
-        document.querySelectorAll('.track-hover').forEach(el => {
-            el.classList.remove('peer-hover-p1', 'peer-hover-p2');
-        });
 
         roles.forEach(role => {
             if(role === window.myRole) return; // Don't show self
@@ -265,7 +256,7 @@ function initPresenceSystem() {
             const data = p[role];
             if(!data) return;
 
-            // Show "Present in Tab" Dot
+            // Show "Present in Tab" Dot ONLY
             if(data.tab) {
                 const targetTab = document.querySelector(`.tab[data-id="tab-${data.tab}"]`);
                 if(targetTab) {
@@ -277,17 +268,6 @@ function initPresenceSystem() {
                     }
                 }
             }
-
-            // Show "Hovering" Glow in Shell
-            if(data.hover) {
-                const targetEl = document.querySelector(`[data-id="${data.hover}"]`);
-                if(targetEl) {
-                    targetEl.classList.add(`peer-hover-${role}`);
-                }
-                
-                // BROADCAST TO IFRAMES
-                broadcastToIframes({ type: 'PEER_HOVER', id: data.hover, role: role });
-            }
         });
     });
 }
@@ -295,12 +275,11 @@ function initPresenceSystem() {
 function updatePresence() {
     if(window.myRole === 'spectator') return;
     
-    // We send just the suffix 'play', 'gen' etc for tab, and the full ID for hover
     let tabShort = currentTabId.replace('tab-', '');
     
+    // We do NOT send hover data anymore as requested
     db.ref('presence/' + window.myRole).update({
         tab: tabShort,
-        hover: currentHoverId,
         timestamp: Date.now()
     });
 }
@@ -376,19 +355,12 @@ function updateTopVolIcon(val) {
     else icon.innerText = "volume_up";
 }
 
-// --- MESSAGE LISTENER (UPDATED) ---
 window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'requestClearCols') {
         clearCol('alb'); clearCol('biu');
     }
     if (event.data && event.data.type === 'GENERATOR_DROP') {
         handleReturnLogic();
-    }
-    
-    // HANDLE HOVER REPORTS FROM IFRAMES
-    if (event.data && event.data.type === 'HOVER_REPORT') {
-        currentHoverId = event.data.id;
-        updatePresence();
     }
 });
 
@@ -406,8 +378,6 @@ function handleReturnLogic() {
          
          if(window.returningIndex !== -1) {
              var dbKey = side === 'alb' ? 'slotsAlb' : 'slotsBiu';
-             // FIX: Use .update() instead of .set(null) for sparse array issues, or explicit null logic
-             // And broadcast changes immediately by clearing data in memory if needed
              db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
          } else {
              saveColumnState(side);
@@ -829,29 +799,22 @@ window.toggleCenterCollapse = function() {
         colC.classList.remove('minimized');
         if(icon) icon.className = "fas fa-compress-alt"; 
     }
-
-    // --- NEW: SYNC COLUMNS WITH CENTER ---
-    // If center is collapsed, ensure columns are collapsed.
-    // If center is expanded, ensure columns are expanded.
-    if (window.centerCollapsed !== window.isCollapsed) {
-        window.toggleCollapse();
-    }
 };
 
 window.switchTab = function(viewId, btn) { 
-    // If window is minimized, expand it automatically
-    // BUT DO NOT EXPAND SIDE COLUMNS (this is key behavior change)
-    if(window.centerCollapsed) {
-        const colC = document.querySelector('.col-c');
-        const icon = document.getElementById('c-collapse-icon');
-        
-        window.centerCollapsed = false;
-        colC.classList.remove('minimized');
-        if(icon) icon.className = "fas fa-compress-alt";
-        // We explicitly do NOT call toggleCollapse() here
+    // TOGGLE LOGIC:
+    // 1. If currently OPEN and click SAME tab -> Close it (Minimize)
+    if (currentTabId === 'tab-' + viewId && !window.centerCollapsed) {
+        window.toggleCenterCollapse();
+        return;
     }
 
-    // UPDATE TAB PRESENCE
+    // 2. If minimized -> Open it
+    if (window.centerCollapsed) {
+        window.toggleCenterCollapse();
+    }
+
+    // 3. Switch active view
     currentTabId = 'tab-' + viewId;
     updatePresence();
 
@@ -866,6 +829,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Init Presence
     initPresenceSystem();
+
+    // START MINIMIZED (Both Columns and Center)
+    window.toggleCollapse();       // Collapse Side Columns
+    window.toggleCenterCollapse(); // Collapse Center Window
     
     // --- LIBRARY LOADER (DATA ONLY) ---
     // This fetches data so other tabs like Generator/Play can use it
