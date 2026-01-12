@@ -13,6 +13,10 @@
   --text: #eee;
   --glass-blur: blur(12px);
   --glow: 0 0 15px rgba(255, 255, 255, 0.1);
+
+  /* PLAYER COLORS (Defaults) */
+  --p1-color: #ff4444;
+  --p2-color: #4488ff;
 }
 
 /* GLOBAL SCROLLBAR */
