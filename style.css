@@ -309,7 +309,7 @@ body::before {
 
 @keyframes pulseDot { 0% { opacity: 0.6; } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0.6; } }
 
-/* DYNAMIC PEER HOVER GLOWS (Restored for interaction visibility) */
+/* DYNAMIC PEER HOVER GLOWS */
 .peer-hover-p1 { border-color: var(--p1-color) !important; box-shadow: 0 0 15px var(--p1-color) !important; z-index: 100; position:relative; }
 .peer-hover-p2 { border-color: var(--p2-color) !important; box-shadow: 0 0 15px var(--p2-color) !important; z-index: 100; position:relative; }
 
