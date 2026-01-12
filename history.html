@@ -17,7 +17,6 @@
     --border-color: rgba(255, 255, 255, 0.15);
     --text-dim: #888;
     
-    /* Defaults - will be overwritten by app.js config */
     --p1-color: #ff4444;
     --p2-color: #4488ff;
   }
@@ -378,7 +377,6 @@
   </div>
 
 <script>
-  // --- 1. FIREBASE SETUP ---
   const firebaseConfig = {
     apiKey: "AIzaSyDz82Dp56EISYqk3hza3upJ2pAjsStgMKo",
     authDomain: "pokemon-masters-d153a.firebaseapp.com",
@@ -397,30 +395,25 @@
   window.p2Name = "BIU";
   let cachedRawData = null;
 
-  // --- THEME & CONFIG SYNC ---
   window.addEventListener('message', (event) => {
       if(event.data) {
           if (event.data.type === 'THEME_UPDATE') {
               document.documentElement.style.setProperty('--theme-green', event.data.color);
           }
           if (event.data.type === 'CONFIG_UPDATE') {
-              // Update local state
               if(event.data.p1Color) document.documentElement.style.setProperty('--p1-color', event.data.p1Color);
               if(event.data.p2Color) document.documentElement.style.setProperty('--p2-color', event.data.p2Color);
               if(event.data.p1Name) window.p1Name = event.data.p1Name;
               if(event.data.p2Name) window.p2Name = event.data.p2Name;
               
-              // Update Headers
               document.getElementById('stat-hdr-p1').innerText = window.p1Name;
               document.getElementById('stat-hdr-p2').innerText = window.p2Name;
               
-              // Re-render list using new names/colors
               if(cachedRawData) {
                   updateStats(cachedRawData);
                   renderAllMatches(cachedRawData);
               }
           }
-          // Presence Sync
           if(event.data.type === 'PEER_HOVER') {
               document.querySelectorAll('.peer-hover-p1, .peer-hover-p2').forEach(el=>el.classList.remove('peer-hover-p1','peer-hover-p2'));
               if(event.data.id && event.data.role) {
@@ -432,13 +425,11 @@
   });
   if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
 
-  // --- HOVER REPORTING ---
   document.addEventListener('mouseover', e => {
       let t = e.target.closest('[id]'); 
       if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
   });
 
-  // --- INITIAL CONFIG LOAD ---
   db.ref('config').once('value', snap => {
       let c = snap.val() || {};
       if(c.p1Name) window.p1Name = c.p1Name;
@@ -450,7 +441,6 @@
       document.getElementById('stat-hdr-p2').innerText = window.p2Name;
   });
 
-  // --- 2. RENDER LOGIC ---
   db.ref('history').limitToLast(50).on('value', snap => {
       cachedRawData = snap.val();
       updateStats(cachedRawData);
@@ -473,7 +463,6 @@
       });
   }
 
-  // --- STATS CALCULATION LOGIC ---
   function updateStats(data) {
       if(!data) return;
       
@@ -486,15 +475,14 @@
       let chalTotal = 0;
 
       Object.values(data).forEach(match => {
-          let w = match.winner;
+          let w = (match.winner || "").toUpperCase().trim();
           let isChal = (match.settings && match.settings.mode === 'Challenge');
           
-          // Match winner by actual name stored OR by fallback code
-          if(w === window.p1Name || w === 'ALB') {
+          if(w === window.p1Name.toUpperCase().trim() || w === 'ALB') {
               albWins++; totalGames++;
               if(isChal) { albChalWins++; chalTotal++; }
           }
-          else if(w === window.p2Name || w === 'BIU') {
+          else if(w === window.p2Name.toUpperCase().trim() || w === 'BIU') {
               biuWins++; totalGames++;
               if(isChal) { biuChalWins++; chalTotal++; }
           }
@@ -532,24 +520,21 @@
 
       if(showDetails) { mode = "Various"; side = "Various"; }
 
-      // --- DYNAMIC WINNER NAME & COLOR ---
       let displayWinner = data.winner;
       let winColor = '#fff';
+      let w = (data.winner || "").toUpperCase().trim();
       
-      // Check P1 (either matches current name OR code)
-      if (data.winner === window.p1Name || data.winner === 'ALB') {
+      if (w === window.p1Name.toUpperCase().trim() || w === 'ALB') {
           displayWinner = window.p1Name;
           winColor = 'var(--p1-color)';
       }
-      // Check P2
-      else if (data.winner === window.p2Name || data.winner === 'BIU') {
+      else if (w === window.p2Name.toUpperCase().trim() || w === 'BIU') {
           displayWinner = window.p2Name;
           winColor = 'var(--p2-color)';
       }
 
-      // --- RECORD BADGES WITH INITIALS ---
       let recordHtml = `<div class="rec-container">`;
-      if(Array.isArray(data.record)) {
+      if(Array.isArray(data.record) && data.record.length > 0) {
           data.record.forEach(r => {
               let txt = r.result;
               let col = '#555';
@@ -565,6 +550,9 @@
               
               recordHtml += `<div class="rec-badge" style="color:${col}; border-color:${col}; background:${bg}">${txt}</div>`;
           });
+      } else {
+          // Placeholder for missing data
+          recordHtml += `<div class="rec-badge" style="border-style:dashed; opacity:0.3">-</div>`;
       }
       recordHtml += `</div>`;
 
@@ -588,7 +576,6 @@
              let gRes = game.result;
              let gCol = '#fff';
              
-             // Dynamic Detail Color
              if(gRes === window.p1Name || gRes === 'ALB' || gRes === 'A') { gRes = window.p1Name + " Win"; gCol = 'var(--p1-color)'; }
              else if(gRes === window.p2Name || gRes === 'BIU' || gRes === 'B') { gRes = window.p2Name + " Win"; gCol = 'var(--p2-color)'; }
              
@@ -655,7 +642,6 @@
       container.innerHTML += html;
   }
 
-  // --- DRAG & DROP LOGIC ---
   let draggedId = null;
 
   function dragStart(e) {
@@ -664,14 +650,8 @@
       e.dataTransfer.effectAllowed = 'move';
   }
 
-  function dragOver(e) {
-      e.preventDefault(); 
-      e.currentTarget.classList.add('drop-target');
-  }
-
-  function dragLeave(e) {
-      e.currentTarget.classList.remove('drop-target');
-  }
+  function dragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drop-target'); }
+  function dragLeave(e) { e.currentTarget.classList.remove('drop-target'); }
 
   function dragDrop(e) {
       e.preventDefault();
@@ -697,20 +677,13 @@
       db.ref('history/' + draggedId).update({ timestamp: newTime });
   }
 
-  // --- ACTIONS ---
-
   function toggleDetails(key) {
       let row = document.getElementById('det-' + key);
       let btn = document.getElementById('btn-' + key);
       if(row) {
           let isVis = row.classList.contains('show');
-          if(isVis) {
-              row.classList.remove('show');
-              btn.classList.remove('open');
-          } else {
-              row.classList.add('show');
-              btn.classList.add('open');
-          }
+          if(isVis) { row.classList.remove('show'); btn.classList.remove('open'); } 
+          else { row.classList.add('show'); btn.classList.add('open'); }
       }
   }
 
@@ -719,21 +692,12 @@
           db.ref('history/' + key).remove();
       }
   }
-
-  // --- 4. MANUAL ADD / EDIT ---
   
   function openModal() {
       document.getElementById('edit-modal').style.display = 'flex';
       document.getElementById('modal-title').innerText = "Add Manual Match";
       document.getElementById('edit-id').value = "";
       clearInputs();
-      
-      // Update Winner Dropdown
-      let sel = document.getElementById('in-winner');
-      sel.innerHTML = `
-        <option value="${window.p1Name}">${window.p1Name}</option>
-        <option value="${window.p2Name}">${window.p2Name}</option>
-      `;
   }
 
   function editEntry(key) {
@@ -743,17 +707,10 @@
           document.getElementById('modal-title').innerText = "Edit Match";
           document.getElementById('edit-id').value = key;
           
-          let sel = document.getElementById('in-winner');
-          sel.innerHTML = `
-            <option value="${window.p1Name}">${window.p1Name}</option>
-            <option value="${window.p2Name}">${window.p2Name}</option>
-          `;
-          
           let mode = d.dashSnapshot ? d.dashSnapshot.mode : (d.mode || "");
           let side = d.dashSnapshot ? d.dashSnapshot.side : (d.side || "");
           let points = d.dashSnapshot ? d.dashSnapshot.points : (d.points || "");
           let sp = d.dashSnapshot ? d.dashSnapshot.sp : (d.sp || "");
-          
           let recStr = Array.isArray(d.record) ? d.record.map(r => r.result).join('-') : (d.record || "");
           let linkStr = Array.isArray(d.links) ? d.links.join(',') : (d.links || "");
 
@@ -767,9 +724,7 @@
       });
   }
 
-  function closeModal() {
-      document.getElementById('edit-modal').style.display = 'none';
-  }
+  function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
 
   function clearInputs() {
       document.getElementById('in-mode').value = "";
@@ -782,7 +737,6 @@
 
   function saveData() {
       const id = document.getElementById('edit-id').value;
-      
       const payload = {
           mode: document.getElementById('in-mode').value,
           side: document.getElementById('in-side').value,
@@ -793,15 +747,11 @@
           links: document.getElementById('in-links').value,
           timestamp: id ? undefined : Date.now() 
       };
-
       if(!id) payload.timestamp = Date.now();
       if(id) delete payload.timestamp; 
 
-      if(id) {
-          db.ref('history/' + id).update(payload);
-      } else {
-          db.ref('history').push(payload);
-      }
+      if(id) db.ref('history/' + id).update(payload);
+      else db.ref('history').push(payload);
       closeModal();
   }
 </script>
