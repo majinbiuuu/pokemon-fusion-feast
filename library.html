@@ -29,6 +29,10 @@
     flex-direction: column;
   }
 
+  /* PEER HOVER STYLES */
+  .peer-hover-alb { border-color: #ff4444 !important; box-shadow: 0 0 15px #ff4444 !important; z-index: 100; position:relative; }
+  .peer-hover-biu { border-color: #4488ff !important; box-shadow: 0 0 15px #4488ff !important; z-index: 100; position:relative; }
+
   /* --- LIBRARY LAYOUT --- */
   .lib-container {
       display: flex;
@@ -272,7 +276,7 @@
       <div class="lib-editor">
           <div class="lib-header">
               <h2 id="lib-current-title">Select Category</h2>
-              <button class="lib-btn action" onclick="addItemToLibrary()">
+              <button class="lib-btn action" id="btn-add-new" onclick="addItemToLibrary()">
                   <i class="fas fa-plus"></i> Add New
               </button>
           </div>
@@ -307,8 +311,22 @@
       if (event.data && event.data.type === 'THEME_UPDATE') {
           document.documentElement.style.setProperty('--accent', event.data.color);
       }
+      // --- PRESENCE SYNC ---
+      if(event.data.type === 'PEER_HOVER') {
+          document.querySelectorAll('.peer-hover-alb, .peer-hover-biu').forEach(el=>el.classList.remove('peer-hover-alb','peer-hover-biu'));
+          if(event.data.id && event.data.role) {
+              let el = document.getElementById(event.data.id);
+              if(el) el.classList.add('peer-hover-'+event.data.role);
+          }
+      }
   });
   if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
+
+  // --- HOVER REPORTING ---
+  document.addEventListener('mouseover', e => {
+      let t = e.target.closest('[id]'); 
+      if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
+  });
 
   // --- LIBRARY LOGIC ---
   const LIBRARY_SECTIONS = {
@@ -347,6 +365,7 @@
               let li = document.createElement('li');
               li.className = 'lib-cat-item';
               li.innerText = itemName;
+              li.id = 'lib-cat-' + itemName.replace(/\s+/g, '-').toLowerCase(); // ADDED ID FOR TRACKING
               li.onclick = () => loadLibraryCategory(itemName, itemData.path, li, itemData.theme);
               
               if(!firstItem) firstItem = { name: itemName, path: itemData.path, el: li, theme: itemData.theme };
@@ -420,6 +439,9 @@
 
           const div = document.createElement('div');
           div.className = 'lib-row';
+          // Use item.key for ID if safe, else random
+          div.id = 'lib-row-' + item.key;
+          
           div.innerHTML = `
               <input type="text" class="lib-input" 
                      value="${textVal}" 
