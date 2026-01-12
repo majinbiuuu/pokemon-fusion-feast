@@ -238,10 +238,23 @@ presenceRef.child('list').on('value', function(snap) {
     document.getElementById('presence-count').innerHTML = `<i class="fas fa-users" style="font-size: 11px;"></i> ${count}`;
 });
 
-// --- NEW: TAB PRESENCE SYSTEM (Glow Removed) ---
+// --- NEW: TAB PRESENCE & HOVER GLOW SYSTEM ---
 let currentTabId = 'tab-play';
+let currentHoverId = null;
 
 function initPresenceSystem() {
+    // 1. Listen for mouseover on trackable elements in Shell (Tabs)
+    document.querySelectorAll('.track-hover').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+            currentHoverId = el.getAttribute('data-id');
+            updatePresence();
+        });
+        el.addEventListener('mouseleave', () => {
+            currentHoverId = null;
+            updatePresence();
+        });
+    });
+
     // 2. Listen for OTHER players
     db.ref('presence').on('value', snap => {
         const p = snap.val() || {};
@@ -249,6 +262,9 @@ function initPresenceSystem() {
         
         // Clear old indicators in Shell
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
+        document.querySelectorAll('.track-hover').forEach(el => {
+            el.classList.remove('peer-hover-p1', 'peer-hover-p2');
+        });
 
         roles.forEach(role => {
             if(role === window.myRole) return; // Don't show self
@@ -256,7 +272,7 @@ function initPresenceSystem() {
             const data = p[role];
             if(!data) return;
 
-            // Show "Present in Tab" Dot ONLY
+            // Show "Present in Tab" Dot (Tabs Only)
             if(data.tab) {
                 const targetTab = document.querySelector(`.tab[data-id="tab-${data.tab}"]`);
                 if(targetTab) {
@@ -268,6 +284,17 @@ function initPresenceSystem() {
                     }
                 }
             }
+
+            // Show "Hovering" Glow in Shell (Buttons/Filters)
+            if(data.hover) {
+                const targetEl = document.querySelector(`[data-id="${data.hover}"]`);
+                if(targetEl) {
+                    targetEl.classList.add(`peer-hover-${role}`);
+                }
+                
+                // BROADCAST TO IFRAMES (So buttons inside iframes glow)
+                broadcastToIframes({ type: 'PEER_HOVER', id: data.hover, role: role });
+            }
         });
     });
 }
@@ -277,9 +304,9 @@ function updatePresence() {
     
     let tabShort = currentTabId.replace('tab-', '');
     
-    // We do NOT send hover data anymore as requested
     db.ref('presence/' + window.myRole).update({
         tab: tabShort,
+        hover: currentHoverId,
         timestamp: Date.now()
     });
 }
@@ -355,12 +382,19 @@ function updateTopVolIcon(val) {
     else icon.innerText = "volume_up";
 }
 
+// --- MESSAGE LISTENER (UPDATED) ---
 window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'requestClearCols') {
         clearCol('alb'); clearCol('biu');
     }
     if (event.data && event.data.type === 'GENERATOR_DROP') {
         handleReturnLogic();
+    }
+    
+    // HANDLE HOVER REPORTS FROM IFRAMES
+    if (event.data && event.data.type === 'HOVER_REPORT') {
+        currentHoverId = event.data.id;
+        updatePresence();
     }
 });
 
@@ -702,11 +736,13 @@ function saveColumnState(side) {
 }
 
 function renderColumn(side, data) {
-    if(!data) return;
+    // FIX: Handle null/undefined data by forcing empty check loop
     var container = document.getElementById('slots-'+side);
     var kids = container.getElementsByClassName('slot');
+    
     for(var i=0; i<kids.length; i++) {
-        if(data[i]) {
+        // If data exists AND data[i] exists, fill. Otherwise clear.
+        if(data && data[i]) {
             if(!kids[i].classList.contains('filled') || kids[i].innerText !== data[i].name) {
                 kids[i].innerHTML = `<img src="${data[i].img}" onerror="this.src='https://play.pokemonshowdown.com/sprites/gen5/${data[i].id}.png'"><div class="slot-txt" data-id="${data[i].id}">${data[i].name}</div>`;
                 kids[i].classList.add('filled');
@@ -798,6 +834,13 @@ window.toggleCenterCollapse = function() {
     } else {
         colC.classList.remove('minimized');
         if(icon) icon.className = "fas fa-compress-alt"; 
+    }
+
+    // --- NEW: SYNC COLUMNS WITH CENTER ---
+    // If center is collapsed, ensure columns are collapsed.
+    // If center is expanded, ensure columns are expanded.
+    if (window.centerCollapsed !== window.isCollapsed) {
+        window.toggleCollapse();
     }
 };
 
