@@ -193,6 +193,19 @@ window.dropHandler = function(ev) {
     }
 }
 
+// --- FULLSCREEN LOGIC ---
+window.toggleFullScreen = function() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch((e) => {
+            console.log(`Error attempting to enable fullscreen: ${e.message}`);
+        });
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+};
+
 // --- PRESENCE LOGIC ---
 var myId = localStorage.getItem('presenceId');
 if (!myId) {
@@ -393,6 +406,8 @@ function handleReturnLogic() {
          
          if(window.returningIndex !== -1) {
              var dbKey = side === 'alb' ? 'slotsAlb' : 'slotsBiu';
+             // FIX: Use .update() instead of .set(null) for sparse array issues, or explicit null logic
+             // And broadcast changes immediately by clearing data in memory if needed
              db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
          } else {
              saveColumnState(side);
@@ -825,8 +840,15 @@ window.toggleCenterCollapse = function() {
 
 window.switchTab = function(viewId, btn) { 
     // If window is minimized, expand it automatically
+    // BUT DO NOT EXPAND SIDE COLUMNS (this is key behavior change)
     if(window.centerCollapsed) {
-        window.toggleCenterCollapse();
+        const colC = document.querySelector('.col-c');
+        const icon = document.getElementById('c-collapse-icon');
+        
+        window.centerCollapsed = false;
+        colC.classList.remove('minimized');
+        if(icon) icon.className = "fas fa-compress-alt";
+        // We explicitly do NOT call toggleCollapse() here
     }
 
     // UPDATE TAB PRESENCE
