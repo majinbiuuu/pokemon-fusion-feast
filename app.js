@@ -3,7 +3,7 @@ var lastTopVol = 100;
 window.returningIndex = -1;
 window.SETDEX_CACHE = null; 
 window.myRole = localStorage.getItem('myRole') || 'spectator';
-window.playerColors = { p1: '#ff4444', p2: '#4488ff' }; // Default fallback
+window.playerColors = { p1: '#ff4444', p2: '#4488ff' };
 
 /* --- CONFIGURATION & DATA --- */
 const MEGA_STONE_EXCEPTIONS = {
@@ -245,13 +245,12 @@ presenceRef.child('list').on('value', function(snap) {
 let currentTabId = 'tab-play';
 
 function initPresenceSystem() {
-    // 2. Listen for OTHER players presence (Tab Dots & Interactions)
+    // 2. Listen for OTHER players
     db.ref('presence').on('value', snap => {
         const p = snap.val() || {};
         const roles = ['p1', 'p2'];
         
         // A. Handle Tab Dots
-        // Clear old indicators in Shell
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
 
         roles.forEach(role => {
@@ -260,7 +259,7 @@ function initPresenceSystem() {
             const data = p[role];
             if(!data) return;
 
-            // Show "Present in Tab" Dot
+            // Show "Present in Tab" Dot with Color
             if(data.tab) {
                 const targetTab = document.querySelector(`.tab[data-id="tab-${data.tab}"]`);
                 if(targetTab) {
@@ -268,7 +267,6 @@ function initPresenceSystem() {
                     if(badgeContainer) {
                         const dot = document.createElement('div');
                         dot.className = `p-dot ${role}`;
-                        // Explicitly set color here to ensure it updates instantly with config
                         dot.style.backgroundColor = window.playerColors[role] || (role==='p1'?'#ff4444':'#4488ff');
                         dot.style.color = dot.style.backgroundColor;
                         badgeContainer.appendChild(dot);
@@ -283,7 +281,7 @@ function initPresenceSystem() {
                     role: role,
                     color: window.playerColors[role] || '#fff',
                     id: data.interaction.id,
-                    action: data.interaction.action, // 'hover' or 'click'
+                    action: data.interaction.action,
                     timestamp: data.interaction.timestamp
                 });
             }
@@ -293,9 +291,7 @@ function initPresenceSystem() {
 
 function updatePresence() {
     if(window.myRole === 'spectator') return;
-    
     let tabShort = currentTabId.replace('tab-', '');
-    
     db.ref('presence/' + window.myRole).update({
         tab: tabShort,
         timestamp: Date.now()
@@ -390,11 +386,14 @@ window.addEventListener('message', (event) => {
     }
 });
 
+// --- UPDATED RETURN LOGIC (SYNCS ACROSS USERS) ---
 function handleReturnLogic() {
     if(window.returningId && window.returningElement) {
+         // 1. Tell the generator this ID is free so it's no longer greyed out for anyone
          let frame = document.getElementById('frame-gen');
          if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
          
+         // 2. Clear the local UI
          window.returningElement.innerHTML = "";
          window.returningElement.classList.remove('filled');
          window.returningElement.draggable = false;
@@ -402,6 +401,7 @@ function handleReturnLogic() {
          var parentId = window.returningElement.parentElement.id;
          var side = parentId.split('-')[1]; 
          
+         // 3. Update Firebase so User 2 sees the empty slot
          if(window.returningIndex !== -1) {
              var dbKey = side === 'alb' ? 'slotsAlb' : 'slotsBiu';
              db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
@@ -470,22 +470,26 @@ window.returnDrop = function(ev) {
     handleReturnLogic();
 };
 
+// --- UPDATED CLEAR COLUMN (SYNCS ACROSS USERS) ---
 window.clearCol = function(p) { 
     window.syncLock = true;
     var container = document.getElementById('slots-'+p);
     var kids = container.getElementsByClassName('slot');
     let frame = document.getElementById('frame-gen');
+    
+    // Free all pokemon in this column from the 'used' list in DB
     for(var i=0; i<kids.length; i++) {
        var txt = kids[i].querySelector('.slot-txt');
        if(txt && txt.dataset.id && frame && frame.contentWindow) {
            frame.contentWindow.postMessage({ type: 'freePokemon', id: txt.dataset.id }, '*');
        }
     }
-    window.initSlots('slots-'+p); 
-    saveColumnState(p);
-    setTimeout(() => window.syncLock = false, 1000);
     
-    // Refresh Icons if collapsed
+    // Reset the slots in Firebase so User 2 sees them clear
+    window.initSlots('slots-'+p); 
+    db.ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(null);
+    
+    setTimeout(() => window.syncLock = false, 1000);
     if(window.isCollapsed) generateMiniIcons(p);
 };
 
@@ -728,7 +732,11 @@ function saveColumnState(side) {
 }
 
 function renderColumn(side, data) {
-    if(!data) return;
+    if(!data) {
+        // If data is null (cleared), wipe column
+        data = [null,null,null,null,null,null];
+    }
+    
     var container = document.getElementById('slots-'+side);
     var kids = container.getElementsByClassName('slot');
     for(var i=0; i<kids.length; i++) {
