@@ -390,20 +390,20 @@ window.addEventListener('message', (event) => {
 // This ensures that "What You See" (an empty slot) is "What Is Saved" to DB.
 function handleReturnLogic() {
     if(window.returningId && window.returningElement) {
-         // 1. Tell the generator this ID is free so it's no longer greyed out for anyone
+         // 1. Tell Generator to Free Pokemon
          let frame = document.getElementById('frame-gen');
          if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
          
-         // 2. Clear the local UI
+         // 2. Clear Visual Slot Immediately
          window.returningElement.innerHTML = "";
          window.returningElement.classList.remove('filled');
          window.returningElement.draggable = false;
          
-         var parentId = window.returningElement.parentElement.id;
-         var side = parentId.split('-')[1]; 
+         var parentId = window.returningElement.parentElement.id; // slots-alb
+         var side = parentId.split('-')[1]; // alb
          
          // 3. FORCE SAVE the entire column state. 
-         // We do not rely on calculating indexes anymore. We just save the current empty state.
+         // This overwrites the database with the empty slot you see.
          saveColumnState(side);
          
          window.returningId = null; window.returningElement = null; window.returningIndex = -1;
