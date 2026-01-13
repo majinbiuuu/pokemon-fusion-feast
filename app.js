@@ -3,6 +3,7 @@ var lastTopVol = 100;
 window.returningIndex = -1;
 window.SETDEX_CACHE = null; 
 window.myRole = localStorage.getItem('myRole') || 'spectator';
+window.playerColors = { p1: '#ff4444', p2: '#4488ff' }; // Default fallback
 
 /* --- CONFIGURATION & DATA --- */
 const MEGA_STONE_EXCEPTIONS = {
@@ -108,6 +109,7 @@ db.ref('config').on('value', snap => {
     // 5. Player 1 Config
     const p1Name = c.p1Name || "ALB";
     const p1Color = c.p1Color || "#ff4444";
+    window.playerColors.p1 = p1Color;
     document.documentElement.style.setProperty('--p1-color', p1Color);
     document.getElementById('disp-p1-name').innerText = p1Name;
     document.getElementById('disp-p1-name').style.color = p1Color;
@@ -119,6 +121,7 @@ db.ref('config').on('value', snap => {
     // 6. Player 2 Config
     const p2Name = c.p2Name || "BIU";
     const p2Color = c.p2Color || "#4488ff";
+    window.playerColors.p2 = p2Color;
     document.documentElement.style.setProperty('--p2-color', p2Color);
     document.getElementById('disp-p2-name').innerText = p2Name;
     document.getElementById('disp-p2-name').style.color = p2Color;
@@ -238,15 +241,16 @@ presenceRef.child('list').on('value', function(snap) {
     document.getElementById('presence-count').innerHTML = `<i class="fas fa-users" style="font-size: 11px;"></i> ${count}`;
 });
 
-// --- NEW: TAB PRESENCE SYSTEM (Glow Removed) ---
+// --- NEW: TAB PRESENCE SYSTEM (Dynamic Color + Interactions) ---
 let currentTabId = 'tab-play';
 
 function initPresenceSystem() {
-    // 2. Listen for OTHER players
+    // 2. Listen for OTHER players presence (Tab Dots & Interactions)
     db.ref('presence').on('value', snap => {
         const p = snap.val() || {};
         const roles = ['p1', 'p2'];
         
+        // A. Handle Tab Dots
         // Clear old indicators in Shell
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
 
@@ -256,7 +260,7 @@ function initPresenceSystem() {
             const data = p[role];
             if(!data) return;
 
-            // Show "Present in Tab" Dot ONLY
+            // Show "Present in Tab" Dot
             if(data.tab) {
                 const targetTab = document.querySelector(`.tab[data-id="tab-${data.tab}"]`);
                 if(targetTab) {
@@ -264,9 +268,24 @@ function initPresenceSystem() {
                     if(badgeContainer) {
                         const dot = document.createElement('div');
                         dot.className = `p-dot ${role}`;
+                        // Explicitly set color here to ensure it updates instantly with config
+                        dot.style.backgroundColor = window.playerColors[role] || (role==='p1'?'#ff4444':'#4488ff');
+                        dot.style.color = dot.style.backgroundColor;
                         badgeContainer.appendChild(dot);
                     }
                 }
+            }
+            
+            // B. Broadcast Interaction (Clicks/Hovers)
+            if(data.interaction) {
+                broadcastToIframes({
+                    type: 'PEER_INTERACTION',
+                    role: role,
+                    color: window.playerColors[role] || '#fff',
+                    id: data.interaction.id,
+                    action: data.interaction.action, // 'hover' or 'click'
+                    timestamp: data.interaction.timestamp
+                });
             }
         });
     });
@@ -277,13 +296,11 @@ function updatePresence() {
     
     let tabShort = currentTabId.replace('tab-', '');
     
-    // We do NOT send hover data anymore as requested
     db.ref('presence/' + window.myRole).update({
         tab: tabShort,
         timestamp: Date.now()
     });
 }
-
 
 // --- DASHBOARD SYNC ---
 db.ref('dashboard').on('value', snap => {
@@ -361,6 +378,15 @@ window.addEventListener('message', (event) => {
     }
     if (event.data && event.data.type === 'GENERATOR_DROP') {
         handleReturnLogic();
+    }
+    // Listen for Interaction Reports from inside iframes
+    if (event.data && event.data.type === 'INTERACTION_REPORT') {
+        if(window.myRole === 'spectator') return;
+        db.ref('presence/' + window.myRole + '/interaction').set({
+            id: event.data.id,
+            action: event.data.action,
+            timestamp: Date.now()
+        });
     }
 });
 
