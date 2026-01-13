@@ -1,6 +1,8 @@
 window.GEN_DRAG_PAYLOAD = null;
 var lastTopVol = 100;
+// We store the specific details of the item being dragged here
 window.returningIndex = -1;
+window.returningSide = null; 
 window.SETDEX_CACHE = null; 
 window.myRole = localStorage.getItem('myRole') || 'spectator';
 window.playerColors = { p1: '#ff4444', p2: '#4488ff' };
@@ -53,18 +55,13 @@ window.saveConfig = function(key, val) {
 
 // --- IDENTITY LOGIC ---
 window.setIdentity = function(role) {
-    // 1. Remove old presence if exists
     if(window.myRole && window.myRole !== 'spectator') {
         db.ref('presence/' + window.myRole).remove();
         db.ref('presence/' + window.myRole).onDisconnect().cancel(); 
     }
-
-    // 2. Set New Role
     window.myRole = role;
     localStorage.setItem('myRole', role);
     updateIdentityUI();
-    
-    // 3. Setup New Presence (with Disconnect Handler)
     if(role !== 'spectator') {
         db.ref('presence/' + role).onDisconnect().remove();
         updatePresence();
@@ -77,18 +74,14 @@ function updateIdentityUI() {
     if(btn) btn.classList.add('active');
 }
 
-// --- SYNC CONFIG (Updated for P1/P2) ---
+// --- SYNC CONFIG ---
 db.ref('config').on('value', snap => {
     const c = snap.val() || {};
-    
-    // 1. Theme Color & Sync
     if(c.theme) {
         document.documentElement.style.setProperty('--accent', c.theme);
         document.getElementById('st-theme-color').value = c.theme;
         broadcastToIframes({ type: 'THEME_UPDATE', color: c.theme });
     }
-
-    // 2. Background Image
     if(c.bgUrl) {
         document.body.style.backgroundImage = `url('${c.bgUrl}')`;
         document.getElementById('st-bg-url').value = c.bgUrl;
@@ -96,45 +89,31 @@ db.ref('config').on('value', snap => {
         document.body.style.backgroundImage = 'none';
         document.getElementById('st-bg-url').value = '';
     }
-
-    // 3. Background Color
     if(c.bgColor) {
         document.body.style.backgroundColor = c.bgColor;
         document.getElementById('st-bg-color').value = c.bgColor;
     }
-
-    // 4. Saved Wallpapers
     renderSavedWallpapers(c.savedWallpapers || []);
 
-    // 5. Player 1 Config
     const p1Name = c.p1Name || "ALB";
     const p1Color = c.p1Color || "#ff4444";
     window.playerColors.p1 = p1Color;
     document.documentElement.style.setProperty('--p1-color', p1Color);
     document.getElementById('disp-p1-name').innerText = p1Name;
     document.getElementById('disp-p1-name').style.color = p1Color;
-    
-    if(document.activeElement !== document.getElementById('st-p1-name')) 
-        document.getElementById('st-p1-name').value = p1Name;
+    if(document.activeElement !== document.getElementById('st-p1-name')) document.getElementById('st-p1-name').value = p1Name;
     document.getElementById('st-p1-color').value = p1Color;
 
-    // 6. Player 2 Config
     const p2Name = c.p2Name || "BIU";
     const p2Color = c.p2Color || "#4488ff";
     window.playerColors.p2 = p2Color;
     document.documentElement.style.setProperty('--p2-color', p2Color);
     document.getElementById('disp-p2-name').innerText = p2Name;
     document.getElementById('disp-p2-name').style.color = p2Color;
-
-    if(document.activeElement !== document.getElementById('st-p2-name')) 
-        document.getElementById('st-p2-name').value = p2Name;
+    if(document.activeElement !== document.getElementById('st-p2-name')) document.getElementById('st-p2-name').value = p2Name;
     document.getElementById('st-p2-color').value = p2Color;
 
-    // Broadcast Config Update to Iframes (so they can update names/colors)
-    broadcastToIframes({ 
-        type: 'CONFIG_UPDATE', 
-        p1Name, p1Color, p2Name, p2Color 
-    });
+    broadcastToIframes({ type: 'CONFIG_UPDATE', p1Name, p1Color, p2Name, p2Color });
 });
 
 function broadcastToIframes(msg) {
@@ -144,7 +123,6 @@ function broadcastToIframes(msg) {
     });
 }
 
-// --- WALLPAPER MANAGER ---
 function addCurrentToSaved() {
     let current = document.getElementById('st-bg-url').value;
     if(!current) return;
@@ -178,16 +156,8 @@ function renderSavedWallpapers(list) {
     });
 }
 
-// --- SETTINGS DRAG DROP ---
-window.dragOverHandler = function(ev) {
-    ev.preventDefault();
-    document.getElementById('drop-zone').classList.add('drag-over');
-}
-
-window.dragLeaveHandler = function(ev) {
-    document.getElementById('drop-zone').classList.remove('drag-over');
-}
-
+window.dragOverHandler = function(ev) { ev.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+window.dragLeaveHandler = function(ev) { document.getElementById('drop-zone').classList.remove('drag-over'); }
 window.dropHandler = function(ev) {
     ev.preventDefault();
     document.getElementById('drop-zone').classList.remove('drag-over');
@@ -195,38 +165,26 @@ window.dropHandler = function(ev) {
         const file = ev.dataTransfer.files[0];
         if(file.type.startsWith('image/')) {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                saveConfig('bgUrl', e.target.result);
-            };
+            reader.onload = function(e) { saveConfig('bgUrl', e.target.result); };
             reader.readAsDataURL(file);
         }
     }
 }
 
-// --- FULLSCREEN LOGIC ---
 window.toggleFullScreen = function() {
     if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch((e) => {
-            console.log(`Error attempting to enable fullscreen: ${e.message}`);
-        });
+        document.documentElement.requestFullscreen().catch((e) => { console.log(e.message); });
     } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        }
+        if (document.exitFullscreen) document.exitFullscreen();
     }
 };
 
-// --- PRESENCE LOGIC ---
 var myId = localStorage.getItem('presenceId');
-if (!myId) {
-    myId = Date.now().toString() + Math.random().toString().slice(2,5);
-    localStorage.setItem('presenceId', myId);
-}
+if (!myId) { myId = Date.now().toString() + Math.random().toString().slice(2,5); localStorage.setItem('presenceId', myId); }
 
 var presenceRef = db.ref('presence');
 var connectedRef = db.ref('.info/connected');
 
-// Standard "Online Count" Logic
 connectedRef.on('value', function(snap) {
     if (snap.val() === true) {
         var userRef = presenceRef.child('list/' + myId);
@@ -241,25 +199,17 @@ presenceRef.child('list').on('value', function(snap) {
     document.getElementById('presence-count').innerHTML = `<i class="fas fa-users" style="font-size: 11px;"></i> ${count}`;
 });
 
-// --- NEW: TAB PRESENCE SYSTEM (Dynamic Color + Interactions) ---
 let currentTabId = 'tab-play';
 
 function initPresenceSystem() {
-    // 2. Listen for OTHER players
     db.ref('presence').on('value', snap => {
         const p = snap.val() || {};
         const roles = ['p1', 'p2'];
-        
-        // A. Handle Tab Dots
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
-
         roles.forEach(role => {
-            if(role === window.myRole) return; // Don't show self
-            
+            if(role === window.myRole) return; 
             const data = p[role];
             if(!data) return;
-
-            // Show "Present in Tab" Dot with Color
             if(data.tab) {
                 const targetTab = document.querySelector(`.tab[data-id="tab-${data.tab}"]`);
                 if(targetTab) {
@@ -273,8 +223,6 @@ function initPresenceSystem() {
                     }
                 }
             }
-            
-            // B. Broadcast Interaction (Clicks/Hovers)
             if(data.interaction) {
                 broadcastToIframes({
                     type: 'PEER_INTERACTION',
@@ -292,10 +240,7 @@ function initPresenceSystem() {
 function updatePresence() {
     if(window.myRole === 'spectator') return;
     let tabShort = currentTabId.replace('tab-', '');
-    db.ref('presence/' + window.myRole).update({
-        tab: tabShort,
-        timestamp: Date.now()
-    });
+    db.ref('presence/' + window.myRole).update({ tab: tabShort, timestamp: Date.now() });
 }
 
 // --- DASHBOARD SYNC ---
@@ -305,6 +250,8 @@ db.ref('dashboard').on('value', snap => {
     window.scores.alb = s.scoreAlb || 0; window.scores.biu = s.scoreBiu || 0;
     document.getElementById('score-alb').innerText = window.scores.alb;
     document.getElementById('score-biu').innerText = window.scores.biu;
+    
+    // IMPORTANT: renderColumn checks for nulls and handles them
     if(s.slotsAlb) renderColumn('alb', s.slotsAlb);
     if(s.slotsBiu) renderColumn('biu', s.slotsBiu);
 });
@@ -313,13 +260,11 @@ db.ref('music/status').on('value', snap => {
     const m = snap.val() || {};
     const titleEl = document.getElementById('np-title-top');
     if(titleEl) titleEl.innerText = m.currentTitle || "System Ready";
-
     const imgEl = document.getElementById('np-img-top');
     if(imgEl) {
         imgEl.src = m.currentId ? `https://img.youtube.com/vi/${m.currentId}/mqdefault.jpg` : "";
         imgEl.style.display = m.currentId ? 'block' : 'none';
     }
-
     const playBtn = document.getElementById('top-play-btn');
     if(playBtn) {
         let isPlaying = (m.state === 'PLAYING');
@@ -334,17 +279,14 @@ window.mediaAction = function(action) {
             let next = (current === 'PLAYING') ? 'PAUSED' : 'PLAYING';
             db.ref('music/status/state').set(next);
         });
-    } 
-    else {
+    } else {
          db.ref('music/cmd').set({ action: action, time: Date.now() });
     }
 };
 
 window.sendVolume = function(val) {
     let frame = document.getElementById('frame-music');
-    if(frame && frame.contentWindow) {
-        frame.contentWindow.postMessage({ type: 'setVolume', value: val }, '*');
-    }
+    if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'setVolume', value: val }, '*');
     updateTopVolIcon(val);
     if(val > 0) lastTopVol = val;
 }
@@ -352,13 +294,8 @@ window.sendVolume = function(val) {
 window.toggleTopMute = function() {
     let slider = document.getElementById('top-vol-slider');
     let current = slider.value;
-    if(current > 0) {
-        sendVolume(0);
-        slider.value = 0;
-    } else {
-        sendVolume(lastTopVol);
-        slider.value = lastTopVol;
-    }
+    if(current > 0) { sendVolume(0); slider.value = 0; } 
+    else { sendVolume(lastTopVol); slider.value = lastTopVol; }
 }
 
 function updateTopVolIcon(val) {
@@ -375,7 +312,6 @@ window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'GENERATOR_DROP') {
         handleReturnLogic();
     }
-    // Listen for Interaction Reports from inside iframes
     if (event.data && event.data.type === 'INTERACTION_REPORT') {
         if(window.myRole === 'spectator') return;
         db.ref('presence/' + window.myRole + '/interaction').set({
@@ -386,27 +322,26 @@ window.addEventListener('message', (event) => {
     }
 });
 
-// --- FIXED RETURN LOGIC (SNAPSHOT SAVE) ---
-// This function now ignores window.returningIndex and saves the entire column state
-// This ensures whatever gap you created is instantly reflected in the DB.
+// --- UPDATED RETURN LOGIC: DIRECT DB COMMAND ---
+// 1. We capture the specific side and index when dragging starts.
+// 2. We command Firebase to set that exact slot to null.
+// 3. We let the existing listener update the visuals for EVERYONE.
 function handleReturnLogic() {
-    if(window.returningId && window.returningElement) {
-         // 1. Tell the generator this ID is free so it's no longer greyed out for anyone
+    if(window.returningId && window.returningSide && window.returningIndex > -1) {
+         // 1. Tell Generator to Free Pokemon
          let frame = document.getElementById('frame-gen');
          if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
          
-         // 2. Clear the local UI
-         window.returningElement.innerHTML = "";
-         window.returningElement.classList.remove('filled');
-         window.returningElement.draggable = false;
+         // 2. Direct Database Update (Surgical Removal)
+         let dbKey = (window.returningSide === 'alb') ? 'slotsAlb' : 'slotsBiu';
          
-         var parentId = window.returningElement.parentElement.id;
-         var side = parentId.split('-')[1]; 
+         // This is the key line: Updating specific index to null in DB
+         db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
          
-         // 3. FORCE SAVE: We rely on scanning the DOM, not index calculations
-         saveColumnState(side);
-         
-         window.returningId = null; window.returningElement = null; window.returningIndex = -1;
+         // Clear tracking vars
+         window.returningId = null; 
+         window.returningIndex = -1;
+         window.returningSide = null;
     }
 }
 
@@ -447,59 +382,57 @@ window.drop = function(ev) {
         window.GEN_DRAG_PAYLOAD = null;
         setTimeout(() => window.syncLock = false, 1000);
         
-        // Refresh Icons if collapsed
         if(window.isCollapsed) generateMiniIcons(side);
     } 
 };
 
+// --- UPDATED DRAG START: CAPTURE DETAILS ---
 function slotDragStart(e, id, idx) {
     e.dataTransfer.setData("text/return", id);
     e.dataTransfer.effectAllowed = "move";
+    
+    // Capture these globally so handleReturnLogic knows what to delete
     window.returningId = id; 
-    window.returningElement = e.target;
     window.returningIndex = idx;
+    
+    // Find parent ID safely
+    let parent = e.target.parentElement;
+    if(parent.classList.contains('slot')) parent = parent.parentElement; // Just in case
+    
+    // parent should be "slots-alb" or "slots-biu"
+    if(parent.id.includes('alb')) window.returningSide = 'alb';
+    else if(parent.id.includes('biu')) window.returningSide = 'biu';
 }
 
 window.allowReturnDrop = function(ev) { if(window.returningId) ev.preventDefault(); };
+window.returnDrop = function(ev) { ev.preventDefault(); handleReturnLogic(); };
 
-window.returnDrop = function(ev) {
-    ev.preventDefault();
-    handleReturnLogic();
-};
-
-// --- FIXED CLEAR LOGIC (SNAPSHOT SAVE) ---
-// This function now clears visually, then saves that exact state (empty array) to DB.
-// It avoids using .set(null) which deletes the node entirely and confuses sync.
+// --- UPDATED CLEAR: CLEAN ARRAY RESET ---
 window.clearCol = function(p) { 
     window.syncLock = true;
     var container = document.getElementById('slots-'+p);
     var kids = container.getElementsByClassName('slot');
     let frame = document.getElementById('frame-gen');
-    
-    // Free all pokemon in this column from the 'used' list in DB
     for(var i=0; i<kids.length; i++) {
        var txt = kids[i].querySelector('.slot-txt');
        if(txt && txt.dataset.id && frame && frame.contentWindow) {
            frame.contentWindow.postMessage({ type: 'freePokemon', id: txt.dataset.id }, '*');
        }
     }
-    
-    // Reset the slots visually
+    // Visually reset
     window.initSlots('slots-'+p); 
     
-    // Force Save the now EMPTY column state to DB
-    saveColumnState(p);
+    // Force Save explicit array of nulls (Fixes "revert" issue)
+    let emptyArr = [null,null,null,null,null,null];
+    db.ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(emptyArr);
     
     setTimeout(() => window.syncLock = false, 1000);
     if(window.isCollapsed) generateMiniIcons(p);
 };
 
-// --- EXPORT WITH SETDEX DATA (Showdown Calc) ---
 window.exportTeam = async function(side) {
     var btn = document.getElementById('export-' + side);
     var originalIcon = '<i class="fas fa-file-export"></i> Export Team';
-    
-    // VISUAL LOADING
     btn.innerHTML = '<i class="fas fa-spinner"></i> Exporting...';
     
     var container = document.getElementById('slots-' + side);
@@ -510,45 +443,30 @@ window.exportTeam = async function(side) {
     for(var i=0; i<kids.length; i++) {
         var txt = kids[i].querySelector('.slot-txt');
         if(txt && txt.dataset.id) {
-            monsToFetch.push({ 
-                name: txt.innerText.trim(), 
-                id: txt.dataset.id 
-            });
+            monsToFetch.push({ name: txt.innerText.trim(), id: txt.dataset.id });
         }
     }
     
-    if(monsToFetch.length === 0) { 
-        alert("Column is empty!"); 
-        btn.innerHTML = originalIcon;
-        return; 
-    }
+    if(monsToFetch.length === 0) { alert("Column is empty!"); btn.innerHTML = originalIcon; return; }
 
-    // 1. Fetch SETDEX Data if not cached
     if (!window.SETDEX_CACHE) {
         try {
-            // Using a more reliable proxy or direct link if possible
             const proxyUrl = "https://corsproxy.io/?";
             const calcUrl = "https://calc.pokemonshowdown.com/data/sets/gen9.js"; 
             const res = await fetch(proxyUrl + calcUrl);
             if(res.ok) {
                 let text = await res.text();
-                // Format is: var SETDEX_SV = { ... };
                 let start = text.indexOf('{');
                 let end = text.lastIndexOf('}');
                 if (start !== -1 && end !== -1) {
-                    let jsonStr = text.substring(start, end + 1);
-                    window.SETDEX_CACHE = JSON.parse(jsonStr);
+                    window.SETDEX_CACHE = JSON.parse(text.substring(start, end + 1));
                 }
             }
-        } catch(e) {
-            console.warn("Setdex fetch failed, using fallback mode.", e);
-        }
+        } catch(e) { console.warn("Setdex fetch failed", e); }
     }
 
     for (let mon of monsToFetch) {
         let set = null;
-        
-        // --- MEGA DETECTION & NAME CLEANING ---
         let baseName = mon.name;
         let isMega = false;
         let megaStone = "";
@@ -556,73 +474,44 @@ window.exportTeam = async function(side) {
         if(baseName.includes("Mega")) {
             isMega = true;
             let parts = baseName.split(" Mega");
-            let cleanBase = parts[0].trim(); // e.g., "Lucario"
-            let suffix = parts[1] ? parts[1].trim() : ""; // "X", "Y" or empty
-            
-            // Construct Lookup Name for dictionary
+            let cleanBase = parts[0].trim();
+            let suffix = parts[1] ? parts[1].trim() : "";
             let lookupName = cleanBase + (suffix ? " " + suffix : "");
             
-            // 1. Check Exceptions Dictionary (e.g. Lucario -> Lucarionite)
-            if(MEGA_STONE_EXCEPTIONS[lookupName]) {
-                megaStone = MEGA_STONE_EXCEPTIONS[lookupName];
-            } 
-            // 2. Check Exceptions Dictionary using just base name (e.g. Lucario)
-            else if(MEGA_STONE_EXCEPTIONS[cleanBase]) {
-                megaStone = MEGA_STONE_EXCEPTIONS[cleanBase];
-            }
-            else {
-                // 3. Default Rule: Name + "ite" (e.g. Pidgeot -> Pidgeotite)
-                megaStone = cleanBase + "ite" + (suffix ? " " + suffix : "");
-            }
+            if(MEGA_STONE_EXCEPTIONS[lookupName]) megaStone = MEGA_STONE_EXCEPTIONS[lookupName];
+            else if(MEGA_STONE_EXCEPTIONS[cleanBase]) megaStone = MEGA_STONE_EXCEPTIONS[cleanBase];
+            else megaStone = cleanBase + "ite" + (suffix ? " " + suffix : "");
             
-            // Special Orbs logic
             if(cleanBase === "Kyogre" && suffix.includes("Primal")) megaStone = "Blue Orb";
             if(cleanBase === "Groudon" && suffix.includes("Primal")) megaStone = "Red Orb";
             if(cleanBase === "Rayquaza") megaStone = ""; 
-            
-            // Use base name for set lookup so we find the base pokemon's stats/moves
             baseName = cleanBase;
         }
 
-        // --- STRATEGY 1: CHECK PREDEFINED SETS ---
         if (COMPETITIVE_SETS[baseName]) {
             set = COMPETITIVE_SETS[baseName];
-        } 
-        
-        // --- STRATEGY 2: LOOKUP IN SMOGON DUMP ---
-        else if (window.SETDEX_CACHE) {
-            // Try exact match
+        } else if (window.SETDEX_CACHE) {
             let setData = window.SETDEX_CACHE[baseName];
-            
-            // Try fuzzy match (ignore case/spaces)
             if (!setData) {
                 let cleanId = baseName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                let foundKey = Object.keys(window.SETDEX_CACHE).find(k => 
-                    k.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanId
-                );
+                let foundKey = Object.keys(window.SETDEX_CACHE).find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanId);
                 if(foundKey) setData = window.SETDEX_CACHE[foundKey];
             }
-
             if (setData) {
-                // Get the first available set (usually the most common one)
                 let firstSetName = Object.keys(setData)[0];
                 set = setData[firstSetName];
             }
         }
 
         if (set) {
-            // --- BUILD EXPORT FROM SMOGON/PRESET ---
             let item = isMega && megaStone ? megaStone : (set.item || 'Leftovers');
-            
             exportText += `${baseName} @ ${item}\n`;
             if(set.ability) exportText += `Ability: ${set.ability}\n`;
             if(set.level && set.level != 100) exportText += `Level: ${set.level}\n`;
             if(set.teraType && !isMega) exportText += `Tera Type: ${set.teraType}\n`;
-            
             if(set.evs) {
-                if(typeof set.evs === 'string') {
-                    exportText += `EVs: ${set.evs}\n`;
-                } else {
+                if(typeof set.evs === 'string') exportText += `EVs: ${set.evs}\n`;
+                else {
                     let evList = [];
                     for (const [stat, val] of Object.entries(set.evs)) {
                         if(val > 0) evList.push(`${val} ${stat.replace('spa','SpA').replace('spd','SpD').replace('spe','Spe').replace('atk','Atk').replace('def','Def').replace('hp','HP')}`);
@@ -630,89 +519,50 @@ window.exportTeam = async function(side) {
                     if(evList.length > 0) exportText += `EVs: ${evList.join(' / ')}\n`;
                 }
             }
-
             if(set.nature) exportText += `${set.nature} Nature\n`;
             if(set.moves) set.moves.forEach(m => exportText += `- ${m}\n`);
             exportText += `\n`;
-
         } else {
-            // --- STRATEGY 3: SMART FALLBACK (PokeAPI + Logic) ---
             try {
                 let query = baseName.toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
                 let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${query}`);
                 if(!res.ok) throw new Error("Not found");
                 let data = await res.json();
-                
-                // 1. Analyze Stats for Item/Nature Choice
                 let stats = {};
                 data.stats.forEach(s => stats[s.stat.name] = s.base_stat);
-                
-                // Identify highest stats
-                let sortedStats = data.stats.sort((a,b) => b.base_stat - a.base_stat);
-                let best1 = sortedStats[0].stat.name;
-                
                 let isFast = stats['speed'] >= 100;
                 let isAttacker = stats['attack'] > stats['special-attack'];
                 let isBulky = (stats['hp'] > 90 || stats['defense'] > 90 || stats['special-defense'] > 90) && stats['speed'] < 80;
-
-                // 2. Smart Item Selection
-                let smartItem = 'Leftovers'; // Default for balanced mons
-                
-                if (isMega && megaStone) {
-                    smartItem = megaStone;
-                } else {
-                    if (isFast && (stats['attack'] > 100 || stats['special-attack'] > 100)) {
-                        smartItem = 'Life Orb'; // Fast attackers get Life Orb
-                        if (stats['speed'] > 120) smartItem = 'Choice Specs'; // Very fast special -> Specs? (Simplified)
-                        if (isAttacker && stats['speed'] > 110) smartItem = 'Choice Band';
-                    } else if (isBulky) {
-                        smartItem = 'Leftovers';
-                    } else if (stats['speed'] > 130) {
-                        smartItem = 'Focus Sash'; // Frail speedsters
-                    } else {
-                        smartItem = 'Heavy-Duty Boots'; // Good generic pivot item
-                    }
+                let smartItem = 'Leftovers';
+                if (isMega && megaStone) smartItem = megaStone;
+                else {
+                    if (isFast && (stats['attack'] > 100 || stats['special-attack'] > 100)) smartItem = 'Life Orb';
+                    else if (isBulky) smartItem = 'Leftovers';
+                    else if (stats['speed'] > 130) smartItem = 'Focus Sash';
+                    else smartItem = 'Heavy-Duty Boots';
                 }
-
-                // 3. Nature Selection
                 const natureMap = { 'attack':'Adamant', 'defense':'Impish', 'special-attack':'Modest', 'special-defense':'Calm', 'speed':'Jolly' };
-                // If speed is good, boost it; otherwise boost main attack stat
                 let natureStat = isFast ? 'speed' : (isAttacker ? 'attack' : 'special-attack');
-                if (isBulky && !isAttacker) natureStat = 'special-defense'; // Bulky special defender
-                if (isBulky && isAttacker) natureStat = 'attack'; // Bulky physical
+                if (isBulky && !isAttacker) natureStat = 'special-defense'; 
+                if (isBulky && isAttacker) natureStat = 'attack'; 
                 let nature = natureMap[natureStat] || 'Serious';
-
-                // 4. Moves (Last 4 Level Up moves as heuristic)
                 let levelMoves = data.moves.filter(m => m.version_group_details.some(d => d.move_learn_method.name === 'level-up'));
-                let moves = levelMoves.slice(-4).map(m => m.move.name);
-                moves = moves.map(m => m.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
+                let moves = levelMoves.slice(-4).map(m => m.move.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
 
-                // 5. Build String
                 exportText += `${baseName} @ ${smartItem}\n`;
                 let abil = data.abilities[0].ability.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                 exportText += `Ability: ${abil}\n`;
                 exportText += `${nature} Nature\n`;
-                
-                // Simple 252/252 Spread based on best stats
                 let evStat1 = isFast ? 'Spe' : 'HP';
                 let evStat2 = isAttacker ? 'Atk' : 'SpA';
                 if(isBulky) { evStat1 = 'HP'; evStat2 = (stats['defense'] > stats['special-defense']) ? 'Def' : 'SpD'; }
-                
                 exportText += `EVs: 252 ${evStat1} / 252 ${evStat2} / 4 SpD\n`;
-                
                 if(moves.length > 0) moves.forEach(m => exportText += `- ${m}\n`);
                 else exportText += `- Tackle\n`;
-                
                 exportText += `\n`;
-
-            } catch(e) {
-                console.log("Export fallback failed for", baseName);
-                exportText += `${baseName}\n\n`;
-            }
+            } catch(e) { console.log("Export fallback failed", baseName); exportText += `${baseName}\n\n`; }
         }
     }
-
-    // VISUAL DONE
     navigator.clipboard.writeText(exportText).then(function() {
         btn.innerHTML = '<i class="fas fa-check" style="color:#0f0"></i> Copied!';
         setTimeout(() => { btn.innerHTML = originalIcon; }, 2000);
@@ -733,11 +583,7 @@ function saveColumnState(side) {
 }
 
 function renderColumn(side, data) {
-    if(!data) {
-        // If data is null (cleared), wipe column
-        data = [null,null,null,null,null,null];
-    }
-    
+    if(!data) data = [null,null,null,null,null,null];
     var container = document.getElementById('slots-'+side);
     var kids = container.getElementsByClassName('slot');
     for(var i=0; i<kids.length; i++) {
@@ -758,43 +604,27 @@ function renderColumn(side, data) {
             }
         }
     }
-    // Update Mini Icons if Collapsed
     if(window.isCollapsed) generateMiniIcons(side);
 }
 
-
-/* --- COLLAPSE / EXPAND LOGIC (PLAYERS) --- */
 window.isCollapsed = false;
-
 window.toggleCollapse = function() {
     window.isCollapsed = !window.isCollapsed;
-    
-    // Update Button Icons
     const icons = document.querySelectorAll('.collapse-btn i');
-    icons.forEach(icon => {
-        icon.className = window.isCollapsed ? "fas fa-expand-alt" : "fas fa-compress-alt";
-    });
-
-    // Handle Animation & Mini Row Generation for BOTH sides
+    icons.forEach(icon => { icon.className = window.isCollapsed ? "fas fa-expand-alt" : "fas fa-compress-alt"; });
     ['alb', 'biu'].forEach(side => {
-        // Target the container directly using the IDs added to index.html
         const col = document.getElementById('col-' + side);
         const list = document.getElementById('slots-' + side);
         const miniRow = document.getElementById('mini-' + side);
-        
         if (window.isCollapsed) {
-            // 1. Generate Mini Icons from current slots
             generateMiniIcons(side);
-            
-            // 2. Hide List, Show Mini, Shrink Container
             list.classList.add('collapsed');
             miniRow.classList.add('active');
-            col.classList.add('collapsed-view'); // Shrinks the glass pane
+            col.classList.add('collapsed-view');
         } else {
-            // 1. Show List, Hide Mini, Expand Container
             list.classList.remove('collapsed');
             miniRow.classList.remove('active');
-            col.classList.remove('collapsed-view'); // Restores size
+            col.classList.remove('collapsed-view');
         }
     });
 };
@@ -802,57 +632,29 @@ window.toggleCollapse = function() {
 window.generateMiniIcons = function(side) {
     const miniRow = document.getElementById('mini-' + side);
     const slots = document.getElementById('slots-' + side).getElementsByClassName('slot');
-    
     let html = '';
-    
-    // Loop through existing slots to grab images
     for(let i=0; i < slots.length; i++) {
         const img = slots[i].querySelector('img');
-        if (img) {
-            html += `<div class="mini-slot"><img src="${img.src}"></div>`;
-        } else {
-            html += `<div class="mini-slot empty"></div>`;
-        }
+        if (img) html += `<div class="mini-slot"><img src="${img.src}"></div>`;
+        else html += `<div class="mini-slot empty"></div>`;
     }
-    
     miniRow.innerHTML = html;
 }
 
-/* --- COLLAPSE / EXPAND LOGIC (CENTER WINDOW) --- */
 window.centerCollapsed = false;
-
 window.toggleCenterCollapse = function() {
     window.centerCollapsed = !window.centerCollapsed;
-    
     const colC = document.querySelector('.col-c');
     const icon = document.getElementById('c-collapse-icon');
-    
-    if(window.centerCollapsed) {
-        colC.classList.add('minimized');
-        if(icon) icon.className = "fas fa-expand-alt"; 
-    } else {
-        colC.classList.remove('minimized');
-        if(icon) icon.className = "fas fa-compress-alt"; 
-    }
+    if(window.centerCollapsed) { colC.classList.add('minimized'); if(icon) icon.className = "fas fa-expand-alt"; }
+    else { colC.classList.remove('minimized'); if(icon) icon.className = "fas fa-compress-alt"; }
 };
 
 window.switchTab = function(viewId, btn) { 
-    // TOGGLE LOGIC:
-    // 1. If currently OPEN and click SAME tab -> Close it (Minimize)
-    if (currentTabId === 'tab-' + viewId && !window.centerCollapsed) {
-        window.toggleCenterCollapse();
-        return;
-    }
-
-    // 2. If minimized -> Open it
-    if (window.centerCollapsed) {
-        window.toggleCenterCollapse();
-    }
-
-    // 3. Switch active view
+    if (currentTabId === 'tab-' + viewId && !window.centerCollapsed) { window.toggleCenterCollapse(); return; }
+    if (window.centerCollapsed) { window.toggleCenterCollapse(); }
     currentTabId = 'tab-' + viewId;
     updatePresence();
-
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); 
     document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); 
     document.getElementById('view-'+viewId).classList.add('active'); 
@@ -861,23 +663,14 @@ window.switchTab = function(viewId, btn) {
 
 document.addEventListener('DOMContentLoaded', function() {
     window.initSlots('slots-alb'); window.initSlots('slots-biu'); 
-    
-    // Init Presence
     initPresenceSystem();
-
-    // START MINIMIZED (Both Columns and Center)
-    window.toggleCollapse();       // Collapse Side Columns
-    window.toggleCenterCollapse(); // Collapse Center Window
-    
-    // --- LIBRARY LOADER (DATA ONLY) ---
-    // This fetches data so other tabs like Generator/Play can use it
+    window.toggleCollapse(); 
+    window.toggleCenterCollapse(); 
     db.ref('library').once('value').then(snap => {
         window.appData = snap.val() || {};
         ['frame-play', 'frame-gen'].forEach(id => {
             let el = document.getElementById(id);
-            if(el && el.contentWindow) {
-                try { el.contentWindow.appData = window.appData; } catch(e) {}
-            }
+            if(el && el.contentWindow) { try { el.contentWindow.appData = window.appData; } catch(e) {} }
         });
     });
 });
