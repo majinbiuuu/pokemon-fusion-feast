@@ -11,7 +11,7 @@
   /* --- GLOBAL VARIABLES --- */
   :root {
     --theme-c: #00ff9d; 
-    /* UPDATED: Made more transparent (0.9 -> 0.7) */
+    /* UPDATED: More Transparent (0.9 -> 0.7) */
     --glass-bg: rgba(10, 10, 10, 0.7);
     --border-c: rgba(255,255,255,0.1);
   }
@@ -159,19 +159,6 @@
     </div>
   </div>
 </div>
-
-<script>
-  // DEFINE CALLBACK FIRST to ensure API finds it
-  function onYouTubeIframeAPIReady() {
-    console.log("API Ready");
-    player = new YT.Player('yt-player-mount', {
-      height: '100%', width: '100%',
-      playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'origin': window.location.origin, 'playsinline': 1 },
-      events: { 'onStateChange': onLocalPlayerStateChange, 'onReady': onPlayerReady }
-    });
-  }
-</script>
-<script src="https://www.youtube.com/iframe_api"></script>
 
 <script>
   // FIREBASE CONFIG
@@ -364,18 +351,18 @@
       const list = (currentList === 1) ? playlists.list1 : playlists.list2;
       if(list.length === 0) return;
       
-      // --- REPEAT ONE LOGIC ---
+      // REPEAT ONE LOGIC
       if (musicStatus.repeat === 1) {
-          db.ref('music/status').update({ timestamp: 0, state: 'PLAYING' });
+          player.seekTo(0);
+          player.playVideo();
           return;
       }
 
       let nextItem;
       if (musicStatus.shuffle) {
-          // --- IMPROVED SHUFFLE LOGIC ---
-          // Avoid playing exact same song unless it's the only one
+          // SHUFFLE (Avoid same song)
           let possible = list.filter(x => x.id !== currentId);
-          if (possible.length > 0) {
+          if(possible.length > 0) {
              nextItem = possible[Math.floor(Math.random() * possible.length)];
           } else {
              nextItem = list[0];
@@ -384,7 +371,7 @@
       else {
           let idx = list.findIndex(x => x.id === currentId);
           if(idx < list.length - 1) nextItem = list[idx+1];
-          else nextItem = list[0]; // Loop back to start if shuffle/repeat are off (Standard playlist behavior)
+          else nextItem = list[0];
       }
       
       if(nextItem) playSpecific(nextItem);
@@ -556,6 +543,20 @@
 
       if(found) db.ref('music/playlists').set(playlists);
   }
+
+  // --- API CALLBACK DEFINITION MUST BE GLOBAL/ACCESSIBLE ---
+  // We place it at the end to ensure all previous functions are defined.
+  function onYouTubeIframeAPIReady() {
+    console.log("API Ready - Functions Loaded");
+    player = new YT.Player('yt-player-mount', {
+      height: '100%', width: '100%',
+      playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'origin': window.location.origin, 'playsinline': 1 },
+      events: { 'onStateChange': onLocalPlayerStateChange, 'onReady': onPlayerReady }
+    });
+  }
 </script>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+
 </body>
 </html>
