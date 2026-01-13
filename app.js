@@ -461,25 +461,30 @@ function slotDragStart(e, id, idx) {
 }
 
 window.allowReturnDrop = function(ev) { if(window.returningId) ev.preventDefault(); };
-window.returnDrop = function(ev) { ev.preventDefault(); handleReturnLogic(); };
 
-// --- UPDATED CLEAR: WIPES DB CORRECTLY ---
-// Uses saveColumnState to ensure consistency (What You See Is What You Save)
+window.returnDrop = function(ev) {
+    ev.preventDefault();
+    handleReturnLogic();
+};
+
+// --- UPDATED CLEAR COLUMN (SYNCS ACROSS USERS) ---
 window.clearCol = function(p) { 
     window.syncLock = true;
     var container = document.getElementById('slots-'+p);
     var kids = container.getElementsByClassName('slot');
     let frame = document.getElementById('frame-gen');
+    
+    // Free all pokemon in this column from the 'used' list in DB
     for(var i=0; i<kids.length; i++) {
        var txt = kids[i].querySelector('.slot-txt');
        if(txt && txt.dataset.id && frame && frame.contentWindow) {
            frame.contentWindow.postMessage({ type: 'freePokemon', id: txt.dataset.id }, '*');
        }
     }
-    // Visually reset
+    
+    // Reset the slots in Firebase so User 2 sees them clear
     window.initSlots('slots-'+p); 
-    // Force Save EMPTY State to DB (This was the missing key!)
-    saveColumnState(p);
+    db.ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(null);
     
     setTimeout(() => window.syncLock = false, 1000);
     if(window.isCollapsed) generateMiniIcons(p);
@@ -724,7 +729,11 @@ function saveColumnState(side) {
 }
 
 function renderColumn(side, data) {
-    if(!data) data = [null,null,null,null,null,null];
+    if(!data) {
+        // If data is null (cleared), wipe column
+        data = [null,null,null,null,null,null];
+    }
+    
     var container = document.getElementById('slots-'+side);
     var kids = container.getElementsByClassName('slot');
     for(var i=0; i<kids.length; i++) {
@@ -745,27 +754,43 @@ function renderColumn(side, data) {
             }
         }
     }
+    // Update Mini Icons if Collapsed
     if(window.isCollapsed) generateMiniIcons(side);
 }
 
+
+/* --- COLLAPSE / EXPAND LOGIC (PLAYERS) --- */
 window.isCollapsed = false;
+
 window.toggleCollapse = function() {
     window.isCollapsed = !window.isCollapsed;
+    
+    // Update Button Icons
     const icons = document.querySelectorAll('.collapse-btn i');
-    icons.forEach(icon => { icon.className = window.isCollapsed ? "fas fa-expand-alt" : "fas fa-compress-alt"; });
+    icons.forEach(icon => {
+        icon.className = window.isCollapsed ? "fas fa-expand-alt" : "fas fa-compress-alt";
+    });
+
+    // Handle Animation & Mini Row Generation for BOTH sides
     ['alb', 'biu'].forEach(side => {
+        // Target the container directly using the IDs added to index.html
         const col = document.getElementById('col-' + side);
         const list = document.getElementById('slots-' + side);
         const miniRow = document.getElementById('mini-' + side);
+        
         if (window.isCollapsed) {
+            // 1. Generate Mini Icons from current slots
             generateMiniIcons(side);
+            
+            // 2. Hide List, Show Mini, Shrink Container
             list.classList.add('collapsed');
             miniRow.classList.add('active');
-            col.classList.add('collapsed-view');
+            col.classList.add('collapsed-view'); // Shrinks the glass pane
         } else {
+            // 1. Show List, Hide Mini, Expand Container
             list.classList.remove('collapsed');
             miniRow.classList.remove('active');
-            col.classList.remove('collapsed-view');
+            col.classList.remove('collapsed-view'); // Restores size
         }
     });
 };
@@ -773,29 +798,57 @@ window.toggleCollapse = function() {
 window.generateMiniIcons = function(side) {
     const miniRow = document.getElementById('mini-' + side);
     const slots = document.getElementById('slots-' + side).getElementsByClassName('slot');
+    
     let html = '';
+    
+    // Loop through existing slots to grab images
     for(let i=0; i < slots.length; i++) {
         const img = slots[i].querySelector('img');
-        if (img) html += `<div class="mini-slot"><img src="${img.src}"></div>`;
-        else html += `<div class="mini-slot empty"></div>`;
+        if (img) {
+            html += `<div class="mini-slot"><img src="${img.src}"></div>`;
+        } else {
+            html += `<div class="mini-slot empty"></div>`;
+        }
     }
+    
     miniRow.innerHTML = html;
 }
 
+/* --- COLLAPSE / EXPAND LOGIC (CENTER WINDOW) --- */
 window.centerCollapsed = false;
+
 window.toggleCenterCollapse = function() {
     window.centerCollapsed = !window.centerCollapsed;
+    
     const colC = document.querySelector('.col-c');
     const icon = document.getElementById('c-collapse-icon');
-    if(window.centerCollapsed) { colC.classList.add('minimized'); if(icon) icon.className = "fas fa-expand-alt"; }
-    else { colC.classList.remove('minimized'); if(icon) icon.className = "fas fa-compress-alt"; }
+    
+    if(window.centerCollapsed) {
+        colC.classList.add('minimized');
+        if(icon) icon.className = "fas fa-expand-alt"; 
+    } else {
+        colC.classList.remove('minimized');
+        if(icon) icon.className = "fas fa-compress-alt"; 
+    }
 };
 
 window.switchTab = function(viewId, btn) { 
-    if (currentTabId === 'tab-' + viewId && !window.centerCollapsed) { window.toggleCenterCollapse(); return; }
-    if (window.centerCollapsed) { window.toggleCenterCollapse(); }
+    // TOGGLE LOGIC:
+    // 1. If currently OPEN and click SAME tab -> Close it (Minimize)
+    if (currentTabId === 'tab-' + viewId && !window.centerCollapsed) {
+        window.toggleCenterCollapse();
+        return;
+    }
+
+    // 2. If minimized -> Open it
+    if (window.centerCollapsed) {
+        window.toggleCenterCollapse();
+    }
+
+    // 3. Switch active view
     currentTabId = 'tab-' + viewId;
     updatePresence();
+
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); 
     document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); 
     document.getElementById('view-'+viewId).classList.add('active'); 
@@ -804,14 +857,24 @@ window.switchTab = function(viewId, btn) {
 
 document.addEventListener('DOMContentLoaded', function() {
     window.initSlots('slots-alb'); window.initSlots('slots-biu'); 
+    
+    // Init Presence
     initPresenceSystem();
-    window.toggleCollapse(); 
-    window.toggleCenterCollapse(); 
+
+    // START MINIMIZED (Both Columns and Center)
+    window.toggleCollapse();       // Collapse Side Columns
+    window.toggleCenterCollapse(); // Collapse Center Window
+    
+    // --- LIBRARY LOADER (DATA ONLY) ---
+    // This fetches data so other tabs like Generator/Play can use it
     db.ref('library').once('value').then(snap => {
         window.appData = snap.val() || {};
         ['frame-play', 'frame-gen'].forEach(id => {
             let el = document.getElementById(id);
-            if(el && el.contentWindow) { try { el.contentWindow.appData = window.appData; } catch(e) {} }
+            if(el && el.contentWindow) {
+                try { el.contentWindow.appData = window.appData; } catch(e) {}
+            }
         });
     });
 });
+
