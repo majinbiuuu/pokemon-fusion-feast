@@ -1,7 +1,7 @@
 window.GEN_DRAG_PAYLOAD = null;
 var lastTopVol = 100;
 window.returningIndex = -1;
-window.returningSide = null; // Added global variable to track side safely
+window.returningSide = null;
 window.SETDEX_CACHE = null; 
 window.myRole = localStorage.getItem('myRole') || 'spectator';
 window.playerColors = { p1: '#ff4444', p2: '#4488ff' };
@@ -242,14 +242,18 @@ function updatePresence() {
     db.ref('presence/' + window.myRole).update({ tab: tabShort, timestamp: Date.now() });
 }
 
+// --- DASHBOARD SYNC (FIXED: ALWAYS RENDER) ---
 db.ref('dashboard').on('value', snap => {
     if(window.syncLock) return; 
     const s = snap.val() || {};
     window.scores.alb = s.scoreAlb || 0; window.scores.biu = s.scoreBiu || 0;
     document.getElementById('score-alb').innerText = window.scores.alb;
     document.getElementById('score-biu').innerText = window.scores.biu;
-    if(s.slotsAlb) renderColumn('alb', s.slotsAlb);
-    if(s.slotsBiu) renderColumn('biu', s.slotsBiu);
+    
+    // REMOVED THE IF CHECKS HERE. ALWAYS RENDER.
+    // This ensures that if the DB is null (cleared), renderColumn runs and wipes the screen.
+    renderColumn('alb', s.slotsAlb);
+    renderColumn('biu', s.slotsBiu);
 });
 
 db.ref('music/status').on('value', snap => {
@@ -318,26 +322,19 @@ window.addEventListener('message', (event) => {
     }
 });
 
-// --- UPDATED RETURN LOGIC: SNAPSHOT SAVE WITH SAFE SIDE TRACKING ---
+// --- UPDATED RETURN LOGIC (DIRECT DB UPDATE) ---
 function handleReturnLogic() {
-    // Check if we have valid Side info
-    if(window.returningId && window.returningElement && window.returningSide) {
-         
-         // 1. Tell Generator to Free Pokemon
+    if(window.returningId && window.returningSide && window.returningIndex > -1) {
          let frame = document.getElementById('frame-gen');
          if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
          
-         // 2. Clear Visual Slot Immediately
-         window.returningElement.innerHTML = "";
-         window.returningElement.classList.remove('filled');
-         window.returningElement.draggable = false;
+         // 2. Direct Database Update (Surgical Removal)
+         let dbKey = (window.returningSide === 'alb') ? 'slotsAlb' : 'slotsBiu';
          
-         // 3. FORCE SAVE the entire column state using the safely stored SIDE
-         saveColumnState(window.returningSide);
+         // Direct update to null for that specific slot
+         db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
          
-         // 4. Cleanup
          window.returningId = null; 
-         window.returningElement = null; 
          window.returningIndex = -1;
          window.returningSide = null;
     }
@@ -353,7 +350,9 @@ window.modScore = function(p, op) {
 
 window.initSlots = function(id) { 
     var h = ''; 
-    for(var i=0; i<6; i++) h += `<div class="slot" data-idx="${i}" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event)"></div>`; 
+    // ADDED data-side to slot to ensure drag start works perfectly
+    let side = id.includes('alb') ? 'alb' : 'biu';
+    for(var i=0; i<6; i++) h += `<div class="slot" data-idx="${i}" data-side="${side}" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event)"></div>`; 
     document.getElementById(id).innerHTML = h; 
 };
 
@@ -384,32 +383,37 @@ window.drop = function(ev) {
     } 
 };
 
-// --- UPDATED: ROBUST ELEMENT & SIDE FINDER ---
+// --- UPDATED DRAG START: USE DATA ATTRIBUTES ---
 function slotDragStart(e, id, idx) {
     e.dataTransfer.setData("text/return", id);
     e.dataTransfer.effectAllowed = "move";
-    window.returningId = id; 
     
-    // 1. Ensure we grab the .slot div, not the image
+    // 1. Find the slot element safely
     let el = e.target;
     if (!el.classList.contains('slot')) {
         el = el.closest('.slot');
     }
-    window.returningElement = el;
+    
+    // 2. Set globals from data attributes (100% reliable)
+    window.returningId = id; 
     window.returningIndex = idx;
-
-    // 2. Safely identify which side (alb/biu) this slot belongs to immediately
-    // The slot is inside .slot-list which has id "slots-alb" or "slots-biu"
-    let container = el.parentElement; 
-    if (container && container.id.includes('alb')) window.returningSide = 'alb';
-    else if (container && container.id.includes('biu')) window.returningSide = 'biu';
-    else window.returningSide = null;
+    window.returningElement = el;
+    
+    // 3. Get Side from the attribute we added in initSlots
+    if(el && el.dataset.side) {
+        window.returningSide = el.dataset.side;
+    } else {
+        // Fallback just in case
+        let p = el.parentElement;
+        if(p.id.includes('alb')) window.returningSide = 'alb';
+        else window.returningSide = 'biu';
+    }
 }
 
 window.allowReturnDrop = function(ev) { if(window.returningId) ev.preventDefault(); };
 window.returnDrop = function(ev) { ev.preventDefault(); handleReturnLogic(); };
 
-// --- UPDATED: CLEAR NOW SAVES EMPTY ARRAY (No NULL Node) ---
+// --- UPDATED CLEAR: NULL ARRAY + RENDER ---
 window.clearCol = function(p) { 
     window.syncLock = true;
     var container = document.getElementById('slots-'+p);
@@ -421,13 +425,12 @@ window.clearCol = function(p) {
            frame.contentWindow.postMessage({ type: 'freePokemon', id: txt.dataset.id }, '*');
        }
     }
-    // Visually reset
+    
     window.initSlots('slots-'+p); 
     
-    // Explicitly save an array of 6 nulls. This maintains the array structure in Firebase.
-    // .set(null) deletes the node, which is bad for syncing arrays.
-    let emptyArr = [null, null, null, null, null, null];
-    db.ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(emptyArr);
+    // Save explicit null array
+    let emptySlots = [null,null,null,null,null,null];
+    db.ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(emptySlots);
     
     setTimeout(() => window.syncLock = false, 1000);
     if(window.isCollapsed) generateMiniIcons(p);
@@ -585,8 +588,10 @@ function saveColumnState(side) {
     db.ref('dashboard/slots' + (side==='alb'?'Alb':'Biu')).set(slots);
 }
 
+// --- FIXED: RENDER HANDLES NULL DATA ---
 function renderColumn(side, data) {
-    if(!data) data = [null,null,null,null,null,null];
+    if(!data) data = [null,null,null,null,null,null]; // Important Fallback
+    
     var container = document.getElementById('slots-'+side);
     var kids = container.getElementsByClassName('slot');
     for(var i=0; i<kids.length; i++) {
@@ -600,6 +605,7 @@ function renderColumn(side, data) {
                 kids[i].ondragstart = function(e) { slotDragStart(e, pid, idx); };
             }
         } else {
+            // This handles the clear logic
             if(kids[i].classList.contains('filled')) {
                 kids[i].innerHTML = "";
                 kids[i].classList.remove('filled');
