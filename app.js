@@ -386,7 +386,8 @@ window.addEventListener('message', (event) => {
     }
 });
 
-// --- UPDATED RETURN LOGIC (SYNCS ACROSS USERS) ---
+// --- UPDATED RETURN LOGIC: FORCE SAVE ENTIRE COLUMN ---
+// This ensures that "What You See" (an empty slot) is "What Is Saved" to DB.
 function handleReturnLogic() {
     if(window.returningId && window.returningElement) {
          // 1. Tell the generator this ID is free so it's no longer greyed out for anyone
@@ -401,13 +402,9 @@ function handleReturnLogic() {
          var parentId = window.returningElement.parentElement.id;
          var side = parentId.split('-')[1]; 
          
-         // 3. Update Firebase so User 2 sees the empty slot
-         if(window.returningIndex !== -1) {
-             var dbKey = side === 'alb' ? 'slotsAlb' : 'slotsBiu';
-             db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
-         } else {
-             saveColumnState(side);
-         }
+         // 3. FORCE SAVE the entire column state. 
+         // We do not rely on calculating indexes anymore. We just save the current empty state.
+         saveColumnState(side);
          
          window.returningId = null; window.returningElement = null; window.returningIndex = -1;
     }
