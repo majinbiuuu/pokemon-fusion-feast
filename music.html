@@ -160,19 +160,6 @@
 </div>
 
 <script>
-  // DEFINE CALLBACK FIRST
-  function onYouTubeIframeAPIReady() {
-    console.log("API Ready");
-    player = new YT.Player('yt-player-mount', {
-      height: '100%', width: '100%',
-      playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'origin': window.location.origin, 'playsinline': 1 },
-      events: { 'onStateChange': onLocalPlayerStateChange, 'onReady': onPlayerReady }
-    });
-  }
-</script>
-<script src="https://www.youtube.com/iframe_api"></script>
-
-<script>
   // FIREBASE CONFIG
   const firebaseConfig = {
       apiKey: "AIzaSyDz82Dp56EISYqk3hza3upJ2pAjsStgMKo",
@@ -215,6 +202,16 @@
         document.getElementById('vol-slider').value = event.data.value;
     }
   });
+
+  // THIS FUNCTION MUST BE DEFINED BEFORE THE API LOADS IT
+  function onYouTubeIframeAPIReady() {
+    console.log("API Ready");
+    player = new YT.Player('yt-player-mount', {
+      height: '100%', width: '100%',
+      playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'origin': window.location.origin, 'playsinline': 1 },
+      events: { 'onStateChange': onLocalPlayerStateChange, 'onReady': onPlayerReady }
+    });
+  }
 
   function onPlayerReady(event) {
      player.setVolume(localVol);
@@ -539,5 +536,8 @@
       if(found) db.ref('music/playlists').set(playlists);
   }
 </script>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+
 </body>
 </html>
