@@ -38,9 +38,14 @@
     width: 100%;
   }
 
-  /* PEER HOVER STYLES */
-  .peer-hover-p1 { border-color: var(--p1-color) !important; box-shadow: 0 0 15px var(--p1-color) !important; z-index: 100; position:relative; }
-  .peer-hover-p2 { border-color: var(--p2-color) !important; box-shadow: 0 0 15px var(--p2-color) !important; z-index: 100; position:relative; }
+  /* PEER HOVER STYLES (DYNAMIC COLOR) */
+  .peer-interactive {
+      border-color: var(--peer-color) !important;
+      box-shadow: 0 0 15px var(--peer-color) !important;
+      z-index: 100;
+      position: relative;
+      transition: box-shadow 0.2s, border-color 0.2s;
+  }
 
   .glass-box {
     background: var(--glass-bg);
@@ -481,19 +486,53 @@
                 if(event.data.p2Name) window.p2Name = event.data.p2Name;
                 updateDynamicLabels();
             }
-            if(event.data.type === 'PEER_HOVER') {
-                document.querySelectorAll('.peer-hover-p1, .peer-hover-p2').forEach(el=>el.classList.remove('peer-hover-p1','peer-hover-p2'));
-                if(event.data.id && event.data.role) {
-                    let el = document.getElementById(event.data.id);
-                    if(el) el.classList.add('peer-hover-'+event.data.role);
-                }
+            // --- PRESENCE SYNC (DYNAMIC COLOR) ---
+            if(event.data.type === 'PEER_INTERACTION') {
+                handlePeerInteraction(event.data);
             }
         }
     });
 
     if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
 
-    // --- HOVER REPORTING ---
+    // --- NEW: UNIVERSAL INTERACTION REPORTER ---
+    document.body.addEventListener('mouseover', reportInteraction);
+    document.body.addEventListener('click', reportInteraction);
+
+    function reportInteraction(e) {
+        // Find closest interactive element
+        let t = e.target.closest('button, input, select, .p-card, .g-dot, .token-center');
+        if (t && t.id) {
+            window.parent.postMessage({
+                type: 'INTERACTION_REPORT',
+                id: t.id,
+                action: e.type === 'click' ? 'click' : 'hover'
+            }, '*');
+        }
+    }
+
+    function handlePeerInteraction(data) {
+        // 1. Remove old glows
+        document.querySelectorAll('.peer-interactive').forEach(el => el.classList.remove('peer-interactive'));
+        
+        // 2. Find target
+        if(data.id) {
+            let el = document.getElementById(data.id);
+            if(el) {
+                // 3. Set Color & Apply Class
+                el.style.setProperty('--peer-color', data.color);
+                el.classList.add('peer-interactive');
+                
+                // Auto-remove after a few seconds if no updates
+                clearTimeout(el.peerTimeout);
+                el.peerTimeout = setTimeout(() => {
+                    el.classList.remove('peer-interactive');
+                }, 4000);
+            }
+        }
+    }
+
+    // --- HOVER REPORTING (Legacy but kept) ---
     document.addEventListener('mouseover', e => {
         let t = e.target.closest('[id]'); 
         if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
