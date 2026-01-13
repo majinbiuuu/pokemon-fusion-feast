@@ -1,8 +1,6 @@
 window.GEN_DRAG_PAYLOAD = null;
 var lastTopVol = 100;
-// We store the specific details of the item being dragged here
 window.returningIndex = -1;
-window.returningSide = null; 
 window.SETDEX_CACHE = null; 
 window.myRole = localStorage.getItem('myRole') || 'spectator';
 window.playerColors = { p1: '#ff4444', p2: '#4488ff' };
@@ -243,15 +241,12 @@ function updatePresence() {
     db.ref('presence/' + window.myRole).update({ tab: tabShort, timestamp: Date.now() });
 }
 
-// --- DASHBOARD SYNC ---
 db.ref('dashboard').on('value', snap => {
     if(window.syncLock) return; 
     const s = snap.val() || {};
     window.scores.alb = s.scoreAlb || 0; window.scores.biu = s.scoreBiu || 0;
     document.getElementById('score-alb').innerText = window.scores.alb;
     document.getElementById('score-biu').innerText = window.scores.biu;
-    
-    // IMPORTANT: renderColumn checks for nulls and handles them
     if(s.slotsAlb) renderColumn('alb', s.slotsAlb);
     if(s.slotsBiu) renderColumn('biu', s.slotsBiu);
 });
@@ -322,26 +317,28 @@ window.addEventListener('message', (event) => {
     }
 });
 
-// --- UPDATED RETURN LOGIC: DIRECT DB COMMAND ---
-// 1. We capture the specific side and index when dragging starts.
-// 2. We command Firebase to set that exact slot to null.
-// 3. We let the existing listener update the visuals for EVERYONE.
+// --- UPDATED LOGIC (FIXED DRAG TARGET) ---
 function handleReturnLogic() {
-    if(window.returningId && window.returningSide && window.returningIndex > -1) {
-         // 1. Tell Generator to Free Pokemon
+    if(window.returningId && window.returningElement) {
          let frame = document.getElementById('frame-gen');
          if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
          
-         // 2. Direct Database Update (Surgical Removal)
-         let dbKey = (window.returningSide === 'alb') ? 'slotsAlb' : 'slotsBiu';
+         // 1. Clear Visual
+         window.returningElement.innerHTML = "";
+         window.returningElement.classList.remove('filled');
+         window.returningElement.draggable = false;
          
-         // This is the key line: Updating specific index to null in DB
-         db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
+         // 2. Identify Side Safely
+         // returningElement MUST be the .slot div. We ensure this in slotDragStart.
+         let parent = window.returningElement.parentElement;
+         let side = null;
+         if(parent && parent.id.includes('alb')) side = 'alb';
+         else if(parent && parent.id.includes('biu')) side = 'biu';
          
-         // Clear tracking vars
-         window.returningId = null; 
-         window.returningIndex = -1;
-         window.returningSide = null;
+         // 3. Save
+         if(side) saveColumnState(side);
+         
+         window.returningId = null; window.returningElement = null; window.returningIndex = -1;
     }
 }
 
@@ -386,28 +383,26 @@ window.drop = function(ev) {
     } 
 };
 
-// --- UPDATED DRAG START: CAPTURE DETAILS ---
+// --- FIXED: ENSURE WE GRAB THE SLOT, NOT THE IMAGE ---
 function slotDragStart(e, id, idx) {
     e.dataTransfer.setData("text/return", id);
     e.dataTransfer.effectAllowed = "move";
-    
-    // Capture these globally so handleReturnLogic knows what to delete
     window.returningId = id; 
+    
+    // Safety check: ensure we are grabbing the .slot container
+    let el = e.target;
+    if(!el.classList.contains('slot')) {
+        el = el.closest('.slot');
+    }
+    
+    window.returningElement = el;
     window.returningIndex = idx;
-    
-    // Find parent ID safely
-    let parent = e.target.parentElement;
-    if(parent.classList.contains('slot')) parent = parent.parentElement; // Just in case
-    
-    // parent should be "slots-alb" or "slots-biu"
-    if(parent.id.includes('alb')) window.returningSide = 'alb';
-    else if(parent.id.includes('biu')) window.returningSide = 'biu';
 }
 
 window.allowReturnDrop = function(ev) { if(window.returningId) ev.preventDefault(); };
 window.returnDrop = function(ev) { ev.preventDefault(); handleReturnLogic(); };
 
-// --- UPDATED CLEAR: CLEAN ARRAY RESET ---
+// --- FIXED: USE EMPTY ARRAY INSTEAD OF NULL ---
 window.clearCol = function(p) { 
     window.syncLock = true;
     var container = document.getElementById('slots-'+p);
@@ -419,12 +414,11 @@ window.clearCol = function(p) {
            frame.contentWindow.postMessage({ type: 'freePokemon', id: txt.dataset.id }, '*');
        }
     }
-    // Visually reset
     window.initSlots('slots-'+p); 
     
-    // Force Save explicit array of nulls (Fixes "revert" issue)
-    let emptyArr = [null,null,null,null,null,null];
-    db.ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(emptyArr);
+    // Save as explicit empty array [null, null...] so DB structure holds
+    let emptySlots = [null,null,null,null,null,null];
+    db.ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(emptySlots);
     
     setTimeout(() => window.syncLock = false, 1000);
     if(window.isCollapsed) generateMiniIcons(p);
