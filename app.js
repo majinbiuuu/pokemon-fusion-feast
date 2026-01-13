@@ -1,6 +1,7 @@
 window.GEN_DRAG_PAYLOAD = null;
 var lastTopVol = 100;
 window.returningIndex = -1;
+window.returningSide = null; // Added global variable to track side safely
 window.SETDEX_CACHE = null; 
 window.myRole = localStorage.getItem('myRole') || 'spectator';
 window.playerColors = { p1: '#ff4444', p2: '#4488ff' };
@@ -317,28 +318,28 @@ window.addEventListener('message', (event) => {
     }
 });
 
-// --- UPDATED LOGIC (FIXED DRAG TARGET) ---
+// --- UPDATED RETURN LOGIC: SNAPSHOT SAVE WITH SAFE SIDE TRACKING ---
 function handleReturnLogic() {
-    if(window.returningId && window.returningElement) {
+    // Check if we have valid Side info
+    if(window.returningId && window.returningElement && window.returningSide) {
+         
+         // 1. Tell Generator to Free Pokemon
          let frame = document.getElementById('frame-gen');
          if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
          
-         // 1. Clear Visual
+         // 2. Clear Visual Slot Immediately
          window.returningElement.innerHTML = "";
          window.returningElement.classList.remove('filled');
          window.returningElement.draggable = false;
          
-         // 2. Identify Side Safely
-         // returningElement MUST be the .slot div. We ensure this in slotDragStart.
-         let parent = window.returningElement.parentElement;
-         let side = null;
-         if(parent && parent.id.includes('alb')) side = 'alb';
-         else if(parent && parent.id.includes('biu')) side = 'biu';
+         // 3. FORCE SAVE the entire column state using the safely stored SIDE
+         saveColumnState(window.returningSide);
          
-         // 3. Save
-         if(side) saveColumnState(side);
-         
-         window.returningId = null; window.returningElement = null; window.returningIndex = -1;
+         // 4. Cleanup
+         window.returningId = null; 
+         window.returningElement = null; 
+         window.returningIndex = -1;
+         window.returningSide = null;
     }
 }
 
@@ -383,26 +384,32 @@ window.drop = function(ev) {
     } 
 };
 
-// --- FIXED: ENSURE WE GRAB THE SLOT, NOT THE IMAGE ---
+// --- UPDATED: ROBUST ELEMENT & SIDE FINDER ---
 function slotDragStart(e, id, idx) {
     e.dataTransfer.setData("text/return", id);
     e.dataTransfer.effectAllowed = "move";
     window.returningId = id; 
     
-    // Safety check: ensure we are grabbing the .slot container
+    // 1. Ensure we grab the .slot div, not the image
     let el = e.target;
-    if(!el.classList.contains('slot')) {
+    if (!el.classList.contains('slot')) {
         el = el.closest('.slot');
     }
-    
     window.returningElement = el;
     window.returningIndex = idx;
+
+    // 2. Safely identify which side (alb/biu) this slot belongs to immediately
+    // The slot is inside .slot-list which has id "slots-alb" or "slots-biu"
+    let container = el.parentElement; 
+    if (container && container.id.includes('alb')) window.returningSide = 'alb';
+    else if (container && container.id.includes('biu')) window.returningSide = 'biu';
+    else window.returningSide = null;
 }
 
 window.allowReturnDrop = function(ev) { if(window.returningId) ev.preventDefault(); };
 window.returnDrop = function(ev) { ev.preventDefault(); handleReturnLogic(); };
 
-// --- FIXED: USE EMPTY ARRAY INSTEAD OF NULL ---
+// --- UPDATED: CLEAR NOW SAVES EMPTY ARRAY (No NULL Node) ---
 window.clearCol = function(p) { 
     window.syncLock = true;
     var container = document.getElementById('slots-'+p);
@@ -414,11 +421,13 @@ window.clearCol = function(p) {
            frame.contentWindow.postMessage({ type: 'freePokemon', id: txt.dataset.id }, '*');
        }
     }
+    // Visually reset
     window.initSlots('slots-'+p); 
     
-    // Save as explicit empty array [null, null...] so DB structure holds
-    let emptySlots = [null,null,null,null,null,null];
-    db.ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(emptySlots);
+    // Explicitly save an array of 6 nulls. This maintains the array structure in Firebase.
+    // .set(null) deletes the node, which is bad for syncing arrays.
+    let emptyArr = [null, null, null, null, null, null];
+    db.ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(emptyArr);
     
     setTimeout(() => window.syncLock = false, 1000);
     if(window.isCollapsed) generateMiniIcons(p);
