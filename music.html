@@ -99,8 +99,6 @@
   .q-name { font-size: 0.9rem; font-weight: 700; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .q-item.playing .q-name { color: var(--theme-c); }
   
-  /* REMOVED .q-time since user wants no timestamp */
-  
   .q-remove { position: absolute; top: 50%; transform: translateY(-50%); right: 10px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; color: transparent; transition: 0.2s; }
   .q-item:hover .q-remove { color: #555; }
   .q-remove:hover { background: #ff4444; color: #fff !important; }
@@ -162,7 +160,7 @@
 </div>
 
 <script>
-  // DEFINE CALLBACK FIRST to ensure API finds it
+  // DEFINE CALLBACK FIRST
   function onYouTubeIframeAPIReady() {
     console.log("API Ready");
     player = new YT.Player('yt-player-mount', {
@@ -186,7 +184,7 @@
       appId: "1:67655442054:web:705baa26ffda58b5d3fb07",
       measurementId: "G-LGW9RJZDP3"
   };
-  firebase.initializeApp(firebaseConfig);
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
   var player;
@@ -297,7 +295,6 @@
           div.className = (item.id === currentId) ? 'q-item playing' : 'q-item';
           div.setAttribute('draggable', 'true');
           
-          // REMOVED TIME DISPLAY FROM HTML
           div.innerHTML = `
             <img class="q-thumb" src="${item.thumb}">
             <div class="q-info">
