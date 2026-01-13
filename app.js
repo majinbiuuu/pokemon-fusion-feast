@@ -386,24 +386,24 @@ window.addEventListener('message', (event) => {
     }
 });
 
-// --- UPDATED RETURN LOGIC: FORCE SAVE ENTIRE COLUMN ---
-// This ensures that "What You See" (an empty slot) is "What Is Saved" to DB.
+// --- FIXED RETURN LOGIC (SNAPSHOT SAVE) ---
+// This function now ignores window.returningIndex and saves the entire column state
+// This ensures whatever gap you created is instantly reflected in the DB.
 function handleReturnLogic() {
     if(window.returningId && window.returningElement) {
-         // 1. Tell Generator to Free Pokemon
+         // 1. Tell the generator this ID is free so it's no longer greyed out for anyone
          let frame = document.getElementById('frame-gen');
          if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
          
-         // 2. Clear Visual Slot Immediately
+         // 2. Clear the local UI
          window.returningElement.innerHTML = "";
          window.returningElement.classList.remove('filled');
          window.returningElement.draggable = false;
          
-         var parentId = window.returningElement.parentElement.id; // slots-alb
-         var side = parentId.split('-')[1]; // alb
+         var parentId = window.returningElement.parentElement.id;
+         var side = parentId.split('-')[1]; 
          
-         // 3. FORCE SAVE the entire column state. 
-         // This overwrites the database with the empty slot you see.
+         // 3. FORCE SAVE: We rely on scanning the DOM, not index calculations
          saveColumnState(side);
          
          window.returningId = null; window.returningElement = null; window.returningIndex = -1;
@@ -467,7 +467,9 @@ window.returnDrop = function(ev) {
     handleReturnLogic();
 };
 
-// --- UPDATED CLEAR COLUMN (SYNCS ACROSS USERS) ---
+// --- FIXED CLEAR LOGIC (SNAPSHOT SAVE) ---
+// This function now clears visually, then saves that exact state (empty array) to DB.
+// It avoids using .set(null) which deletes the node entirely and confuses sync.
 window.clearCol = function(p) { 
     window.syncLock = true;
     var container = document.getElementById('slots-'+p);
@@ -482,9 +484,11 @@ window.clearCol = function(p) {
        }
     }
     
-    // Reset the slots in Firebase so User 2 sees them clear
+    // Reset the slots visually
     window.initSlots('slots-'+p); 
-    db.ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(null);
+    
+    // Force Save the now EMPTY column state to DB
+    saveColumnState(p);
     
     setTimeout(() => window.syncLock = false, 1000);
     if(window.isCollapsed) generateMiniIcons(p);
@@ -877,4 +881,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-
