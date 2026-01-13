@@ -14,9 +14,14 @@
   :root { --theme-green: var(--accent); }
   body { font-family: 'Segoe UI', sans-serif; color: #eee; text-align: center; margin: 0; padding: 10px; box-sizing: border-box; background: transparent; user-select: none; min-height: 100vh; }
 
-  /* PEER HOVER STYLES */
-  .peer-hover-alb { border-color: #ff4444 !important; box-shadow: 0 0 15px #ff4444 !important; z-index: 100; position:relative; }
-  .peer-hover-biu { border-color: #4488ff !important; box-shadow: 0 0 15px #4488ff !important; z-index: 100; position:relative; }
+  /* PEER HOVER STYLES (DYNAMIC COLOR) */
+  .peer-interactive {
+      border-color: var(--peer-color) !important;
+      box-shadow: 0 0 15px var(--peer-color) !important;
+      z-index: 100;
+      position: relative;
+      transition: box-shadow 0.2s, border-color 0.2s;
+  }
 
   /* PANEL */
   .control-panel { background: rgba(8, 8, 8, 0.95); border: 1px solid #333; border-radius: 12px; padding: 10px 15px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); backdrop-filter: blur(10px); position: relative; z-index: 10; margin-bottom: 20px; }
@@ -191,22 +196,49 @@
       if (event.data && event.data.type === 'freePokemon') {
           freePokemonLocal(event.data.id);
       }
-      // --- PRESENCE SYNC ---
-      if(event.data.type === 'PEER_HOVER') {
-          document.querySelectorAll('.peer-hover-alb, .peer-hover-biu').forEach(el=>el.classList.remove('peer-hover-alb','peer-hover-biu'));
-          if(event.data.id && event.data.role) {
-              let el = document.getElementById(event.data.id);
-              if(el) el.classList.add('peer-hover-'+event.data.role);
-          }
+      // --- PRESENCE SYNC (DYNAMIC COLOR) ---
+      if(event.data.type === 'PEER_INTERACTION') {
+          handlePeerInteraction(event.data);
       }
   });
   if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
 
-  // --- HOVER REPORTING ---
-  document.addEventListener('mouseover', e => {
-      let t = e.target.closest('[id]'); 
-      if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
-  });
+  // --- NEW: UNIVERSAL INTERACTION REPORTER ---
+  document.body.addEventListener('mouseover', reportInteraction);
+  document.body.addEventListener('click', reportInteraction);
+
+  function reportInteraction(e) {
+      // Find closest interactive element
+      let t = e.target.closest('button, input, select, .dd-btn, .toggle-btn, .action-btn, .poke-card');
+      if (t && t.id) {
+          window.parent.postMessage({
+              type: 'INTERACTION_REPORT',
+              id: t.id,
+              action: e.type === 'click' ? 'click' : 'hover'
+          }, '*');
+      }
+  }
+
+  function handlePeerInteraction(data) {
+      // 1. Remove old glows
+      document.querySelectorAll('.peer-interactive').forEach(el => el.classList.remove('peer-interactive'));
+      
+      // 2. Find target
+      if(data.id) {
+          let el = document.getElementById(data.id);
+          if(el) {
+              // 3. Set Color & Apply Class
+              el.style.setProperty('--peer-color', data.color);
+              el.classList.add('peer-interactive');
+              
+              // Auto-remove after a few seconds if no updates
+              clearTimeout(el.peerTimeout);
+              el.peerTimeout = setTimeout(() => {
+                  el.classList.remove('peer-interactive');
+              }, 4000);
+          }
+      }
+  }
 
   function isSameTeam(a, b) {
       return JSON.stringify(a) === JSON.stringify(b);
