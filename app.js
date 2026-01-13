@@ -73,7 +73,7 @@ function updateIdentityUI() {
     if(btn) btn.classList.add('active');
 }
 
-// --- SYNC CONFIG (Includes Score/Name Update for Top Bar) ---
+// --- SYNC CONFIG ---
 db.ref('config').on('value', snap => {
     const c = snap.val() || {};
     if(c.theme) {
@@ -98,14 +98,8 @@ db.ref('config').on('value', snap => {
     const p1Color = c.p1Color || "#ff4444";
     window.playerColors.p1 = p1Color;
     document.documentElement.style.setProperty('--p1-color', p1Color);
-    
-    // Side Bar Names
     document.getElementById('disp-p1-name').innerText = p1Name;
     document.getElementById('disp-p1-name').style.color = p1Color;
-    // Top Bar Names
-    document.getElementById('top-name-alb').innerText = p1Name;
-    document.getElementById('top-name-alb').style.color = p1Color;
-
     if(document.activeElement !== document.getElementById('st-p1-name')) document.getElementById('st-p1-name').value = p1Name;
     document.getElementById('st-p1-color').value = p1Color;
 
@@ -113,14 +107,8 @@ db.ref('config').on('value', snap => {
     const p2Color = c.p2Color || "#4488ff";
     window.playerColors.p2 = p2Color;
     document.documentElement.style.setProperty('--p2-color', p2Color);
-    
-    // Side Bar Names
     document.getElementById('disp-p2-name').innerText = p2Name;
     document.getElementById('disp-p2-name').style.color = p2Color;
-    // Top Bar Names
-    document.getElementById('top-name-biu').innerText = p2Name;
-    document.getElementById('top-name-biu').style.color = p2Color;
-
     if(document.activeElement !== document.getElementById('st-p2-name')) document.getElementById('st-p2-name').value = p2Name;
     document.getElementById('st-p2-color').value = p2Color;
 
@@ -134,7 +122,6 @@ function broadcastToIframes(msg) {
     });
 }
 
-// --- WALLPAPER MANAGER ---
 function addCurrentToSaved() {
     let current = document.getElementById('st-bg-url').value;
     if(!current) return;
@@ -168,7 +155,6 @@ function renderSavedWallpapers(list) {
     });
 }
 
-// --- SETTINGS DRAG DROP ---
 window.dragOverHandler = function(ev) { ev.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
 window.dragLeaveHandler = function(ev) { document.getElementById('drop-zone').classList.remove('drag-over'); }
 window.dropHandler = function(ev) {
@@ -256,20 +242,16 @@ function updatePresence() {
     db.ref('presence/' + window.myRole).update({ tab: tabShort, timestamp: Date.now() });
 }
 
-// --- DASHBOARD SYNC ---
+// --- DASHBOARD SYNC (FIXED: ALWAYS RENDER) ---
 db.ref('dashboard').on('value', snap => {
     if(window.syncLock) return; 
     const s = snap.val() || {};
     window.scores.alb = s.scoreAlb || 0; window.scores.biu = s.scoreBiu || 0;
-    
-    // Side Bar Scores
     document.getElementById('score-alb').innerText = window.scores.alb;
     document.getElementById('score-biu').innerText = window.scores.biu;
     
-    // Top Bar Scores
-    document.getElementById('top-score-alb').innerText = window.scores.alb;
-    document.getElementById('top-score-biu').innerText = window.scores.biu;
-    
+    // REMOVED THE IF CHECKS HERE. ALWAYS RENDER.
+    // This ensures that if the DB is null (cleared), renderColumn runs and wipes the screen.
     renderColumn('alb', s.slotsAlb);
     renderColumn('biu', s.slotsBiu);
 });
@@ -340,12 +322,16 @@ window.addEventListener('message', (event) => {
     }
 });
 
+// --- UPDATED RETURN LOGIC (DIRECT DB UPDATE) ---
 function handleReturnLogic() {
     if(window.returningId && window.returningSide && window.returningIndex > -1) {
          let frame = document.getElementById('frame-gen');
          if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
          
+         // 2. Direct Database Update (Surgical Removal)
          let dbKey = (window.returningSide === 'alb') ? 'slotsAlb' : 'slotsBiu';
+         
+         // Direct update to null for that specific slot
          db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
          
          window.returningId = null; 
@@ -357,18 +343,14 @@ function handleReturnLogic() {
 window.modScore = function(p, op) {
     window.syncLock = true;
     if(op==='add') window.scores[p]++; else window.scores[p] = Math.max(0, window.scores[p]-1);
-    
-    // Update Side
     document.getElementById('score-'+p).innerText = window.scores[p];
-    // Update Top
-    document.getElementById('top-score-'+p).innerText = window.scores[p];
-    
     db.ref('dashboard/score' + (p==='alb'?'Alb':'Biu')).set(window.scores[p]);
     setTimeout(() => window.syncLock = false, 500);
 };
 
 window.initSlots = function(id) { 
     var h = ''; 
+    // ADDED data-side to slot to ensure drag start works perfectly
     let side = id.includes('alb') ? 'alb' : 'biu';
     for(var i=0; i<6; i++) h += `<div class="slot" data-idx="${i}" data-side="${side}" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event)"></div>`; 
     document.getElementById(id).innerHTML = h; 
@@ -397,20 +379,31 @@ window.drop = function(ev) {
         window.GEN_DRAG_PAYLOAD = null;
         setTimeout(() => window.syncLock = false, 1000);
         
-        // No longer needed to manually update mini icons here as renderColumn handles data updates
+        if(window.isCollapsed) generateMiniIcons(side);
     } 
 };
 
+// --- UPDATED DRAG START: USE DATA ATTRIBUTES ---
 function slotDragStart(e, id, idx) {
     e.dataTransfer.setData("text/return", id);
     e.dataTransfer.effectAllowed = "move";
-    window.returningId = id; 
+    
+    // 1. Find the slot element safely
     let el = e.target;
-    if (!el.classList.contains('slot')) { el = el.closest('.slot'); }
-    window.returningElement = el;
+    if (!el.classList.contains('slot')) {
+        el = el.closest('.slot');
+    }
+    
+    // 2. Set globals from data attributes (100% reliable)
+    window.returningId = id; 
     window.returningIndex = idx;
-    if(el && el.dataset.side) window.returningSide = el.dataset.side;
-    else {
+    window.returningElement = el;
+    
+    // 3. Get Side from the attribute we added in initSlots
+    if(el && el.dataset.side) {
+        window.returningSide = el.dataset.side;
+    } else {
+        // Fallback just in case
         let p = el.parentElement;
         if(p.id.includes('alb')) window.returningSide = 'alb';
         else window.returningSide = 'biu';
@@ -420,6 +413,7 @@ function slotDragStart(e, id, idx) {
 window.allowReturnDrop = function(ev) { if(window.returningId) ev.preventDefault(); };
 window.returnDrop = function(ev) { ev.preventDefault(); handleReturnLogic(); };
 
+// --- UPDATED CLEAR: NULL ARRAY + RENDER ---
 window.clearCol = function(p) { 
     window.syncLock = true;
     var container = document.getElementById('slots-'+p);
@@ -431,26 +425,34 @@ window.clearCol = function(p) {
            frame.contentWindow.postMessage({ type: 'freePokemon', id: txt.dataset.id }, '*');
        }
     }
+    
     window.initSlots('slots-'+p); 
+    
+    // Save explicit null array
     let emptySlots = [null,null,null,null,null,null];
     db.ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(emptySlots);
+    
     setTimeout(() => window.syncLock = false, 1000);
+    if(window.isCollapsed) generateMiniIcons(p);
 };
 
 window.exportTeam = async function(side) {
     var btn = document.getElementById('export-' + side);
     var originalIcon = '<i class="fas fa-file-export"></i> Export Team';
     btn.innerHTML = '<i class="fas fa-spinner"></i> Exporting...';
+    
     var container = document.getElementById('slots-' + side);
     var kids = container.getElementsByClassName('slot');
     var exportText = "";
     var monsToFetch = [];
+    
     for(var i=0; i<kids.length; i++) {
         var txt = kids[i].querySelector('.slot-txt');
         if(txt && txt.dataset.id) {
             monsToFetch.push({ name: txt.innerText.trim(), id: txt.dataset.id });
         }
     }
+    
     if(monsToFetch.length === 0) { alert("Column is empty!"); btn.innerHTML = originalIcon; return; }
 
     if (!window.SETDEX_CACHE) {
@@ -481,9 +483,11 @@ window.exportTeam = async function(side) {
             let cleanBase = parts[0].trim();
             let suffix = parts[1] ? parts[1].trim() : "";
             let lookupName = cleanBase + (suffix ? " " + suffix : "");
+            
             if(MEGA_STONE_EXCEPTIONS[lookupName]) megaStone = MEGA_STONE_EXCEPTIONS[lookupName];
             else if(MEGA_STONE_EXCEPTIONS[cleanBase]) megaStone = MEGA_STONE_EXCEPTIONS[cleanBase];
             else megaStone = cleanBase + "ite" + (suffix ? " " + suffix : "");
+            
             if(cleanBase === "Kyogre" && suffix.includes("Primal")) megaStone = "Blue Orb";
             if(cleanBase === "Groudon" && suffix.includes("Primal")) megaStone = "Red Orb";
             if(cleanBase === "Rayquaza") megaStone = ""; 
@@ -584,10 +588,10 @@ function saveColumnState(side) {
     db.ref('dashboard/slots' + (side==='alb'?'Alb':'Biu')).set(slots);
 }
 
+// --- FIXED: RENDER HANDLES NULL DATA ---
 function renderColumn(side, data) {
-    if(!data) data = [null,null,null,null,null,null];
+    if(!data) data = [null,null,null,null,null,null]; // Important Fallback
     
-    // 1. Update Side Columns (Original)
     var container = document.getElementById('slots-'+side);
     var kids = container.getElementsByClassName('slot');
     for(var i=0; i<kids.length; i++) {
@@ -601,6 +605,7 @@ function renderColumn(side, data) {
                 kids[i].ondragstart = function(e) { slotDragStart(e, pid, idx); };
             }
         } else {
+            // This handles the clear logic
             if(kids[i].classList.contains('filled')) {
                 kids[i].innerHTML = "";
                 kids[i].classList.remove('filled');
@@ -608,37 +613,42 @@ function renderColumn(side, data) {
             }
         }
     }
-
-    // 2. Update Top Bar Mini Icons (New)
-    generateTopBarIcons(side, data);
-}
-
-// Helper to render icons in the Top Bar
-function generateTopBarIcons(side, data) {
-    const container = document.getElementById('top-mini-' + side);
-    if(!container) return;
-    
-    let html = '';
-    for(let i=0; i<6; i++) {
-        if(data[i]) {
-            html += `<div class="top-mini-slot"><img src="${data[i].img}"></div>`;
-        } else {
-            // Optional: Show empty slots or just nothing
-            // html += `<div class="top-mini-slot" style="opacity:0.2"></div>`;
-        }
-    }
-    container.innerHTML = html;
+    if(window.isCollapsed) generateMiniIcons(side);
 }
 
 window.isCollapsed = false;
-
 window.toggleCollapse = function() {
     window.isCollapsed = !window.isCollapsed;
-    
-    // Toggle Layout Class on Body
-    if(window.isCollapsed) document.body.classList.add('layout-collapsed');
-    else document.body.classList.remove('layout-collapsed');
+    const icons = document.querySelectorAll('.collapse-btn i');
+    icons.forEach(icon => { icon.className = window.isCollapsed ? "fas fa-expand-alt" : "fas fa-compress-alt"; });
+    ['alb', 'biu'].forEach(side => {
+        const col = document.getElementById('col-' + side);
+        const list = document.getElementById('slots-' + side);
+        const miniRow = document.getElementById('mini-' + side);
+        if (window.isCollapsed) {
+            generateMiniIcons(side);
+            list.classList.add('collapsed');
+            miniRow.classList.add('active');
+            col.classList.add('collapsed-view');
+        } else {
+            list.classList.remove('collapsed');
+            miniRow.classList.remove('active');
+            col.classList.remove('collapsed-view');
+        }
+    });
 };
+
+window.generateMiniIcons = function(side) {
+    const miniRow = document.getElementById('mini-' + side);
+    const slots = document.getElementById('slots-' + side).getElementsByClassName('slot');
+    let html = '';
+    for(let i=0; i < slots.length; i++) {
+        const img = slots[i].querySelector('img');
+        if (img) html += `<div class="mini-slot"><img src="${img.src}"></div>`;
+        else html += `<div class="mini-slot empty"></div>`;
+    }
+    miniRow.innerHTML = html;
+}
 
 window.centerCollapsed = false;
 window.toggleCenterCollapse = function() {
@@ -663,9 +673,8 @@ window.switchTab = function(viewId, btn) {
 document.addEventListener('DOMContentLoaded', function() {
     window.initSlots('slots-alb'); window.initSlots('slots-biu'); 
     initPresenceSystem();
-    // Default State: Expanded
-    if(window.isCollapsed) document.body.classList.add('layout-collapsed');
-    
+    window.toggleCollapse(); 
+    window.toggleCenterCollapse(); 
     db.ref('library').once('value').then(snap => {
         window.appData = snap.val() || {};
         ['frame-play', 'frame-gen'].forEach(id => {
