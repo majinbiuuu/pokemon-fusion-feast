@@ -24,7 +24,7 @@ window.db = firebase.database();
 window.appData = {};
 window.scores = { alb: 0, biu: 0 };
 window.syncLock = false;
-window.playerColors = { p1: '#ff4444', p2: '#4488ff' };
+window.playerColors = { p1: '#ff4444', p2: '#4488ff' }; // Defaults
 window.myRole = localStorage.getItem('myRole') || 'spectator';
 
 // --- 3. IDENTITY & PRESENCE LOGIC ---
@@ -95,14 +95,14 @@ window.initPresenceSystem = function() {
         const p = snap.val() || {};
         const roles = ['p1', 'p2'];
         
-        // 1. Tab Dots Logic
+        // 1. Tab Dots Logic (Reverted to original working logic)
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
         roles.forEach(role => {
             if(role === window.myRole) return; 
             const data = p[role];
             if(!data) return;
             
-            // Render Tabs
+            // Render Tab Dots
             if(data.tab) {
                 const targetTab = document.querySelector(`.tab[data-id="tab-${data.tab}"]`);
                 if(targetTab) {
@@ -117,30 +117,35 @@ window.initPresenceSystem = function() {
                 }
             }
 
-            // 2. Universal Interaction Logic (Clicks & Hovers)
+            // 2. Universal Interaction Logic (Border & Ripple)
             if(data.universal) {
                 const u = data.universal;
                 // Only process fresh events (within last 2 seconds)
                 if (Date.now() - u.timestamp < 2000) {
                     const el = document.getElementById(u.elementId);
-                    const roleColor = window.playerColors[role];
+                    const roleColor = window.playerColors[role] || (role==='p1'?'#ff4444':'#4488ff');
 
                     if (u.type === 'click' && el) {
-                        // Create Ripple
                         const ripple = document.createElement('div');
                         ripple.className = 'peer-click-effect';
                         ripple.style.left = u.x + 'px';
                         ripple.style.top = u.y + 'px';
-                        ripple.style.color = roleColor;
+                        ripple.style.color = roleColor; 
                         document.body.appendChild(ripple);
                         setTimeout(() => ripple.remove(), 600);
                     } 
                     
                     if (u.type === 'hover' && el) {
-                        // Apply Hover Border
-                        el.classList.add('peer-hover-' + role);
-                        // Auto remove after 2 seconds of inactivity
-                        setTimeout(() => el.classList.remove('peer-hover-' + role), 2000);
+                        // Use inline style for EXACT color matching
+                        el.style.transition = 'box-shadow 0.3s';
+                        el.style.boxShadow = `0 0 10px ${roleColor}, inset 0 0 5px ${roleColor}`;
+                        el.style.borderColor = roleColor;
+                        
+                        // Auto remove style after 2 seconds
+                        setTimeout(() => {
+                            el.style.boxShadow = '';
+                            el.style.borderColor = '';
+                        }, 2000);
                     }
                 }
             }
