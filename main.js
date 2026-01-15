@@ -5,24 +5,17 @@
 
 // --- 1. GLOBAL MESSAGE LISTENER (Cross-Iframe Comms) ---
 window.addEventListener('message', (event) => {
-    // Theme Request from iframes
     if(event.data && event.data.type === 'REQUEST_THEME') {
         const c = window.currentAccent || '#00ff9d';
         if(event.source) event.source.postMessage({ type: 'THEME_UPDATE', color: c }, '*');
     }
-    
-    // Clear Columns Request
     if (event.data && event.data.type === 'requestClearCols') {
         window.clearCol('alb'); 
         window.clearCol('biu');
     }
-    
-    // Generator Drop Return Logic
     if (event.data && event.data.type === 'GENERATOR_DROP') {
         window.handleReturnLogic();
     }
-    
-    // Interaction Reporting (Presence)
     if (event.data && event.data.type === 'INTERACTION_REPORT') {
         if(window.myRole === 'spectator') return;
         window.db.ref('presence/' + window.myRole + '/interaction').set({
@@ -35,18 +28,14 @@ window.addEventListener('message', (event) => {
 
 // --- 2. INITIALIZATION ON LOAD ---
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Dashboard Slots
     window.initSlots('slots-alb'); 
     window.initSlots('slots-biu'); 
     
-    // Initialize Systems
     if(window.initPresenceSystem) window.initPresenceSystem();
     
-    // Initialize UI States
     window.toggleCollapse(); 
     window.toggleCenterCollapse(); 
     
-    // Load Library Data Once
     window.db.ref('library').once('value').then(snap => {
         window.appData = snap.val() || {};
         ['frame-play', 'frame-gen'].forEach(id => {
@@ -60,26 +49,22 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function attachUniversalListeners() {
-    // List of elements to track
-    const targets = [
-        '.theme-color-btn', '.theme-party-btn', '.theme-gear-btn', // Theme Buttons
-        '#col-alb', '#col-biu', // Player Columns
-        '.top-bar', '.np-widget', // Title Bar Area
-        '.tab', // Tabs
-        '#score-alb', '#score-biu', // Scores
-        '.who-btn' // Role Buttons
+    // Only track these specific IDs (matching HTML)
+    const trackedIds = [
+        'btn-theme-color', 'btn-theme-party', 'btn-fullscreen', 'btn-settings', // Theme Buttons
+        'col-alb', 'col-biu', // Columns
+        'top-bar-area', 'music-widget', // Title Areas
+        'tab-btn-play', 'tab-btn-gen', 'tab-btn-music', 'tab-btn-hist', 'tab-btn-lib', // Tabs
+        'score-alb', 'score-biu'
     ];
 
-    targets.forEach(selector => {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(el => {
-            // Assign ID if missing (needed for tracking)
-            if(!el.id) el.id = 'tracked-' + Math.random().toString(36).substr(2, 9);
-
+    trackedIds.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) {
             // Click Tracker
             el.addEventListener('mousedown', (e) => {
                 if(window.reportInteraction) {
-                    window.reportInteraction(el.id, 'click', e.pageX, e.pageY);
+                    window.reportInteraction(id, 'click', e.pageX, e.pageY);
                 }
             });
 
@@ -88,9 +73,9 @@ function attachUniversalListeners() {
             el.addEventListener('mouseenter', () => {
                 if(window.reportInteraction) {
                     clearTimeout(hoverTimeout);
-                    window.reportInteraction(el.id, 'hover');
+                    window.reportInteraction(id, 'hover');
                 }
             });
-        });
+        }
     });
 }
