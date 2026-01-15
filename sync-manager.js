@@ -24,7 +24,7 @@ window.db = firebase.database();
 window.appData = {};
 window.scores = { alb: 0, biu: 0 };
 window.syncLock = false;
-window.playerColors = { p1: '#ff4444', p2: '#4488ff' }; // Defaults
+window.playerColors = { p1: '#ff4444', p2: '#4488ff' }; 
 window.myRole = localStorage.getItem('myRole') || 'spectator';
 
 // --- 3. IDENTITY & PRESENCE LOGIC ---
@@ -78,12 +78,12 @@ window.updatePresence = function() {
     window.db.ref('presence/' + window.myRole).update({ tab: tabShort, timestamp: Date.now() });
 };
 
-// REPORT INTERACTION (Helper function)
+// REPORT INTERACTION
 window.reportInteraction = function(elementId, type, x, y) {
     if(window.myRole === 'spectator') return;
     window.db.ref('presence/' + window.myRole + '/universal').set({
         elementId: elementId,
-        type: type, // 'click' or 'hover'
+        type: type, // 'click', 'hover', or 'blur'
         x: x || 0,
         y: y || 0,
         timestamp: Date.now()
@@ -95,14 +95,13 @@ window.initPresenceSystem = function() {
         const p = snap.val() || {};
         const roles = ['p1', 'p2'];
         
-        // 1. Tab Dots Logic (Reverted to original working logic)
+        // 1. Tab Dots Logic
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
         roles.forEach(role => {
             if(role === window.myRole) return; 
             const data = p[role];
             if(!data) return;
             
-            // Render Tab Dots
             if(data.tab) {
                 const targetTab = document.querySelector(`.tab[data-id="tab-${data.tab}"]`);
                 if(targetTab) {
@@ -117,15 +116,18 @@ window.initPresenceSystem = function() {
                 }
             }
 
-            // 2. Universal Interaction Logic (Border & Ripple)
+            // 2. Universal Interaction Logic (Instant Response)
             if(data.universal) {
                 const u = data.universal;
-                // Only process fresh events (within last 2 seconds)
-                if (Date.now() - u.timestamp < 2000) {
+                // Only process fresh events (within last 5 seconds)
+                if (Date.now() - u.timestamp < 5000) {
                     const el = document.getElementById(u.elementId);
                     const roleColor = window.playerColors[role] || (role==='p1'?'#ff4444':'#4488ff');
 
-                    if (u.type === 'click' && el) {
+                    if (!el) return;
+
+                    // A. Click Ripple
+                    if (u.type === 'click') {
                         const ripple = document.createElement('div');
                         ripple.className = 'peer-click-effect';
                         ripple.style.left = u.x + 'px';
@@ -135,17 +137,19 @@ window.initPresenceSystem = function() {
                         setTimeout(() => ripple.remove(), 600);
                     } 
                     
-                    if (u.type === 'hover' && el) {
-                        // Use inline style for EXACT color matching
-                        el.style.transition = 'box-shadow 0.3s';
-                        el.style.boxShadow = `0 0 10px ${roleColor}, inset 0 0 5px ${roleColor}`;
+                    // B. Hover ON (Instant)
+                    if (u.type === 'hover') {
+                        el.style.transition = 'box-shadow 0.2s ease, border-color 0.2s ease';
+                        el.style.boxShadow = `0 0 15px ${roleColor}, inset 0 0 5px ${roleColor}`;
                         el.style.borderColor = roleColor;
-                        
-                        // Auto remove style after 2 seconds
-                        setTimeout(() => {
-                            el.style.boxShadow = '';
-                            el.style.borderColor = '';
-                        }, 2000);
+                        el.style.zIndex = '100'; // Bring to front
+                    }
+
+                    // C. Hover OFF (Instant)
+                    if (u.type === 'blur') {
+                        el.style.boxShadow = '';
+                        el.style.borderColor = '';
+                        el.style.zIndex = '';
                     }
                 }
             }
