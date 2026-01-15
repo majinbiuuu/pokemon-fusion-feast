@@ -84,9 +84,9 @@
       </div>
   </div>
 
-  <div class="top-bar" id="top-bar-area">
+  <div class="top-bar">
     <div class="top-left">
-      <div class="status-badge" id="status-badge-area">
+      <div class="status-badge">
         <div id="status-dot" class="status-dot active"></div> 
         <span>Live</span>
         <div id="presence-count" class="online-count"><i class="fas fa-users" style="font-size: 11px;"></i> 0</div>
@@ -94,7 +94,7 @@
     </div>
 
     <div class="top-center">
-        <div class="np-widget" id="music-widget">
+        <div class="np-widget">
             <img id="np-img-top" class="np-thumb-mini" src="">
             <div class="np-info">
                 <div class="np-scroll-wrapper">
@@ -117,10 +117,10 @@
 
     <div class="top-right">
       <div class="theme-btn-group">
-        <div class="theme-color-btn" id="btn-theme-color" onclick="window.changeTheme()" title="Quick Random Theme"><i class="fas fa-palette"></i></div>
-        <div class="theme-party-btn" id="btn-theme-party" onclick="window.toggleParty()" title="Party Mode"><i class="fas fa-infinity"></i></div>
-        <div class="theme-gear-btn" id="btn-fullscreen" onclick="toggleFullScreen()" title="Toggle Fullscreen"><i class="fas fa-expand" id="fs-icon"></i></div>
-        <div class="theme-gear-btn" id="btn-settings" onclick="toggleSettings()" title="Settings"><i class="fas fa-cog"></i></div>
+        <div class="theme-color-btn" onclick="window.changeTheme()" title="Quick Random Theme"><i class="fas fa-palette"></i></div>
+        <div class="theme-party-btn" onclick="window.toggleParty()" title="Party Mode"><i class="fas fa-infinity"></i></div>
+        <div class="theme-gear-btn" onclick="toggleFullScreen()" title="Toggle Fullscreen"><i class="fas fa-expand" id="fs-icon"></i></div>
+        <div class="theme-gear-btn" onclick="toggleSettings()" title="Settings"><i class="fas fa-cog"></i></div>
       </div>
     </div>
   </div>
@@ -151,29 +151,29 @@
       <button class="col-btn clear-btn" onclick="clearCol('alb')">Clear</button>
     </div>
 
-    <div class="col-c" id="col-center">
+    <div class="col-c">
       <div class="tab-bar">
-        <button class="tab-btn-collapse" id="btn-tab-collapse" onclick="toggleCenterCollapse()" title="Collapse/Expand Window">
+        <button class="tab-btn-collapse" onclick="toggleCenterCollapse()" title="Collapse/Expand Window">
             <i class="fas fa-compress-alt" id="c-collapse-icon"></i>
         </button>
 
-        <div class="tab active track-hover" id="tab-btn-play" data-id="tab-play" onclick="switchTab('play', this)">
+        <div class="tab active track-hover" data-id="tab-play" onclick="switchTab('play', this)">
             Play
             <div class="tab-badges"></div>
         </div>
-        <div class="tab track-hover" id="tab-btn-gen" data-id="tab-gen" onclick="switchTab('gen', this)">
+        <div class="tab track-hover" data-id="tab-gen" onclick="switchTab('gen', this)">
             Generator
             <div class="tab-badges"></div>
         </div>
-        <div class="tab track-hover" id="tab-btn-music" data-id="tab-music" onclick="switchTab('music', this)">
+        <div class="tab track-hover" data-id="tab-music" onclick="switchTab('music', this)">
             Music
             <div class="tab-badges"></div>
         </div>
-        <div class="tab track-hover" id="tab-btn-hist" data-id="tab-hist" onclick="switchTab('hist', this)">
+        <div class="tab track-hover" data-id="tab-hist" onclick="switchTab('hist', this)">
             History
             <div class="tab-badges"></div>
         </div>
-        <div class="tab track-hover" id="tab-btn-lib" data-id="tab-lib" onclick="switchTab('lib', this)">
+        <div class="tab track-hover" data-id="tab-lib" onclick="switchTab('lib', this)">
             Library
             <div class="tab-badges"></div>
         </div>
