@@ -54,4 +54,43 @@ document.addEventListener('DOMContentLoaded', function() {
             if(el && el.contentWindow) { try { el.contentWindow.appData = window.appData; } catch(e) {} }
         });
     });
+
+    // --- 3. ATTACH UNIVERSAL LISTENERS ---
+    attachUniversalListeners();
 });
+
+function attachUniversalListeners() {
+    // List of elements to track
+    const targets = [
+        '.theme-color-btn', '.theme-party-btn', '.theme-gear-btn', // Theme Buttons
+        '#col-alb', '#col-biu', // Player Columns
+        '.top-bar', '.np-widget', // Title Bar Area
+        '.tab', // Tabs
+        '#score-alb', '#score-biu', // Scores
+        '.who-btn' // Role Buttons
+    ];
+
+    targets.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+            // Assign ID if missing (needed for tracking)
+            if(!el.id) el.id = 'tracked-' + Math.random().toString(36).substr(2, 9);
+
+            // Click Tracker
+            el.addEventListener('mousedown', (e) => {
+                if(window.reportInteraction) {
+                    window.reportInteraction(el.id, 'click', e.pageX, e.pageY);
+                }
+            });
+
+            // Hover Tracker (Throttled)
+            let hoverTimeout;
+            el.addEventListener('mouseenter', () => {
+                if(window.reportInteraction) {
+                    clearTimeout(hoverTimeout);
+                    window.reportInteraction(el.id, 'hover');
+                }
+            });
+        });
+    });
+}
