@@ -1,7 +1,7 @@
 /* main.js */
 /* Entry point: Initializers and Global Event Listeners */
 
-const mainDb = firebase.database(); // Local ref
+// USE GLOBAL DB (Defined in sync-manager.js)
 
 // --- 1. GLOBAL MESSAGE LISTENER (Cross-Iframe Comms) ---
 window.addEventListener('message', (event) => {
@@ -25,7 +25,7 @@ window.addEventListener('message', (event) => {
     // Interaction Reporting (Presence)
     if (event.data && event.data.type === 'INTERACTION_REPORT') {
         if(window.myRole === 'spectator') return;
-        mainDb.ref('presence/' + window.myRole + '/interaction').set({
+        window.db.ref('presence/' + window.myRole + '/interaction').set({
             id: event.data.id,
             action: event.data.action,
             timestamp: Date.now()
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.toggleCenterCollapse(); 
     
     // Load Library Data Once
-    mainDb.ref('library').once('value').then(snap => {
+    window.db.ref('library').once('value').then(snap => {
         window.appData = snap.val() || {};
         ['frame-play', 'frame-gen'].forEach(id => {
             let el = document.getElementById(id);
