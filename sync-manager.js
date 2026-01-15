@@ -17,7 +17,7 @@ if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
-// ESTABLISH GLOBAL DB CONNECTION TO PREVENT CONFLICTS
+// ESTABLISH GLOBAL DB CONNECTION
 window.db = firebase.database();
 
 // --- 2. GLOBAL STATE ---
@@ -78,15 +78,31 @@ window.updatePresence = function() {
     window.db.ref('presence/' + window.myRole).update({ tab: tabShort, timestamp: Date.now() });
 };
 
+// REPORT INTERACTION (Helper function)
+window.reportInteraction = function(elementId, type, x, y) {
+    if(window.myRole === 'spectator') return;
+    window.db.ref('presence/' + window.myRole + '/universal').set({
+        elementId: elementId,
+        type: type, // 'click' or 'hover'
+        x: x || 0,
+        y: y || 0,
+        timestamp: Date.now()
+    });
+};
+
 window.initPresenceSystem = function() {
     window.db.ref('presence').on('value', snap => {
         const p = snap.val() || {};
         const roles = ['p1', 'p2'];
+        
+        // 1. Tab Dots Logic
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
         roles.forEach(role => {
             if(role === window.myRole) return; 
             const data = p[role];
             if(!data) return;
+            
+            // Render Tabs
             if(data.tab) {
                 const targetTab = document.querySelector(`.tab[data-id="tab-${data.tab}"]`);
                 if(targetTab) {
@@ -100,21 +116,33 @@ window.initPresenceSystem = function() {
                     }
                 }
             }
-            if(data.interaction) {
-                const frames = ['frame-play', 'frame-gen', 'frame-music', 'frame-hist', 'frame-lib'];
-                frames.forEach(id => {
-                    let el = document.getElementById(id);
-                    if(el && el.contentWindow) {
-                        el.contentWindow.postMessage({
-                            type: 'PEER_INTERACTION',
-                            role: role,
-                            color: window.playerColors[role] || '#fff',
-                            id: data.interaction.id,
-                            action: data.interaction.action,
-                            timestamp: data.interaction.timestamp
-                        }, '*');
+
+            // 2. Universal Interaction Logic (Clicks & Hovers)
+            if(data.universal) {
+                const u = data.universal;
+                // Only process fresh events (within last 2 seconds)
+                if (Date.now() - u.timestamp < 2000) {
+                    const el = document.getElementById(u.elementId);
+                    const roleColor = window.playerColors[role];
+
+                    if (u.type === 'click' && el) {
+                        // Create Ripple
+                        const ripple = document.createElement('div');
+                        ripple.className = 'peer-click-effect';
+                        ripple.style.left = u.x + 'px';
+                        ripple.style.top = u.y + 'px';
+                        ripple.style.color = roleColor;
+                        document.body.appendChild(ripple);
+                        setTimeout(() => ripple.remove(), 600);
+                    } 
+                    
+                    if (u.type === 'hover' && el) {
+                        // Apply Hover Border
+                        el.classList.add('peer-hover-' + role);
+                        // Auto remove after 2 seconds of inactivity
+                        setTimeout(() => el.classList.remove('peer-hover-' + role), 2000);
                     }
-                });
+                }
             }
         });
     });
