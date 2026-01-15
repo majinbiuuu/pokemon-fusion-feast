@@ -17,14 +17,14 @@ if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
-// ESTABLISH GLOBAL DB CONNECTION
+// ESTABLISH GLOBAL DB CONNECTION TO PREVENT CONFLICTS
 window.db = firebase.database();
 
 // --- 2. GLOBAL STATE ---
 window.appData = {};
 window.scores = { alb: 0, biu: 0 };
 window.syncLock = false;
-window.playerColors = { p1: '#ff4444', p2: '#4488ff' }; 
+window.playerColors = { p1: '#ff4444', p2: '#4488ff' };
 window.myRole = localStorage.getItem('myRole') || 'spectator';
 
 // --- 3. IDENTITY & PRESENCE LOGIC ---
@@ -78,30 +78,15 @@ window.updatePresence = function() {
     window.db.ref('presence/' + window.myRole).update({ tab: tabShort, timestamp: Date.now() });
 };
 
-// REPORT INTERACTION
-window.reportInteraction = function(elementId, type, x, y) {
-    if(window.myRole === 'spectator') return;
-    window.db.ref('presence/' + window.myRole + '/universal').set({
-        elementId: elementId,
-        type: type, // 'click', 'hover', or 'blur'
-        x: x || 0,
-        y: y || 0,
-        timestamp: Date.now()
-    });
-};
-
 window.initPresenceSystem = function() {
     window.db.ref('presence').on('value', snap => {
         const p = snap.val() || {};
         const roles = ['p1', 'p2'];
-        
-        // 1. Tab Dots Logic
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
         roles.forEach(role => {
             if(role === window.myRole) return; 
             const data = p[role];
             if(!data) return;
-            
             if(data.tab) {
                 const targetTab = document.querySelector(`.tab[data-id="tab-${data.tab}"]`);
                 if(targetTab) {
@@ -115,43 +100,21 @@ window.initPresenceSystem = function() {
                     }
                 }
             }
-
-            // 2. Universal Interaction Logic (Instant Response)
-            if(data.universal) {
-                const u = data.universal;
-                // Only process fresh events (within last 5 seconds)
-                if (Date.now() - u.timestamp < 5000) {
-                    const el = document.getElementById(u.elementId);
-                    const roleColor = window.playerColors[role] || (role==='p1'?'#ff4444':'#4488ff');
-
-                    if (!el) return;
-
-                    // A. Click Ripple
-                    if (u.type === 'click') {
-                        const ripple = document.createElement('div');
-                        ripple.className = 'peer-click-effect';
-                        ripple.style.left = u.x + 'px';
-                        ripple.style.top = u.y + 'px';
-                        ripple.style.color = roleColor; 
-                        document.body.appendChild(ripple);
-                        setTimeout(() => ripple.remove(), 600);
-                    } 
-                    
-                    // B. Hover ON (Instant)
-                    if (u.type === 'hover') {
-                        el.style.transition = 'box-shadow 0.2s ease, border-color 0.2s ease';
-                        el.style.boxShadow = `0 0 15px ${roleColor}, inset 0 0 5px ${roleColor}`;
-                        el.style.borderColor = roleColor;
-                        el.style.zIndex = '100'; // Bring to front
+            if(data.interaction) {
+                const frames = ['frame-play', 'frame-gen', 'frame-music', 'frame-hist', 'frame-lib'];
+                frames.forEach(id => {
+                    let el = document.getElementById(id);
+                    if(el && el.contentWindow) {
+                        el.contentWindow.postMessage({
+                            type: 'PEER_INTERACTION',
+                            role: role,
+                            color: window.playerColors[role] || '#fff',
+                            id: data.interaction.id,
+                            action: data.interaction.action,
+                            timestamp: data.interaction.timestamp
+                        }, '*');
                     }
-
-                    // C. Hover OFF (Instant)
-                    if (u.type === 'blur') {
-                        el.style.boxShadow = '';
-                        el.style.borderColor = '';
-                        el.style.zIndex = '';
-                    }
-                }
+                });
             }
         });
     });
