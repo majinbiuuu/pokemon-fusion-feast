@@ -16,7 +16,9 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
-const db = firebase.database();
+
+// ESTABLISH GLOBAL DB CONNECTION TO PREVENT CONFLICTS
+window.db = firebase.database();
 
 // --- 2. GLOBAL STATE ---
 window.appData = {};
@@ -32,8 +34,8 @@ if (!myId) {
     localStorage.setItem('presenceId', myId); 
 }
 
-var presenceRef = db.ref('presence');
-var connectedRef = db.ref('.info/connected');
+var presenceRef = window.db.ref('presence');
+var connectedRef = window.db.ref('.info/connected');
 
 connectedRef.on('value', function(snap) {
     if (snap.val() === true) {
@@ -51,14 +53,14 @@ presenceRef.child('list').on('value', function(snap) {
 
 window.setIdentity = function(role) {
     if(window.myRole && window.myRole !== 'spectator') {
-        db.ref('presence/' + window.myRole).remove();
-        db.ref('presence/' + window.myRole).onDisconnect().cancel(); 
+        window.db.ref('presence/' + window.myRole).remove();
+        window.db.ref('presence/' + window.myRole).onDisconnect().cancel(); 
     }
     window.myRole = role;
     localStorage.setItem('myRole', role);
     updateIdentityUI();
     if(role !== 'spectator') {
-        db.ref('presence/' + role).onDisconnect().remove();
+        window.db.ref('presence/' + role).onDisconnect().remove();
         updatePresence();
     }
 };
@@ -73,11 +75,11 @@ window.updatePresence = function() {
     if(window.myRole === 'spectator') return;
     let currentTabId = document.querySelector('.tab.active') ? document.querySelector('.tab.active').dataset.id : 'tab-play';
     let tabShort = currentTabId.replace('tab-', '');
-    db.ref('presence/' + window.myRole).update({ tab: tabShort, timestamp: Date.now() });
+    window.db.ref('presence/' + window.myRole).update({ tab: tabShort, timestamp: Date.now() });
 };
 
 window.initPresenceSystem = function() {
-    db.ref('presence').on('value', snap => {
+    window.db.ref('presence').on('value', snap => {
         const p = snap.val() || {};
         const roles = ['p1', 'p2'];
         document.querySelectorAll('.tab-badges').forEach(el => el.innerHTML = '');
@@ -99,8 +101,6 @@ window.initPresenceSystem = function() {
                 }
             }
             if(data.interaction) {
-                // We will handle broadcasting in the main app logic or theme manager
-                // For now, minimal broadcast
                 const frames = ['frame-play', 'frame-gen', 'frame-music', 'frame-hist', 'frame-lib'];
                 frames.forEach(id => {
                     let el = document.getElementById(id);
@@ -122,20 +122,17 @@ window.initPresenceSystem = function() {
 
 // --- 4. CONFIG SYNC ---
 window.saveConfig = function(key, val) {
-    db.ref('config/' + key).set(val);
+    window.db.ref('config/' + key).set(val);
 };
 
-db.ref('config').on('value', snap => {
+window.db.ref('config').on('value', snap => {
     const c = snap.val() || {};
     
-    // Theme & Background logic will be handled by Theme Manager, 
-    // but we set variables here for consistency
     if(c.theme) {
         document.documentElement.style.setProperty('--accent', c.theme);
         if(document.getElementById('st-theme-color')) document.getElementById('st-theme-color').value = c.theme;
     }
     
-    // Update Global Player Colors
     const p1Name = c.p1Name || "ALB";
     const p1Color = c.p1Color || "#ff4444";
     window.playerColors.p1 = p1Color;
@@ -146,7 +143,6 @@ db.ref('config').on('value', snap => {
     window.playerColors.p2 = p2Color;
     document.documentElement.style.setProperty('--p2-color', p2Color);
 
-    // Update UI Text
     if(document.getElementById('disp-p1-name')) {
         document.getElementById('disp-p1-name').innerText = p1Name;
         document.getElementById('disp-p1-name').style.color = p1Color;
@@ -156,7 +152,6 @@ db.ref('config').on('value', snap => {
         document.getElementById('disp-p2-name').style.color = p2Color;
     }
 
-    // Update Settings Inputs
     if(document.activeElement !== document.getElementById('st-p1-name') && document.getElementById('st-p1-name')) 
         document.getElementById('st-p1-name').value = p1Name;
     if(document.getElementById('st-p1-color')) document.getElementById('st-p1-color').value = p1Color;
@@ -165,7 +160,6 @@ db.ref('config').on('value', snap => {
         document.getElementById('st-p2-name').value = p2Name;
     if(document.getElementById('st-p2-color')) document.getElementById('st-p2-color').value = p2Color;
 
-    // Broadcast Config
     ['frame-play', 'frame-gen', 'frame-music', 'frame-hist', 'frame-lib'].forEach(id => {
         let el = document.getElementById(id);
         if(el && el.contentWindow) el.contentWindow.postMessage({ type: 'CONFIG_UPDATE', p1Name, p1Color, p2Name, p2Color }, '*');
@@ -178,11 +172,11 @@ window.modScore = function(p, op) {
     window.syncLock = true;
     if(op==='add') window.scores[p]++; else window.scores[p] = Math.max(0, window.scores[p]-1);
     document.getElementById('score-'+p).innerText = window.scores[p];
-    db.ref('dashboard/score' + (p==='alb'?'Alb':'Biu')).set(window.scores[p]);
+    window.db.ref('dashboard/score' + (p==='alb'?'Alb':'Biu')).set(window.scores[p]);
     setTimeout(() => window.syncLock = false, 500);
 };
 
-db.ref('dashboard').on('value', snap => {
+window.db.ref('dashboard').on('value', snap => {
     if(window.syncLock) return; 
     const s = snap.val() || {};
     window.scores.alb = s.scoreAlb || 0; 
@@ -191,7 +185,6 @@ db.ref('dashboard').on('value', snap => {
     if(document.getElementById('score-alb')) document.getElementById('score-alb').innerText = window.scores.alb;
     if(document.getElementById('score-biu')) document.getElementById('score-biu').innerText = window.scores.biu;
     
-    // Calls renderColumn from drag-drop-manager.js
     if(typeof window.renderColumn === 'function') {
         window.renderColumn('alb', s.slotsAlb);
         window.renderColumn('biu', s.slotsBiu);
