@@ -18,7 +18,7 @@ window.renderColumn = function(side, data) {
     if(!data) data = [null,null,null,null,null,null]; 
     
     var container = document.getElementById('slots-'+side);
-    if(!container) return; // Safety check
+    if(!container) return; 
     
     var kids = container.getElementsByClassName('slot');
     for(var i=0; i<kids.length; i++) {
@@ -107,8 +107,8 @@ window.handleReturnLogic = function() {
          // Direct Database Update (Surgical Removal)
          let dbKey = (window.returningSide === 'alb') ? 'slotsAlb' : 'slotsBiu';
          
-         // Using the global firebase db instance
-         firebase.database().ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
+         // USE GLOBAL DB
+         window.db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
          
          window.returningId = null; 
          window.returningIndex = -1;
@@ -127,7 +127,7 @@ window.saveColumnState = function(side) {
         if(img && txt) slots.push({ img: img.src, name: txt.innerText, id: txt.dataset.id });
         else slots.push(null);
     }
-    firebase.database().ref('dashboard/slots' + (side==='alb'?'Alb':'Biu')).set(slots);
+    window.db.ref('dashboard/slots' + (side==='alb'?'Alb':'Biu')).set(slots);
 };
 
 window.clearCol = function(p) { 
@@ -145,7 +145,7 @@ window.clearCol = function(p) {
     window.initSlots('slots-'+p); 
     
     let emptySlots = [null,null,null,null,null,null];
-    firebase.database().ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(emptySlots);
+    window.db.ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(emptySlots);
     
     setTimeout(() => window.syncLock = false, 1000);
     if(window.isCollapsed) generateMiniIcons(p);
