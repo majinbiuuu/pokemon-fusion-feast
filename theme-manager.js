@@ -1,7 +1,7 @@
 /* theme-manager.js */
 /* Handles Themes, Party Mode, Settings Modal, Backgrounds, and Music Sync */
 
-const db = firebase.database(); // Re-reference for local file scope
+// USE GLOBAL DB (Defined in sync-manager.js)
 
 // --- 1. THEME LOGIC ---
 const themeColors = [
@@ -17,9 +17,8 @@ let hue = 0;
 function applyThemeColor(color) {
     document.documentElement.style.setProperty('--accent', color);
     document.documentElement.style.setProperty('--theme-green', color);
-    window.currentAccent = color; // For query access
+    window.currentAccent = color; 
 
-    // Broadcast to frames
     ['frame-play', 'frame-gen', 'frame-music', 'frame-hist', 'frame-lib'].forEach(id => {
         const frame = document.getElementById(id);
         if(frame && frame.contentWindow) {
@@ -34,16 +33,15 @@ function applyThemeColor(color) {
 
 window.changeTheme = function() {
     const newColor = themeColors[Math.floor(Math.random() * themeColors.length)];
-    db.ref('theme').set({ color: newColor, mode: 'static' });
+    window.db.ref('theme').set({ color: newColor, mode: 'static' });
 };
 
 window.toggleParty = function() {
     const next = (currentThemeMode === 'party') ? 'static' : 'party';
-    db.ref('theme/mode').set(next);
+    window.db.ref('theme/mode').set(next);
 };
 
-// Listen for Theme Changes
-db.ref('theme').on('value', snap => {
+window.db.ref('theme').on('value', snap => {
     const t = snap.val() || { color: '#00ff9d', mode: 'static' };
     currentThemeMode = t.mode;
 
@@ -88,7 +86,6 @@ window.toggleFullScreen = function() {
     }
 };
 
-// Wallpaper Drag & Drop (Settings Modal)
 window.dragOverHandler = function(ev) { ev.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); };
 window.dragLeaveHandler = function(ev) { document.getElementById('drop-zone').classList.remove('drag-over'); };
 window.dropHandler = function(ev) {
@@ -104,24 +101,23 @@ window.dropHandler = function(ev) {
     }
 };
 
-// Saved Wallpapers Logic
 window.addCurrentToSaved = function() {
     let current = document.getElementById('st-bg-url').value;
     if(!current) return;
-    db.ref('config/savedWallpapers').once('value', snap => {
+    window.db.ref('config/savedWallpapers').once('value', snap => {
         let list = snap.val() || [];
         if(!list.includes(current)) {
             list.push(current);
-            db.ref('config/savedWallpapers').set(list);
+            window.db.ref('config/savedWallpapers').set(list);
         }
     });
 };
 
 window.removeWallpaper = function(idx) {
-    db.ref('config/savedWallpapers').once('value', snap => {
+    window.db.ref('config/savedWallpapers').once('value', snap => {
         let list = snap.val() || [];
         list.splice(idx, 1);
-        db.ref('config/savedWallpapers').set(list);
+        window.db.ref('config/savedWallpapers').set(list);
     });
 };
 
@@ -139,8 +135,7 @@ window.renderSavedWallpapers = function(list) {
     });
 };
 
-// Listen for Config Changes (Specific to Wallpaper/BG)
-db.ref('config').on('value', snap => {
+window.db.ref('config').on('value', snap => {
     const c = snap.val() || {};
     if(c.bgUrl) {
         document.body.style.backgroundImage = `url('${c.bgUrl}')`;
@@ -160,10 +155,9 @@ db.ref('config').on('value', snap => {
 // --- 3. MUSIC SYNC LOGIC ---
 let lastTopVol = 100;
 
-db.ref('music/status').on('value', snap => {
+window.db.ref('music/status').on('value', snap => {
     const m = snap.val() || {};
     
-    // Update Top Bar Widget
     const titleEl = document.getElementById('np-title-top');
     if(titleEl) titleEl.innerText = m.currentTitle || "System Ready";
     
@@ -182,13 +176,13 @@ db.ref('music/status').on('value', snap => {
 
 window.mediaAction = function(action) {
     if(action === 'play') {
-        db.ref('music/status/state').once('value', snap => {
+        window.db.ref('music/status/state').once('value', snap => {
             let current = snap.val() || 'PAUSED'; 
             let next = (current === 'PLAYING') ? 'PAUSED' : 'PLAYING';
-            db.ref('music/status/state').set(next);
+            window.db.ref('music/status/state').set(next);
         });
     } else {
-         db.ref('music/cmd').set({ action: action, time: Date.now() });
+         window.db.ref('music/cmd').set({ action: action, time: Date.now() });
     }
 };
 
