@@ -5,17 +5,24 @@
 
 // --- 1. GLOBAL MESSAGE LISTENER (Cross-Iframe Comms) ---
 window.addEventListener('message', (event) => {
+    // Theme Request from iframes
     if(event.data && event.data.type === 'REQUEST_THEME') {
         const c = window.currentAccent || '#00ff9d';
         if(event.source) event.source.postMessage({ type: 'THEME_UPDATE', color: c }, '*');
     }
+    
+    // Clear Columns Request
     if (event.data && event.data.type === 'requestClearCols') {
         window.clearCol('alb'); 
         window.clearCol('biu');
     }
+    
+    // Generator Drop Return Logic
     if (event.data && event.data.type === 'GENERATOR_DROP') {
         window.handleReturnLogic();
     }
+    
+    // Interaction Reporting (Presence)
     if (event.data && event.data.type === 'INTERACTION_REPORT') {
         if(window.myRole === 'spectator') return;
         window.db.ref('presence/' + window.myRole + '/interaction').set({
@@ -28,14 +35,18 @@ window.addEventListener('message', (event) => {
 
 // --- 2. INITIALIZATION ON LOAD ---
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Dashboard Slots
     window.initSlots('slots-alb'); 
     window.initSlots('slots-biu'); 
     
+    // Initialize Systems
     if(window.initPresenceSystem) window.initPresenceSystem();
     
+    // Initialize UI States
     window.toggleCollapse(); 
     window.toggleCenterCollapse(); 
     
+    // Load Library Data Once
     window.db.ref('library').once('value').then(snap => {
         window.appData = snap.val() || {};
         ['frame-play', 'frame-gen'].forEach(id => {
@@ -43,39 +54,4 @@ document.addEventListener('DOMContentLoaded', function() {
             if(el && el.contentWindow) { try { el.contentWindow.appData = window.appData; } catch(e) {} }
         });
     });
-
-    // --- 3. ATTACH UNIVERSAL LISTENERS ---
-    attachUniversalListeners();
 });
-
-function attachUniversalListeners() {
-    // Only track these specific IDs (matching HTML)
-    const trackedIds = [
-        'btn-theme-color', 'btn-theme-party', 'btn-fullscreen', 'btn-settings', // Theme Buttons
-        'col-alb', 'col-biu', // Columns
-        'top-bar-area', 'music-widget', // Title Areas
-        'tab-btn-play', 'tab-btn-gen', 'tab-btn-music', 'tab-btn-hist', 'tab-btn-lib', // Tabs
-        'score-alb', 'score-biu'
-    ];
-
-    trackedIds.forEach(id => {
-        const el = document.getElementById(id);
-        if(el) {
-            // Click Tracker
-            el.addEventListener('mousedown', (e) => {
-                if(window.reportInteraction) {
-                    window.reportInteraction(id, 'click', e.pageX, e.pageY);
-                }
-            });
-
-            // Hover Tracker (Throttled)
-            let hoverTimeout;
-            el.addEventListener('mouseenter', () => {
-                if(window.reportInteraction) {
-                    clearTimeout(hoverTimeout);
-                    window.reportInteraction(id, 'hover');
-                }
-            });
-        }
-    });
-}
