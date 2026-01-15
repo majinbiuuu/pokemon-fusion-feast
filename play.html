@@ -18,85 +18,300 @@
     --card-dark: rgba(0, 0, 0, 0.4); 
     --text-main: #eee;
     --text-dim: #888;
+    
     --p1-color: #ff4444;
     --p2-color: #4488ff;
   }
+
   html { box-sizing: border-box; }
   *, *:before, *:after { box-sizing: inherit; }
-  body { font-family: 'Segoe UI', sans-serif; color: var(--text-main); margin: 0; padding: 20px; background: transparent; user-select: none; height: 100vh; overflow-y: auto; width: 100%; }
-  
-  /* PEER HOVER STYLES */
-  .peer-interactive { border-color: var(--peer-color) !important; box-shadow: 0 0 15px var(--peer-color) !important; z-index: 100; position: relative; transition: box-shadow 0.2s, border-color 0.2s; }
-  
-  .glass-box { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); position: relative; }
+
+  body { 
+    font-family: 'Segoe UI', sans-serif; 
+    color: var(--text-main); 
+    margin: 0; 
+    padding: 20px; 
+    background: transparent;
+    user-select: none;
+    height: 100vh; 
+    overflow-y: auto; 
+    width: 100%;
+  }
+
+  /* PEER HOVER STYLES (DYNAMIC COLOR) */
+  .peer-interactive {
+      border-color: var(--peer-color) !important;
+      box-shadow: 0 0 15px var(--peer-color) !important;
+      z-index: 100;
+      position: relative;
+      transition: box-shadow 0.2s, border-color 0.2s;
+  }
+
+  .glass-box {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    position: relative;
+  }
+
   .play-header { display: flex; gap: 15px; margin-bottom: 20px; height: 55px; }
-  .btn-big { flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); color: var(--text-dim); font-weight: 900; cursor: pointer; border-radius: 8px; font-size: 1.2rem; letter-spacing: 2px; transition: 0.2s; text-transform: uppercase; }
-  .btn-accent { background: var(--theme-green) !important; color: #000; border: none; box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); }
-  .btn-accent:hover { background: var(--theme-green); filter: brightness(1.2); box-shadow: 0 0 25px var(--theme-green); }
+  
+  .btn-big {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-dim);
+    font-weight: 900;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    transition: 0.2s;
+    text-transform: uppercase;
+  }
+  
+  .btn-accent {
+    background: var(--theme-green) !important;
+    color: #000;
+    border: none;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); 
+  }
+  .btn-accent:hover {
+    background: var(--theme-green);
+    filter: brightness(1.2);
+    box-shadow: 0 0 25px var(--theme-green); 
+  }
   .btn-big:hover:not(.btn-accent) { color: #fff; background: rgba(255,255,255,0.1); }
+
   .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-  .p-card { background: var(--card-dark); border: 1px solid var(--glass-border); border-radius: 8px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; min-height: 100px; display: flex; flex-direction: column; justify-content: center; }
+
+  .p-card {
+    background: var(--card-dark);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
   .c-lbl { font-size: 0.75rem; color: var(--text-dim); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;}
   .c-val { font-size: 1.6rem; font-weight: 900; color: #fff; line-height: 1.1; }
   .c-note { font-size: 0.85rem; color: var(--theme-green); font-style: italic; margin-top: 5px; }
-  /* QUICK GEN */
+
+  /* --- QUICK GEN --- */
   .qg-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .qg-row { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
-  .qg-btn { flex: 1; padding: 10px 5px; font-size: 0.75rem; font-weight: 700; background: #222; border: 1px solid #333; color: #ccc; border-radius: 6px; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+  
+  .qg-btn {
+    flex: 1;
+    padding: 10px 5px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #222;
+    border: 1px solid #333;
+    color: #ccc;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+    white-space: nowrap;
+  }
   .qg-btn:hover { border-color: var(--theme-green); color: #fff; }
   .btn-shit { border-color: #5d4037; color: #a1887f; }
   .btn-shit:hover { background: #5d4037; color: #fff; border-color: #8d6e63; }
-  .x3-switch-container { display: flex; align-items: center; gap: 8px; margin-left: 10px; padding: 5px 10px; background: #111; border-radius: 6px; border: 1px solid #333; cursor: pointer; transition: 0.2s; }
-  .x3-switch-container.active { border-color: var(--theme-green); box-shadow: 0 0 10px var(--theme-green); }
+
+  .x3-switch-container {
+    display: flex; align-items: center; gap: 8px; margin-left: 10px; padding: 5px 10px;
+    background: #111; border-radius: 6px; border: 1px solid #333; cursor: pointer; transition: 0.2s;
+  }
+  .x3-switch-container.active {
+    border-color: var(--theme-green);
+    box-shadow: 0 0 10px var(--theme-green);
+  }
   .x3-lbl { font-weight: 800; font-size: 0.9rem; color: #888; }
   .x3-switch-container.active .x3-lbl { color: var(--theme-green); }
+  
   .qg-display { display: flex; gap: 15px; margin-top: 15px;}
-  .qg-box { flex: 1; background: var(--card-dark); border: 1px solid #333; border-radius: 8px; position: relative; display: flex; align-items: center; justify-content: center; padding: 10px 15px; min-height: 60px; }
-  .qg-box-label { position: absolute; top: 6px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+  
+  .qg-box { 
+    flex: 1; 
+    background: var(--card-dark); 
+    border: 1px solid #333; border-radius: 8px; position: relative;
+    display: flex; align-items: center; justify-content: center; padding: 10px 15px; min-height: 60px; 
+  }
+  .qg-box-label { 
+    position: absolute; top: 6px; font-size: 0.65rem; font-weight: 900; 
+    text-transform: uppercase; letter-spacing: 1px;
+  }
   .qg-box-val { font-size: 1.1rem; font-weight: 700; color: #fff; line-height: 1.2; text-align: center; margin-top: 10px;}
-  .reroll { width: 40px; background: #222; border: 1px solid #333; color: #fff; border-radius: 8px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+
+  .reroll { 
+    width: 40px; background: #222; border: 1px solid #333; color: #fff; border-radius: 8px; 
+    cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+  }
   .reroll:hover { color: var(--theme-green); border-color: var(--theme-green); }
-  /* RECORD SECTION */
+
+  /* --- RECORD SECTION --- */
   .rec-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; height: 32px; }
-  .rec-toggle { font-size: 0.75rem; font-weight: 800; color: #666; cursor: pointer; padding: 6px 12px; border: 1px solid #333; border-radius: 4px; background: #111; transition: 0.2s; text-transform: uppercase; display: flex; align-items: center; justify-content: center; }
+  
+  .rec-toggle {
+      font-size: 0.75rem; font-weight: 800; color: #666; cursor: pointer; padding: 6px 12px;
+      border: 1px solid #333; border-radius: 4px; background: #111; transition: 0.2s; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: center;
+  }
   .rec-toggle:hover { color: #fff; border-color: #555; }
   .rec-toggle.active { color: var(--theme-green); border-color: var(--theme-green); background: rgba(255,255,255,0.05); }
-  .rec-points-input { display: none; width: 60px; background: #000; border: 1px solid var(--theme-green); color: #fff; font-weight: 900; text-align: center; padding: 6px; border-radius: 4px; margin-left: 10px; font-size: 0.9rem; }
+
+  .rec-points-input {
+      display: none;
+      width: 60px;
+      background: #000;
+      border: 1px solid var(--theme-green);
+      color: #fff;
+      font-weight: 900;
+      text-align: center;
+      padding: 6px;
+      border-radius: 4px;
+      margin-left: 10px;
+      font-size: 0.9rem;
+  }
   .rec-points-input:focus { outline: none; box-shadow: 0 0 10px var(--theme-green); }
+
   .rec-info-display { flex: 1; text-align: center; font-size: 0.8rem; color: #888; font-style: italic; padding: 0 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
   .rec-wrapper { display: flex; gap: 20px; align-items: stretch; }
   .rec-games { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-  .rec-winner-box { width: 140px; display: flex; flex-direction: column; gap: 10px; }
+  
+  .rec-winner-box { 
+      width: 140px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 10px; 
+  }
+
   .rec-winner-box .g-dot { height: 100% !important; min-height: 80px; }
+
   .g-col { display: flex; flex-direction: column; gap: 8px; text-align: center; transition: 0.3s; }
   .g-col.disabled { opacity: 0.2; pointer-events: none; }
   .g-head { font-size: 0.75rem; font-weight: 900; color: #666; text-transform: uppercase; letter-spacing: 1px; }
-  .g-select { background: #111; border: 1px solid #333; color: #aaa; font-size: 0.7rem; width: 100%; height: 24px; border-radius: 4px; margin-bottom: 2px; }
+  
+  .g-select {
+      background: #111; border: 1px solid #333; color: #aaa; font-size: 0.7rem; width: 100%;
+      height: 24px; border-radius: 4px; margin-bottom: 2px;
+  }
   .g-select:focus { border-color: var(--theme-green); outline: none; color: #fff; }
-  .g-dot { height: 80px; background: rgba(0,0,0,0.3); border: 2px solid #333; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 2rem; transition: 0.1s; }
-  .g-input { background: #111; border: 1px solid #333; color: #aaa; border-radius: 4px; padding: 8px; text-align: center; font-size: 0.75rem; width: 100%; box-sizing: border-box; }
+
+  .g-dot { 
+    height: 80px; 
+    background: rgba(0,0,0,0.3); border: 2px solid #333; border-radius: 6px; 
+    cursor: pointer; display: flex; align-items: center; justify-content: center; 
+    font-weight: 900; font-size: 2rem; transition: 0.1s; 
+  }
+  /* Dynamic styles injected via JS */
+  
+  .g-input { 
+    background: #111; border: 1px solid #333; color: #aaa; border-radius: 4px; padding: 8px; 
+    text-align: center; font-size: 0.75rem; width: 100%; box-sizing: border-box; 
+  }
   .g-input:focus { border-color: var(--theme-green); outline: none; }
-  .save-btn { height: 40px; background: #222; color: #fff; border: 1px solid #444; font-weight: 900; cursor: pointer; border-radius: 6px; letter-spacing: 1px; font-size: 0.9rem; margin-top: auto; }
+
+  .save-btn { 
+    height: 40px; background: #222; color: #fff; border: 1px solid #444; font-weight: 900; 
+    cursor: pointer; border-radius: 6px; letter-spacing: 1px; font-size: 0.9rem; margin-top: auto;
+  }
   .save-btn:hover { background: var(--theme-green); color: #000; border-color: var(--theme-green); }
-  /* TOKEN CENTER */
-  .token-center { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 15px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; max-width: 500px; margin-left: auto; margin-right: auto; }
-  .claw-header { font-size: 0.9rem; font-weight: 900; color: var(--theme-green); text-transform: uppercase; letter-spacing: 3px; opacity: 0.8; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; width: 100%; text-align: center; }
+
+  /* --- TOKEN CENTER --- */
+  .token-center {
+    display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 15px;
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    border-radius: 12px; padding: 20px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative;
+    max-width: 500px; margin-left: auto; margin-right: auto;
+  }
+  
+  .claw-header { 
+      font-size: 0.9rem; font-weight: 900; color: var(--theme-green); 
+      text-transform: uppercase; letter-spacing: 3px; opacity: 0.8;
+      border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; width: 100%; text-align: center;
+  }
+  
   .token-row { display: flex; justify-content: space-between; align-items: center; gap: 20px; width: 100%; }
+  
   .token-player { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
   .token-name { font-weight: 800; font-size: 0.8rem; letter-spacing: 1px; opacity: 0.7; }
-  .token-ctrls { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.4); padding: 8px 15px; border-radius: 20px; border: 1px solid #333; }
-  .tk-btn { background: none; border: none; color: #666; font-weight: 900; font-size: 1.2rem; cursor: pointer; transition: 0.2s; padding: 0; line-height: 1; }
+  
+  .token-ctrls { 
+      display: flex; align-items: center; gap: 10px; 
+      background: rgba(0,0,0,0.4); padding: 8px 15px; 
+      border-radius: 20px; border: 1px solid #333; 
+  }
+  
+  .tk-btn { 
+      background: none; border: none; color: #666; font-weight: 900; 
+      font-size: 1.2rem; cursor: pointer; transition: 0.2s; padding: 0; line-height: 1;
+  }
   .tk-btn:hover { color: var(--theme-green); }
+  
   .tk-val { font-size: 1.3rem; font-weight: 900; color: #fff; min-width: 25px; text-align: center; line-height: 1.2; }
-  .token-mid-section { flex: 1.5; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-  .machine-display { width: 60px; height: 60px; background: radial-gradient(circle, #222, #050505); border: 2px solid var(--theme-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+
+  .token-mid-section {
+      flex: 1.5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+  }
+
+  .machine-display {
+    width: 60px; height: 60px;
+    background: radial-gradient(circle, #222, #050505);
+    border: 2px solid var(--theme-green); 
+    border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; cursor: pointer; transition: 0.3s;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  }
   .machine-display:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--theme-green); }
   .machine-display:active { transform: scale(0.95); }
+  
   .token-icon { font-size: 1.8rem; filter: drop-shadow(0 0 2px var(--theme-green)); }
-  .token-output-wrapper { position: relative; width: 100%; height: auto; min-height: 34px; display: flex; align-items: center; }
-  .token-result-text { width: 100%; height: auto; background: #111; border: 1px solid #333; border-radius: 6px; color: #fff; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; justify-content: center; text-align: center; padding: 6px 25px 6px 10px; white-space: normal; word-break: break-word; line-height: 1.3; }
-  .token-clear-btn { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 1rem; cursor: pointer; font-weight: 900; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: 0.2s; }
+  
+  .token-output-wrapper {
+      position: relative;
+      width: 100%;
+      height: auto; 
+      min-height: 34px;
+      display: flex; align-items: center;
+  }
+  
+  .token-result-text {
+      width: 100%; height: auto;
+      background: #111; border: 1px solid #333;
+      border-radius: 6px; color: #fff;
+      font-size: 0.85rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 6px 25px 6px 10px; 
+      white-space: normal; 
+      word-break: break-word;
+      line-height: 1.3;
+  }
+
+  .token-clear-btn {
+      position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: #666;
+      font-size: 1rem; cursor: pointer; font-weight: 900;
+      width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+      border-radius: 4px; transition: 0.2s;
+  }
   .token-clear-btn:hover { color: #ff4444; background: rgba(255,68,68,0.1); }
+
   .anim-click:active { transform: scale(0.95) !important; filter: brightness(0.8); }
   .anim-hover:hover { transform: translateY(-2px); border-color: var(--theme-green); }
 </style>
@@ -111,16 +326,27 @@
   <div class="glass-box">
     <div class="card-grid">
       <div class="p-card anim-hover anim-click" id="card-mode" onclick="safeCall('roll', 'mode', 'gameModes', 'modeNote')">
-        <div class="c-lbl">Game Mode</div><div class="c-val" id="val-mode">-</div><div class="c-note" id="note-mode"></div>
+        <div class="c-lbl">Game Mode</div>
+        <div class="c-val" id="val-mode">-</div>
+        <div class="c-note" id="note-mode"></div>
       </div>
+      
       <div class="p-card anim-hover anim-click" id="card-side" onclick="safeCall('roll', 'side', 'sides', 'sideNote')">
-        <div class="c-lbl">Side Quest</div><div class="c-val" id="val-side">-</div><div class="c-note" id="note-side"></div>
+        <div class="c-lbl">Side Quest</div>
+        <div class="c-val" id="val-side">-</div>
+        <div class="c-note" id="note-side"></div>
       </div>
+      
       <div class="p-card anim-hover anim-click" id="card-points" onclick="safeCall('roll', 'points', 'points', 'pointsNote')" style="min-height:80px">
-        <div class="c-lbl">Points</div><div class="c-val" id="val-points">-</div><div class="c-note" id="note-points"></div>
+        <div class="c-lbl">Points</div>
+        <div class="c-val" id="val-points">-</div>
+        <div class="c-note" id="note-points"></div>
       </div>
+      
       <div class="p-card anim-hover anim-click" id="card-sp" onclick="safeCall('roll', 'sp', 'sp', 'spNote')" style="min-height:80px">
-        <div class="c-lbl">SP</div><div class="c-val" id="val-sp">-</div><div class="c-note" id="note-sp"></div>
+        <div class="c-lbl">SP</div>
+        <div class="c-val" id="val-sp">-</div>
+        <div class="c-note" id="note-sp"></div>
       </div>
     </div>
   </div>
@@ -134,8 +360,12 @@
         <button class="qg-btn anim-click" id="btn-qg-rng" onclick="safeCall('runQGen', 'RNG (1-9)')">RNG (1-9)</button>
         <button class="qg-btn btn-shit anim-click" id="btn-qg-shit" onclick="safeCall('runShitWheel')">SHIT WHEEL 💩</button>
       </div>
-      <div class="x3-switch-container anim-click" id="btn-qg-x3" onclick="safeCall('toggleX3')"><span class="x3-lbl">x3</span></div>
+      
+      <div class="x3-switch-container anim-click" id="btn-qg-x3" onclick="safeCall('toggleX3')">
+        <span class="x3-lbl">x3</span>
+      </div>
     </div>
+
     <div class="qg-display">
       <div style="flex:1; display:flex; gap:5px;">
         <button class="reroll anim-click" id="btn-reroll-alb" onclick="safeCall('localReroll', 'alb')">↻</button>
@@ -144,6 +374,7 @@
           <div class="qg-box-val" id="qg-alb">-</div>
         </div>
       </div>
+      
       <div style="flex:1; display:flex; gap:5px;">
         <div class="qg-box">
           <div class="qg-box-label" style="right:10px; color:var(--p2-color)" id="lbl-qg-b">P2</div>
@@ -160,9 +391,11 @@
             <div class="rec-toggle" id="tog-mode" onclick="safeCall('setRecMode')">Regular</div>
             <input id="chal-points-input" class="rec-points-input" placeholder="Pts" oninput="safeCall('setChalPoints', this.value)">
         </div>
+        
         <div id="reg-mode-display" class="rec-info-display"></div>
         <div class="rec-toggle" id="tog-fmt" onclick="safeCall('setRecFormat')">BO3</div>
     </div>
+
     <div class="rec-wrapper" id="rec-wrapper">
       <div class="rec-games">
         <script>
@@ -180,9 +413,11 @@
           }
         </script>
       </div>
+
       <div class="rec-winner-box">
          <div class="g-head" style="text-align:center">WINNER</div>
          <div class="g-dot" id="win-res" style="cursor:default">-</div>
+         <button class="save-btn anim-click" id="btn-save-match" onclick="safeCall('saveMatch')">SAVE</button>
       </div>
     </div>
   </div>
@@ -198,6 +433,7 @@
                   <button class="tk-btn" id="btn-tk-alb-add" onclick="safeCall('modToken', 'alb', 1)">+</button>
               </div>
           </div>
+
           <div class="token-mid-section">
               <div class="machine-display" id="btn-roll-token" onclick="safeCall('rollToken')">
                   <div class="token-icon">🪙</div>
@@ -207,6 +443,7 @@
                   <button class="token-clear-btn" id="btn-clear-token" onclick="safeCall('clearToken')">×</button>
               </div>
           </div>
+
           <div class="token-player">
               <div class="token-name" style="color:var(--p2-color)" id="tk-lbl-b">P2</div>
               <div class="token-ctrls">
@@ -219,148 +456,229 @@
   </div>
 
   <script>
-    const firebaseConfig = { apiKey: "AIzaSyDz82Dp56EISYqk3hza3upJ2pAjsStgMKo", authDomain: "pokemon-masters-d153a.firebaseapp.com", databaseURL: "https://pokemon-masters-d153a-default-rtdb.firebaseio.com", projectId: "pokemon-masters-d153a", storageBucket: "pokemon-masters-d153a.firebasestorage.app", messagingSenderId: "67655442054", appId: "1:67655442054:web:705baa26ffda58b5d3fb07", measurementId: "G-LGW9RJZDP3" };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDz82Dp56EISYqk3hza3upJ2pAjsStgMKo",
+      authDomain: "pokemon-masters-d153a.firebaseapp.com",
+      databaseURL: "https://pokemon-masters-d153a-default-rtdb.firebaseio.com",
+      projectId: "pokemon-masters-d153a",
+      storageBucket: "pokemon-masters-d153a.firebasestorage.app",
+      messagingSenderId: "67655442054",
+      appId: "1:67655442054:web:705baa26ffda58b5d3fb07",
+      measurementId: "G-LGW9RJZDP3"
+    };
+
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     
     var appData = {};
     window.p1Name = "ALB"; window.p2Name = "BIU";
-    
-    // --- SESSION SCOPING HELPER ---
-    let dbPrefix = ""; // Default to root (User Global or Shared)
-    
-    function getRef(path) {
-        if (dbPrefix) return db.ref(dbPrefix + '/' + path);
-        // Fallback: If no prefix, assume we are in User Dashboard mode (via parent logic? No, parent handles main. This is iframe.)
-        // Actually, iframes default to ROOT unless told otherwise.
-        // But wait! If we are P1 in local mode, we want to write to users/{uid}/dashboard.
-        // We can't know UID easily here without auth.
-        // FIX: We rely on "dbPrefix" being passed from Parent. If empty, we write to global (legacy) or just wait.
-        return db.ref(path);
-    }
 
-    // --- UNIVERSAL RECEIVER ---
     window.addEventListener('message', (event) => {
-        if (!event.data) return;
-        const d = event.data;
-
-        if (d.type === 'THEME_UPDATE') {
-            document.documentElement.style.setProperty('--accent', d.color);
-            document.documentElement.style.setProperty('--theme-green', d.color);
-        }
-        if (d.type === 'CONFIG_UPDATE') {
-            if(d.p1Color) document.documentElement.style.setProperty('--p1-color', d.p1Color);
-            if(d.p2Color) document.documentElement.style.setProperty('--p2-color', d.p2Color);
-            if(d.p1Name) window.p1Name = d.p1Name;
-            if(d.p2Name) window.p2Name = d.p2Name;
-            updateDynamicLabels();
-        }
-        if (d.type === 'LIBRARY_UPDATE') {
-            window.appData = d.data || {};
-            populateDropdowns();
-        }
-        if (d.type === 'PEER_INTERACTION') {
-            handlePeerInteraction(d);
-        }
-        
-        // --- SESSION LOGIC ---
-        if (d.type === 'SESSION_START') {
-            // Switch to Session Path
-            dbPrefix = `sessions/${d.sessionId}`;
-            restartListeners();
-        }
-        if (d.type === 'SESSION_END') {
-            dbPrefix = ""; // Revert to global/local? (Requires re-auth logic or parent sends user path)
-            // For now, simple revert to root or wait for config
-            // Ideally parent sends "USER_PATH" on load
+        if (event.data) {
+            if (event.data.type === 'THEME_UPDATE') {
+                document.documentElement.style.setProperty('--accent', event.data.color);
+                document.documentElement.style.setProperty('--theme-green', event.data.color);
+            }
+            if (event.data.type === 'CONFIG_UPDATE') {
+                if(event.data.p1Color) document.documentElement.style.setProperty('--p1-color', event.data.p1Color);
+                if(event.data.p2Color) document.documentElement.style.setProperty('--p2-color', event.data.p2Color);
+                if(event.data.p1Name) window.p1Name = event.data.p1Name;
+                if(event.data.p2Name) window.p2Name = event.data.p2Name;
+                updateDynamicLabels();
+            }
+            // --- PRESENCE SYNC (DYNAMIC COLOR) ---
+            if(event.data.type === 'PEER_INTERACTION') {
+                handlePeerInteraction(event.data);
+            }
         }
     });
 
     if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
 
-    // --- DB LISTENERS MANAGER ---
-    let unsubList = [];
-    
-    function restartListeners() {
-        // Detach old
-        unsubList.forEach(off => off());
-        unsubList = [];
-        
-        // Attach New
-        const dashRef = getRef('dashboard');
-        const dashFn = dashRef.on('value', snap => {
-            window.dashState = snap.val() || {}; 
-            const s = window.dashState;
-            ['mode','side','points','sp'].forEach(k => {
-                if(document.getElementById('val-'+k)) document.getElementById('val-'+k).innerText = s[k] || '-';
-                if(document.getElementById('note-'+k)) document.getElementById('note-'+k).innerText = s[k+'Note'] || '';
-            });
-            if(s.points) {
-                let ptsInput = document.getElementById('chal-points-input');
-                if(ptsInput && document.activeElement !== ptsInput) ptsInput.value = s.points;
-            }
-            updateRegInfoText();
-        });
-        unsubList.push(() => dashRef.off('value', dashFn));
-
-        const genRef = getRef('gen');
-        const genFn = genRef.on('value', snap => {
-            const g = snap.val() || {};
-            document.getElementById('qg-alb').innerText = g.a || '-';
-            document.getElementById('qg-biu').innerText = g.b || '-';
-            window.lastQType = g.t || "";
-            window.isX3 = g.x3 || false;
-            const x3Btn = document.getElementById('btn-qg-x3');
-            if(window.isX3) x3Btn.classList.add('active'); else x3Btn.classList.remove('active');
-        });
-        unsubList.push(() => genRef.off('value', genFn));
-
-        const tokRef = getRef('tokens');
-        const tokFn = tokRef.on('value', snap => {
-            const t = snap.val() || { alb:0, biu:0 };
-            document.getElementById('tk-alb').innerText = t.alb || 0;
-            document.getElementById('tk-biu').innerText = t.biu || 0;
-            let resDisplay = document.getElementById('token-result-display');
-            if(resDisplay) resDisplay.innerText = t.result || '-';
-        });
-        unsubList.push(() => tokRef.off('value', tokFn));
-
-        const recRef = getRef('record');
-        const recFn = recRef.on('value', snap => {
-            const r = snap.val() || {};
-            window.recState = r; 
-            updateToggleUI(r.settings || {});
-            renderDots(r.dots || {});
-            // ... (Populate inputs logic same as before) ...
-            calculateWinner(r.dots || {}, r.settings ? r.settings.format : 'BO3');
-        });
-        unsubList.push(() => recRef.off('value', recFn));
-    }
-
-    // Start listeners immediately (default root)
-    restartListeners();
-
-    // --- INTERACTION REPORTING ---
+    // --- NEW: UNIVERSAL INTERACTION REPORTER ---
     document.body.addEventListener('mouseover', reportInteraction);
     document.body.addEventListener('click', reportInteraction);
+
     function reportInteraction(e) {
+        // Find closest interactive element
         let t = e.target.closest('button, input, select, .p-card, .g-dot, .token-center');
-        if (t && t.id) window.parent.postMessage({ type: 'INTERACTION_REPORT', id: t.id, action: e.type==='click'?'click':'hover' }, '*');
+        if (t && t.id) {
+            window.parent.postMessage({
+                type: 'INTERACTION_REPORT',
+                id: t.id,
+                action: e.type === 'click' ? 'click' : 'hover'
+            }, '*');
+        }
     }
+
     function handlePeerInteraction(data) {
+        // 1. Remove old glows
         document.querySelectorAll('.peer-interactive').forEach(el => el.classList.remove('peer-interactive'));
+        
+        // 2. Find target
         if(data.id) {
             let el = document.getElementById(data.id);
             if(el) {
+                // 3. Set Color & Apply Class
                 el.style.setProperty('--peer-color', data.color);
                 el.classList.add('peer-interactive');
-                setTimeout(() => el.classList.remove('peer-interactive'), 4000);
+                
+                // Auto-remove after a few seconds if no updates
+                clearTimeout(el.peerTimeout);
+                el.peerTimeout = setTimeout(() => {
+                    el.classList.remove('peer-interactive');
+                }, 4000);
             }
         }
     }
 
-    // --- LOGIC FUNCTIONS (Using getRef) ---
-    window.safeCall = function(fnName, ...args) { if (typeof window[fnName] === 'function') window[fnName](...args); };
+    // --- HOVER REPORTING (Legacy but kept) ---
+    document.addEventListener('mouseover', e => {
+        let t = e.target.closest('[id]'); 
+        if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
+    });
+
+    window.safeCall = function(fnName, ...args) {
+        if (typeof window[fnName] === 'function') window[fnName](...args);
+    };
+
+    const TYPES = [
+      "🔥 Fire", "💧 Water", "🍃 Grass", "⚡ Electric", "🔮 Psychic", "❄️ Ice", 
+      "🐉 Dragon", "🌑 Dark", "🎀 Fairy", "🙂 Normal", "🥊 Fighting", "🌪️ Flying", 
+      "💀 Poison", "🌎 Ground", "🏔️ Rock", "👻 Ghost", "⚙️ Steel", "🦗 Bug"
+    ];
+    const COLORS = ["Black", "Blue", "Brown", "Green", "Pink", "Purple", "Red", "White", "Yellow"];
+
+    // Changed to .on() for live updates
+    db.ref('library').on('value', snap => {
+        window.appData = snap.val() || {};
+        populateDropdowns();
+    });
+    
+    // --- LOAD CONFIG FOR NAMES ---
+    db.ref('config').on('value', snap => {
+        const c = snap.val() || {};
+        if(c.p1Name) window.p1Name = c.p1Name;
+        if(c.p2Name) window.p2Name = c.p2Name;
+        if(c.p1Color) document.documentElement.style.setProperty('--p1-color', c.p1Color);
+        if(c.p2Color) document.documentElement.style.setProperty('--p2-color', c.p2Color);
+        updateDynamicLabels();
+    });
+
+    function updateDynamicLabels() {
+        // Quick Gen Labels
+        const lblA = document.getElementById('lbl-qg-a');
+        const lblB = document.getElementById('lbl-qg-b');
+        if(lblA && lblA.innerText !== 'NAME') lblA.innerText = window.p1Name;
+        if(lblB && lblB.innerText !== 'NOTE') lblB.innerText = window.p2Name;
+        
+        // Token Labels
+        const tkA = document.getElementById('tk-lbl-a');
+        const tkB = document.getElementById('tk-lbl-b');
+        if(tkA) tkA.innerText = window.p1Name;
+        if(tkB) tkB.innerText = window.p2Name;
+        
+        // Redraw dots to update initials/colors
+        if(window.recState) renderDots(window.recState.dots || {});
+    }
+
+    db.ref('dashboard').on('value', snap => {
+        window.dashState = snap.val() || {}; 
+        const s = window.dashState;
+        ['mode','side','points','sp'].forEach(k => {
+            if(document.getElementById('val-'+k)) document.getElementById('val-'+k).innerText = s[k] || '-';
+            if(document.getElementById('note-'+k)) document.getElementById('note-'+k).innerText = s[k+'Note'] || '';
+        });
+        if(s.points) {
+            let ptsInput = document.getElementById('chal-points-input');
+            if(ptsInput && document.activeElement !== ptsInput) ptsInput.value = s.points;
+        } else {
+            let ptsInput = document.getElementById('chal-points-input');
+            if(ptsInput && document.activeElement !== ptsInput) ptsInput.value = "";
+        }
+        updateRegInfoText();
+    });
+
+    db.ref('gen').on('value', snap => {
+        const g = snap.val() || {};
+        document.getElementById('qg-alb').innerText = g.a || '-';
+        document.getElementById('qg-biu').innerText = g.b || '-';
+        
+        let lblA = document.getElementById('lbl-qg-a');
+        let lblB = document.getElementById('lbl-qg-b');
+        if(g.t === 'ShitWheel') {
+            lblA.innerText = "NAME";
+            lblB.innerText = "NOTE";
+        } else {
+            lblA.innerText = window.p1Name;
+            lblB.innerText = window.p2Name;
+        }
+
+        window.lastQType = g.t || "";
+        window.isX3 = g.x3 || false;
+        const x3Btn = document.getElementById('btn-qg-x3');
+        if(window.isX3) x3Btn.classList.add('active'); else x3Btn.classList.remove('active');
+    });
+
+    db.ref('tokens').on('value', snap => {
+        const t = snap.val() || { alb:0, biu:0 };
+        document.getElementById('tk-alb').innerText = t.alb || 0;
+        document.getElementById('tk-biu').innerText = t.biu || 0;
+        
+        // Sync Token Display Result
+        let resDisplay = document.getElementById('token-result-display');
+        if(resDisplay) resDisplay.innerText = t.result || '-';
+    });
+
+    db.ref('record').on('value', snap => {
+        const r = snap.val() || {};
+        window.recState = r; 
+        updateToggleUI(r.settings || {});
+        const dots = r.dots || {};
+        const links = r.links || {};
+        const details = r.details || {}; 
+
+        renderDots(dots);
+
+        for(let i=0; i<5; i++) {
+            let l = document.getElementById('lnk-'+i);
+            if(l && document.activeElement !== l) l.value = links[i] || '';
+            
+            if(r.settings && r.settings.mode === 'Challenge') {
+                let mSel = document.getElementById('sel-m-'+i);
+                let sSel = document.getElementById('sel-s-'+i);
+                if(mSel && document.activeElement !== mSel) mSel.value = (details[i] && details[i].mode) ? details[i].mode : "";
+                if(sSel && document.activeElement !== sSel) sSel.value = (details[i] && details[i].side) ? details[i].side : "";
+            }
+        }
+        calculateWinner(dots, r.settings ? r.settings.format : 'BO3');
+    });
+    
+    function renderDots(dots) {
+        for(let i=0; i<5; i++) {
+            let d = document.getElementById('dot-'+i);
+            if(d) {
+                let val = dots[i] || '';
+                // Logic: A=P1, B=P2. Display Initials.
+                d.style.backgroundColor = '';
+                d.style.color = '';
+                d.style.borderColor = '';
+                d.innerText = '';
+                
+                if (val === 'A') {
+                    d.innerText = window.p1Name.charAt(0);
+                    d.style.color = 'var(--p1-color)';
+                    d.style.borderColor = 'var(--p1-color)';
+                    d.style.backgroundColor = 'rgba(255,255,255,0.05)';
+                } else if (val === 'B') {
+                    d.innerText = window.p2Name.charAt(0);
+                    d.style.color = 'var(--p2-color)';
+                    d.style.borderColor = 'var(--p2-color)';
+                    d.style.backgroundColor = 'rgba(255,255,255,0.05)';
+                }
+            }
+        }
+    }
 
     window.roll = function(key, listKey, noteKey) {
         const lib = window.appData || {};
@@ -370,7 +688,7 @@
         let updates = {};
         updates['dashboard/'+key] = pick.text;
         if(noteKey) updates['dashboard/'+noteKey] = pick.note || "";
-        getRef('').update(updates);
+        db.ref().update(updates);
     };
 
     window.rollAll = function() {
@@ -381,7 +699,7 @@
     };
 
     window.clearBoard = function() {
-        getRef('').update({
+        db.ref().update({
             'dashboard/mode': "-", 'dashboard/modeNote': "",
             'dashboard/side': "-", 'dashboard/sideNote': "",
             'dashboard/points': "-", 'dashboard/pointsNote': "",
@@ -391,70 +709,249 @@
         });
     };
 
-    window.toggleX3 = function() { getRef('gen/x3').set(!window.isX3); };
+    window.toggleX3 = function() { db.ref('gen/x3').set(!window.isX3); };
+
+    function generateSet(type, count, excludeItems = []) {
+        let pool = [];
+        const lib = window.appData || {};
+        if(type === 'Type') pool = [...TYPES];
+        else if(type === 'Colour') pool = [...COLORS];
+        else if(type === 'RNG (1-9)') pool = [1,2,3,4,5,6,7,8,9];
+        else if(type === 'Legendary Trio') pool = lib.trio ? lib.trio.map(t => t.text) : ["Err"];
+        else return ["-"];
+
+        pool = pool.filter(item => !excludeItems.includes(item));
+        let result = [];
+        for(let i=0; i<count; i++) {
+            if(pool.length === 0) break;
+            let idx = Math.floor(Math.random() * pool.length);
+            result.push(pool[idx]);
+            pool.splice(idx, 1);
+        }
+        return result.join(" / ");
+    }
 
     window.runQGen = function(type) {
         let count = window.isX3 ? 3 : 1;
-        // ... (Generation Logic same as before) ...
-        // Placeholder for brevity - copy existing generateSet logic here if needed
-        // Assuming generateSet exists (it's pure local logic)
-        let valA = "Gen A"; // Replace with real logic
-        let valB = "Gen B"; 
-        getRef('gen').update({ a:valA, b:valB, t:type });
-    };
-    
-    // ... [KEEP ALL YOUR EXISTING HELPER FUNCTIONS LIKE generateSet, runShitWheel, etc.] ...
-    // Just replace db.ref() with getRef() inside them.
-    
-    window.modToken = function(p, val) { getRef('tokens/' + p).transaction(curr => (curr || 0) + val); };
-    window.clearToken = function() { getRef('tokens').update({ result: "-" }); };
-    
-    window.togDot = function(i) {
-        let dbVal = window.recState?.dots?.[i] || '';
-        let nextVal = dbVal === '' ? 'A' : (dbVal === 'A' ? 'B' : '');
-        getRef(`record/dots/${i}`).set(nextVal);
+        let valA = generateSet(type, count, []);
+        let valB = generateSet(type, count, valA.split(' / ').map(s => isNaN(s) ? s : parseInt(s)));
+        db.ref('gen').update({ a:valA, b:valB, t:type });
     };
 
-    function updateDynamicLabels() {
-        const lblA = document.getElementById('lbl-qg-a'); const lblB = document.getElementById('lbl-qg-b');
-        if(lblA) lblA.innerText = window.p1Name; if(lblB) lblB.innerText = window.p2Name;
-        const tkA = document.getElementById('tk-lbl-a'); const tkB = document.getElementById('tk-lbl-b');
-        if(tkA) tkA.innerText = window.p1Name; if(tkB) tkB.innerText = window.p2Name;
-        if(window.recState) renderDots(window.recState.dots || {});
-    }
+    // --- UPDATED SHITWHEEL LOGIC ---
+    window.runShitWheel = function() {
+        const lib = window.appData || {};
+        // Try strict name, then lowercase, then fallback
+        let raw = lib.ShitWheelList || lib.shitWheelList || lib.shitWheel;
+        
+        if(!raw) {
+              const keys = Object.keys(lib).join(", ");
+              return alert(`Error: 'ShitWheelList' not found in Library.\n\nItems currently in your database:\n${keys}`);
+        }
+        
+        const list = Object.values(raw);
+        if(list.length === 0) return alert("Wheel List is empty!");
+        
+        const rand = list[Math.floor(Math.random() * list.length)];
+        const pick = (typeof rand === 'object' && rand.text) ? rand.text : rand;
+        const note = (typeof rand === 'object' && rand.note) ? rand.note : "";
+        
+        // Put Name in A, Note in B
+        db.ref('gen').update({ a: pick, b: note, t: "ShitWheel" });
+    };
+
+    window.localReroll = function(who) {
+        if(!window.lastQType) return;
+        if(window.lastQType === "ShitWheel") return window.runShitWheel();
+        let count = window.isX3 ? 3 : 1;
+        let otherWho = (who === 'alb') ? 'biu' : 'alb';
+        let otherValRaw = document.getElementById('qg-' + otherWho).innerText;
+        let exclude = otherValRaw.split(' / ').map(s => isNaN(s) ? s : parseInt(s));
+        let newVal = generateSet(window.lastQType, count, exclude);
+        db.ref('gen/' + (who === 'alb' ? 'a' : 'b')).set(newVal);
+    };
+
+    window.modToken = function(p, val) {
+        db.ref('tokens/' + p).transaction(curr => (curr || 0) + val);
+    };
+
+    // --- UPDATED TOKEN LOGIC ---
+    window.rollToken = function() {
+        const lib = window.appData || {};
+        let raw = lib.TokenList || lib.tokenList || lib.tokens;
+        
+        if(!raw) {
+              const keys = Object.keys(lib).join(", ");
+              return alert(`Error: 'TokenList' not found in Library.\n\nItems currently in your database:\n${keys}`);
+        }
+        
+        const list = Object.values(raw);
+        if(list.length === 0) return alert("Token List is empty!");
+        
+        const rand = list[Math.floor(Math.random() * list.length)];
+        const pick = (typeof rand === 'object' && rand.text) ? rand.text : rand;
+        
+        db.ref('tokens').update({ result: pick });
+    };
     
-    function renderDots(dots) {
+    window.clearToken = function() {
+        db.ref('tokens').update({ result: "-" });
+    };
+
+    // --- REFACTORED: Challenge Mode Sync Logic ---
+    window.setRecMode = function() {
+        let curr = window.recState?.settings?.mode || 'Regular';
+        let next = curr === 'Regular' ? 'Challenge' : 'Regular';
+        let updates = { 'record/settings/mode': next };
+        if(next === 'Challenge') {
+            updates['dashboard/sp'] = '4';
+            updates['dashboard/points'] = ""; // Ensure blank on start
+            updates['dashboard/pointsNote'] = "Challenge Mode";
+        }
+        db.ref().update(updates);
+    };
+
+    window.setRecFormat = function() {
+        let curr = window.recState?.settings?.format || 'BO3';
+        let next = curr === 'BO3' ? 'BO5' : 'BO3';
+        db.ref('record/settings/format').set(next);
+    };
+
+    // --- REFACTORED: Update Card + Note when typing ---
+    window.setChalPoints = function(val) { 
+        db.ref().update({
+            'dashboard/points': val,
+            'dashboard/pointsNote': "Challenge Mode"
+        }); 
+    };
+
+    function updateToggleUI(settings) {
+        let mode = settings.mode || 'Regular';
+        let fmt = settings.format || 'BO3';
+        let mTog = document.getElementById('tog-mode');
+        if(mTog) {
+            mTog.innerText = mode;
+            if(mode === 'Challenge') mTog.classList.add('active'); else mTog.classList.remove('active');
+        }
+        let fTog = document.getElementById('tog-fmt');
+        if(fTog) {
+            fTog.innerText = fmt;
+            if(fmt === 'BO5') fTog.classList.add('active'); else fTog.classList.remove('active');
+        }
+        document.getElementById('chal-points-input').style.display = (mode === 'Challenge') ? 'block' : 'none';
+        document.getElementById('reg-mode-display').style.display = (mode === 'Regular') ? 'block' : 'none';
         for(let i=0; i<5; i++) {
-            let d = document.getElementById('dot-'+i);
-            if(d) {
-                let val = dots[i] || '';
-                d.style.backgroundColor = ''; d.style.color = ''; d.style.borderColor = ''; d.innerText = '';
-                if (val === 'A') {
-                    d.innerText = window.p1Name.charAt(0);
-                    d.style.color = 'var(--p1-color)'; d.style.borderColor = 'var(--p1-color)'; d.style.backgroundColor = 'rgba(255,255,255,0.05)';
-                } else if (val === 'B') {
-                    d.innerText = window.p2Name.charAt(0);
-                    d.style.color = 'var(--p2-color)'; d.style.borderColor = 'var(--p2-color)'; d.style.backgroundColor = 'rgba(255,255,255,0.05)';
-                }
+            let col = document.getElementById('col-'+i);
+            if(col) col.classList.toggle('disabled', fmt === 'BO3' && i >= 3);
+            let chalDiv = document.getElementById('top-chal-'+i);
+            if(chalDiv) chalDiv.style.display = (mode === 'Challenge') ? 'block' : 'none';
+        }
+    }
+
+    function updateRegInfoText() {
+        if(!window.dashState) return;
+        let txt = `${window.dashState.mode || '-'} / ${window.dashState.side || '-'} / ${window.dashState.points || '-'} / ${window.dashState.sp || '-'}`;
+        if(document.getElementById('reg-mode-display')) document.getElementById('reg-mode-display').innerText = txt;
+    }
+
+    function populateDropdowns() {
+        const lib = window.appData || {};
+        for(let i=0; i<5; i++) {
+            let mSel = document.getElementById('sel-m-'+i);
+            let sSel = document.getElementById('sel-s-'+i);
+            if(mSel && sSel && mSel.innerHTML === "") { 
+                mSel.innerHTML = "<option value=''>Game Mode</option>";
+                sSel.innerHTML = "<option value=''>Side Quest</option>";
+                (lib.gameModes || []).forEach(m => { let op = document.createElement('option'); op.value = m.text; op.innerText = m.text; mSel.appendChild(op); });
+                (lib.sides || []).forEach(s => { let op = document.createElement('option'); op.value = s.text; op.innerText = s.text; sSel.appendChild(op); });
             }
         }
     }
-    
+
+    window.updateGameDetail = function(idx, type) {
+        let val = document.getElementById(`sel-${type==='mode'?'m':'s'}-${idx}`).value;
+        db.ref(`record/details/${idx}/${type}`).set(val);
+        const match = (window.appData[type==='mode'?'gameModes':'sides'] || []).find(x => x.text === val);
+        db.ref('dashboard').update({ [type]: val, [`${type}Note`]: match?.note || "" });
+    };
+
+    window.togDot = function(i) {
+        let d = document.getElementById('dot-'+i);
+        let currVal = 'EMPTY';
+        // Check current state based on color or text, but data stored as A/B
+        // Simpler: Read from window.recState
+        let dbVal = window.recState?.dots?.[i] || '';
+        
+        let nextVal = '';
+        if(dbVal === '') nextVal = 'A';
+        else if(dbVal === 'A') nextVal = 'B';
+        else nextVal = '';
+        
+        db.ref(`record/dots/${i}`).set(nextVal);
+    };
+
     function calculateWinner(dots, format) {
         let a = 0; let b = 0;
         let max = format === 'BO3' ? 3 : 5;
         for(let i=0; i<max; i++) { if(dots[i] === 'A') a++; if(dots[i] === 'B') b++; }
         let winner = (a >= (format === 'BO3' ? 2 : 3)) ? window.p1Name : ((b >= (format === 'BO3' ? 2 : 3)) ? window.p2Name : "-");
+        
         let wEl = document.getElementById('win-res');
         if(wEl) { 
-            wEl.innerText = winner; wEl.style.color = ''; wEl.style.borderColor = '#333'; wEl.style.background = '';
+            wEl.innerText = winner;
+            wEl.style.color = '';
+            wEl.style.borderColor = '#333';
+            wEl.style.background = '';
+            
             if (winner === window.p1Name) {
-                wEl.style.color = 'var(--p1-color)'; wEl.style.borderColor = 'var(--p1-color)'; wEl.style.background = 'rgba(255,255,255,0.05)';
+                wEl.style.color = 'var(--p1-color)';
+                wEl.style.borderColor = 'var(--p1-color)';
+                wEl.style.background = 'rgba(255,255,255,0.05)';
             } else if (winner === window.p2Name) {
-                wEl.style.color = 'var(--p2-color)'; wEl.style.borderColor = 'var(--p2-color)'; wEl.style.background = 'rgba(255,255,255,0.05)';
+                wEl.style.color = 'var(--p2-color)';
+                wEl.style.borderColor = 'var(--p2-color)';
+                wEl.style.background = 'rgba(255,255,255,0.05)';
             }
         }
     }
+
+    window.broadcastRec = function() {
+        for(let i=0; i<5; i++) {
+            let l = document.getElementById('lnk-'+i);
+            if(l) db.ref(`record/links/${i}`).set(l.value);
+        }
+    };
+
+    window.saveMatch = function() {
+        let winner = document.getElementById('win-res').innerText;
+        if(winner === '-' || winner === '') return alert("No winner yet.");
+        let settings = window.recState?.settings || { mode: 'Regular', format: 'BO3' };
+        
+        // Save using current Names
+        let winnerCode = (winner === window.p1Name) ? 'ALB' : 'BIU'; // Fallback for data consistency if needed, but lets use names
+        
+        let payload = { timestamp: Date.now(), winner, settings, record: [], links: [] };
+        let count = settings.format === 'BO3' ? 3 : 5;
+        for(let i=0; i<count; i++) {
+            // Get Result as A/B from state
+            let dbVal = window.recState?.dots?.[i] || '';
+            let resName = (dbVal === 'A') ? window.p1Name : (dbVal === 'B' ? window.p2Name : '-');
+            
+            let lVal = document.getElementById('lnk-'+i).value || '';
+            let gameInfo = { result: resName };
+            if(settings.mode === 'Challenge') {
+                gameInfo.mode = document.getElementById('sel-m-'+i).value;
+                gameInfo.side = document.getElementById('sel-s-'+i).value;
+                gameInfo.sp = "4";
+                gameInfo.points = window.dashState.points; 
+            } else payload.dashSnapshot = window.dashState;
+            payload.record.push(gameInfo);
+            if(lVal) payload.links.push(`G${i+1}: ${lVal}`);
+        }
+        db.ref('history').push(payload);
+        alert("Match Saved!");
+        db.ref('record').update({ dots:null, links:null, details:null });
+    };
   </script>
 </body>
 </html>
