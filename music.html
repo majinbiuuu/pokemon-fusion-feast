@@ -197,12 +197,19 @@
   }, 500);
 
   // --- PARENT MESSAGES ---
-  window.addEventListener('message', (event) => {
-    if(event.data.type === 'setVolume') {
-        setLocalVolume(event.data.value);
-        document.getElementById('vol-slider').value = event.data.value;
-    }
-  });
+  function setLocalVolume(val, fromSync = false) {
+      localVol = val;
+      if(val > 0) lastVol = val;
+      localStorage.setItem('music_vol', val);
+      
+      if(player && player.setVolume) player.setVolume(val);
+      updateVolIcon(val);
+
+      // ONLY send to parent if this was a manual change (not from sync)
+      if (!fromSync && window.parent) {
+          window.parent.postMessage({ type: 'UPDATE_TOP_VOL', value: val }, '*');
+      }
+  };
 
   function onPlayerReady(event) {
      player.setVolume(localVol);
@@ -300,6 +307,17 @@
           div.addEventListener('dragend', handleDragEnd);
           div.dataset.index = index;
           container.appendChild(div);
+
+          window.addEventListener('message', (event) => {
+    if(event.data.type === 'setVolume') {
+        // IMPORTANT: The 'true' tells the player "This came from the top bar, don't send it back!"
+        setLocalVolume(event.data.value, true); 
+        
+        // Also update the local slider visual
+        const slider = document.getElementById('vol-slider');
+        if(slider) slider.value = event.data.value;
+    }
+  })
       });
   }
 
