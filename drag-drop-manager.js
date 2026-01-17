@@ -195,6 +195,24 @@ window.toggleCenterCollapse = function() {
     else { colC.classList.remove('minimized'); if(icon) icon.className = "fas fa-compress-alt"; }
 };
 
+// --- NEW: Master Toggle for Tab Bar Button ---
+window.toggleAll = function() {
+    // Determine target state based on center window
+    // If Center is Open (collapsed=false), we want to Close All (target=true)
+    // If Center is Closed (collapsed=true), we want to Open All (target=false)
+    const targetState = !window.centerCollapsed;
+    
+    // 1. Set Center State
+    if (window.centerCollapsed !== targetState) {
+        window.toggleCenterCollapse();
+    }
+    
+    // 2. Set Columns State (Match the center state)
+    if (window.isCollapsed !== targetState) {
+        window.toggleCollapse();
+    }
+};
+
 window.switchTab = function(viewId, btn) { 
     if (document.querySelector('.tab.active').dataset.id === 'tab-' + viewId && !window.centerCollapsed) { window.toggleCenterCollapse(); return; }
     if (window.centerCollapsed) { window.toggleCenterCollapse(); }

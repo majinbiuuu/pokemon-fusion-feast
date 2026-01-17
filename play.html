@@ -138,25 +138,47 @@
   .x3-lbl { font-weight: 800; font-size: 0.9rem; color: #888; }
   .x3-switch-container.active .x3-lbl { color: var(--theme-green); }
   
-  .qg-display { display: flex; gap: 15px; margin-top: 15px;}
-  
-  .qg-box { 
-    flex: 1; 
-    background: var(--card-dark); 
-    border: 1px solid #333; border-radius: 8px; position: relative;
-    display: flex; align-items: center; justify-content: center; padding: 10px 15px; min-height: 60px; 
+  /* NEW QUICK GEN STYLES */
+  .qg-unified-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; height: 60px;
+      background: var(--card-dark);
+      border: 1px solid #333; border-radius: 8px;
+      padding: 0 15px; position: relative;
+      margin-top: 15px;
   }
-  .qg-box-label { 
-    position: absolute; top: 6px; font-size: 0.65rem; font-weight: 900; 
-    text-transform: uppercase; letter-spacing: 1px;
-  }
-  .qg-box-val { font-size: 1.1rem; font-weight: 700; color: #fff; line-height: 1.2; text-align: center; margin-top: 10px;}
 
-  .reroll { 
-    width: 40px; background: #222; border: 1px solid #333; color: #fff; border-radius: 8px; 
-    cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+  .qg-name-label {
+      font-size: 0.8rem; font-weight: 900; letter-spacing: 1px;
+      min-width: 40px;
   }
-  .reroll:hover { color: var(--theme-green); border-color: var(--theme-green); }
+
+  .qg-content-area {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      gap: 5px; height: 100%;
+  }
+
+  .qg-mid-divider {
+      width: 2px; height: 70%;
+      background: #444; margin: 0 15px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.5);
+  }
+
+  .qg-item {
+      font-size: 1.1rem; font-weight: 700; color: #fff;
+      cursor: pointer; padding: 2px 6px;
+      border-radius: 4px; transition: 0.2s;
+      user-select: none;
+  }
+  .qg-item:hover {
+      background: rgba(255,255,255,0.15);
+      color: var(--theme-green);
+      transform: translateY(-1px);
+  }
+  
+  .qg-mini-sep {
+      color: #555; font-size: 0.9rem; margin: 0 2px; font-weight: 300;
+  }
 
   /* --- RECORD SECTION --- */
   .rec-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; height: 32px; }
@@ -230,7 +252,8 @@
 
   /* --- TOKEN CENTER --- */
   .token-center {
-    display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 15px;
+    display: none; /* CHANGED: Starts hidden */
+    flex-direction: column; align-items: center; gap: 15px; margin-top: 15px;
     background: var(--glass-bg); border: 1px solid var(--glass-border);
     border-radius: 12px; padding: 20px; 
     box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative;
@@ -361,27 +384,25 @@
         <button class="qg-btn btn-shit anim-click" id="btn-qg-shit" onclick="safeCall('runShitWheel')">SHIT WHEEL 💩</button>
       </div>
       
+      <button class="qg-btn anim-click" id="btn-toggle-token" onclick="safeCall('toggleTokenSection')" style="flex:0; width:auto; margin-left:10px;">Token</button>
+
       <div class="x3-switch-container anim-click" id="btn-qg-x3" onclick="safeCall('toggleX3')">
         <span class="x3-lbl">x3</span>
       </div>
     </div>
 
-    <div class="qg-display">
-      <div style="flex:1; display:flex; gap:5px;">
-        <button class="reroll anim-click" id="btn-reroll-alb" onclick="safeCall('localReroll', 'alb')">↻</button>
-        <div class="qg-box">
-          <div class="qg-box-label" style="left:10px; color:var(--p1-color)" id="lbl-qg-a">P1</div>
-          <div class="qg-box-val" id="qg-alb">-</div>
+    <div class="qg-unified-bar">
+        <div class="qg-name-label" style="color:var(--p1-color); text-align:left;" id="lbl-qg-a">P1</div>
+
+        <div class="qg-content-area">
+            <div id="qg-cont-a" style="display:flex; gap:2px; align-items:center;">-</div>
+            
+            <div class="qg-mid-divider"></div>
+            
+            <div id="qg-cont-b" style="display:flex; gap:2px; align-items:center;">-</div>
         </div>
-      </div>
-      
-      <div style="flex:1; display:flex; gap:5px;">
-        <div class="qg-box">
-          <div class="qg-box-label" style="right:10px; color:var(--p2-color)" id="lbl-qg-b">P2</div>
-          <div class="qg-box-val" id="qg-biu">-</div>
-        </div>
-        <button class="reroll anim-click" id="btn-reroll-biu" onclick="safeCall('localReroll', 'biu')">↻</button>
-      </div>
+
+        <div class="qg-name-label" style="color:var(--p2-color); text-align:right;" id="lbl-qg-b">P2</div>
     </div>
   </div>
 
@@ -601,9 +622,9 @@
 
     db.ref('gen').on('value', snap => {
         const g = snap.val() || {};
-        document.getElementById('qg-alb').innerText = g.a || '-';
-        document.getElementById('qg-biu').innerText = g.b || '-';
+        window.lastGenState = g; // Store for reroll logic
         
+        // Update Names
         let lblA = document.getElementById('lbl-qg-a');
         let lblB = document.getElementById('lbl-qg-b');
         if(g.t === 'ShitWheel') {
@@ -616,9 +637,33 @@
 
         window.lastQType = g.t || "";
         window.isX3 = g.x3 || false;
+        
         const x3Btn = document.getElementById('btn-qg-x3');
         if(window.isX3) x3Btn.classList.add('active'); else x3Btn.classList.remove('active');
+
+        // Render Clickable Items
+        renderQGBlock('a', g.a || "-", g.t);
+        renderQGBlock('b', g.b || "-", g.t);
     });
+
+    function renderQGBlock(side, text, type) {
+        const container = document.getElementById('qg-cont-' + side);
+        if(!container) return;
+        
+        // If Shitwheel or invalid, just show text (no click-to-reroll)
+        if(type === 'ShitWheel' || text === '-') {
+            container.innerHTML = `<span style="font-size:1.1rem; font-weight:700; color:#fff;">${text}</span>`;
+            return;
+        }
+
+        // Split by delimiter " / " and create spans
+        const parts = text.toString().split(' / ');
+        let html = parts.map((part, idx) => {
+            return `<span class="qg-item" onclick="safeCall('rerollOne', '${side}', ${idx})">${part}</span>`;
+        }).join('<span class="qg-mini-sep">|</span>');
+        
+        container.innerHTML = html;
+    }
 
     db.ref('tokens').on('value', snap => {
         const t = snap.val() || { alb:0, biu:0 };
@@ -711,6 +756,20 @@
 
     window.toggleX3 = function() { db.ref('gen/x3').set(!window.isX3); };
 
+    window.toggleTokenSection = function() {
+        let el = document.querySelector('.token-center');
+        let btn = document.getElementById('btn-toggle-token');
+        if (el.style.display === 'none') {
+            el.style.display = 'flex';
+            btn.style.borderColor = 'var(--theme-green)';
+            btn.style.color = '#fff';
+        } else {
+            el.style.display = 'none';
+            btn.style.borderColor = '#333';
+            btn.style.color = '#666';
+        }
+    };
+
     function generateSet(type, count, excludeItems = []) {
         let pool = [];
         const lib = window.appData || {};
@@ -760,15 +819,29 @@
         db.ref('gen').update({ a: pick, b: note, t: "ShitWheel" });
     };
 
-    window.localReroll = function(who) {
-        if(!window.lastQType) return;
-        if(window.lastQType === "ShitWheel") return window.runShitWheel();
-        let count = window.isX3 ? 3 : 1;
-        let otherWho = (who === 'alb') ? 'biu' : 'alb';
-        let otherValRaw = document.getElementById('qg-' + otherWho).innerText;
-        let exclude = otherValRaw.split(' / ').map(s => isNaN(s) ? s : parseInt(s));
-        let newVal = generateSet(window.lastQType, count, exclude);
-        db.ref('gen/' + (who === 'alb' ? 'a' : 'b')).set(newVal);
+    window.rerollOne = function(side, idx) {
+        if(!window.lastQType || window.lastQType === "ShitWheel") return;
+
+        let g = window.lastGenState || {};
+        let currentStr = g[side] || "";
+        let parts = currentStr.toString().split(' / ');
+
+        // 1. Collect everything currently on board to avoid dupes
+        let otherSide = (side === 'a' ? 'b' : 'a');
+        let otherStr = g[otherSide] || "";
+        let allCurrent = [...parts, ...otherStr.split(' / ')];
+        
+        // Clean up data for exclude list
+        let exclude = allCurrent.map(s => isNaN(s) ? s : parseInt(s));
+
+        // 2. Generate ONE new item
+        let newItem = generateSet(window.lastQType, 1, exclude);
+
+        // 3. Replace the specific index
+        parts[idx] = newItem;
+
+        // 4. Save back to DB
+        db.ref('gen/' + side).set(parts.join(' / '));
     };
 
     window.modToken = function(p, val) {
