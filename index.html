@@ -15,7 +15,8 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-  <script src="constants.js"></script>          <script src="sync-manager.js"></script>        <script src="theme-manager.js"></script>       <script src="drag-drop-manager.js"></script>   <script src="export-manager.js"></script>      <script src="main.js"></script>                </head>
+  <script src="constants.js"></script>          <script src="sync-manager.js"></script>        <script src="theme-manager.js"></script>       <script src="drag-drop-manager.js"></script>   <script src="export-manager.js"></script>      <script src="main.js"></script>
+  <script src="chat-manager.js"></script> </head>
 <body>
   
   <div id="settings-modal" onclick="if(event.target===this) toggleSettings()">
@@ -90,6 +91,10 @@
         <div id="status-dot" class="status-dot active"></div> 
         <span>Live</span>
         <div id="presence-count" class="online-count"><i class="fas fa-users" style="font-size: 11px;"></i> 0</div>
+        
+        <div class="chat-trigger" onclick="toggleChat()" title="Open Chat">
+            <i class="fas fa-comment-alt"></i>
+        </div>
       </div>
     </div>
 
@@ -217,6 +222,22 @@
       <div class="slot-list" id="slots-biu"></div>
       <button class="col-btn clear-btn" onclick="clearCol('biu')">Clear</button>
     </div>
+  </div>
+
+  <div id="chat-window" class="chat-window">
+      <div id="chat-header" class="chat-header">
+          <span class="chat-title">Live Chat</span>
+          <span class="chat-close" onclick="toggleChat()">&times;</span>
+      </div>
+      <div class="chat-content">
+          <div id="chat-output" class="chat-output">
+              <div class="chat-msg"><span class="chat-text" style="color:#666; font-style:italic;">Welcome to the chat...</span></div>
+          </div>
+          <div class="chat-input-area">
+              <input id="chat-input" class="chat-input" placeholder="Type..." autocomplete="off">
+              <button class="chat-send-btn" onclick="sendMessage()">></button>
+          </div>
+      </div>
   </div>
 
 </body>
