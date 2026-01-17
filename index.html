@@ -14,8 +14,8 @@
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="global.js"></script>
-</head>
+
+  <script src="constants.js"></script>          <script src="sync-manager.js"></script>        <script src="theme-manager.js"></script>       <script src="drag-drop-manager.js"></script>   <script src="export-manager.js"></script>      <script src="main.js"></script>                </head>
 <body>
   
   <div id="settings-modal" onclick="if(event.target===this) toggleSettings()">
@@ -119,13 +119,14 @@
       <div class="theme-btn-group">
         <div class="theme-color-btn" onclick="window.changeTheme()" title="Quick Random Theme"><i class="fas fa-palette"></i></div>
         <div class="theme-party-btn" onclick="window.toggleParty()" title="Party Mode"><i class="fas fa-infinity"></i></div>
-        <div class="theme-gear-btn" onclick="toggleSettings()" title="Settings"><i class="fas fa-cog"></i></div>
         <div class="theme-gear-btn" onclick="toggleFullScreen()" title="Toggle Fullscreen"><i class="fas fa-expand" id="fs-icon"></i></div>
+        <div class="theme-gear-btn" onclick="toggleSettings()" title="Settings"><i class="fas fa-cog"></i></div>
       </div>
     </div>
   </div>
 
   <div class="stage">
+    
     <div class="col-p" id="col-alb">
       <div class="p-header">
           <div class="p-name" id="disp-p1-name" style="color:var(--p1-color)">P1</div>
@@ -146,14 +147,13 @@
       </div>
 
       <div class="mini-row" id="mini-alb"></div>
-
       <div class="slot-list" id="slots-alb"></div>
       <button class="col-btn clear-btn" onclick="clearCol('alb')">Clear</button>
     </div>
 
     <div class="col-c">
       <div class="tab-bar">
-        <button class="tab-btn-collapse" onclick="toggleCenterCollapse()" title="Collapse/Expand Window">
+        <button class="tab-btn-collapse" onclick="toggleAll()" title="Collapse/Expand Window">
             <i class="fas fa-compress-alt" id="c-collapse-icon"></i>
         </button>
 
@@ -214,12 +214,10 @@
       </div>
 
       <div class="mini-row" id="mini-biu"></div>
-
       <div class="slot-list" id="slots-biu"></div>
       <button class="col-btn clear-btn" onclick="clearCol('biu')">Clear</button>
     </div>
   </div>
 
-  <script src="app.js"></script>
 </body>
 </html>
