@@ -11,98 +11,77 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <style>
-  /* UPDATED: More Transparent Background */
+  /* --- THEME & BASICS --- */
   :root { --glass-bg: rgba(20, 20, 20, 0.6); --glass-border: rgba(255, 255, 255, 0.15); }
-  
   body { font-family: 'Segoe UI', sans-serif; color: #eee; margin: 0; padding: 20px; overflow-y: auto; }
 
-  /* SEARCH BAR & AUTOCOMPLETE */
+  /* SEARCH BAR */
   .search-row { display: flex; gap: 10px; margin-bottom: 20px; position: relative; }
-  
-  .poke-input {
-      flex: 1; background: #111; border: 1px solid #444; color: #fff; padding: 12px;
-      border-radius: 8px; font-size: 1.5rem; outline: none; transition: 0.2s;
-  }
+  .poke-input { flex: 1; background: #111; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 8px; font-size: 1.5rem; outline: none; transition: 0.2s; }
   .poke-input:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
   
-  /* AUTOCOMPLETE DROPDOWN */
+  /* AUTOCOMPLETE */
   #autocomplete-list {
-      position: absolute; 
-      top: 100%; left: 0; right: 180px; /* Space for ADD + CLEAR buttons */
+      position: absolute; top: 100%; left: 0; right: 180px; 
       background: #080808; border: 1px solid #444; border-top: none;
       border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;
-      max-height: 300px; overflow-y: auto; 
-      display: none; z-index: 1000;
+      max-height: 300px; overflow-y: auto; display: none; z-index: 1000;
       box-shadow: 0 10px 20px rgba(0,0,0,0.8);
   }
-  .auto-item { 
-      padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #222; 
-      font-size: 1.1rem; text-transform: capitalize; color: #aaa; transition: 0.1s;
-  }
+  .auto-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #222; font-size: 1.1rem; text-transform: capitalize; color: #aaa; transition: 0.1s; }
   .auto-item:hover { background: var(--accent); color: #000; font-weight: 800; }
   .auto-match { color: var(--accent); font-weight: 700; }
   .auto-item:hover .auto-match { color: #000; }
 
-  .btn-add {
-      background: var(--accent); color: #000; border: none; padding: 0 20px;
-      font-weight: 900; border-radius: 8px; cursor: pointer; text-transform: uppercase;
-      width: 80px;
-  }
+  /* BUTTONS */
+  .btn-add { background: var(--accent); color: #000; border: none; padding: 0 20px; font-weight: 900; border-radius: 8px; cursor: pointer; text-transform: uppercase; width: 80px; }
   .btn-add:hover { filter: brightness(1.2); }
-
-  /* CLEAR BUTTON */
-  .btn-clear {
-      background: #333; color: #ccc; border: 1px solid #555; padding: 0 15px;
-      font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase;
-      width: 80px; transition: 0.2s;
-  }
+  .btn-clear { background: #333; color: #ccc; border: 1px solid #555; padding: 0 15px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; width: 80px; transition: 0.2s; }
   .btn-clear:hover { background: #d32f2f; color: #fff; border-color: #d32f2f; }
 
-  /* CARD CONTAINER */
+  /* GRID & CARDS */
   #battle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
-
-  /* POKEMON CARD */
   .b-card {
       background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px;
       padding: 20px; position: relative; animation: slideUp 0.3s ease;
-      display: flex; flex-direction: column; gap: 15px;
-      backdrop-filter: blur(10px); 
+      display: flex; flex-direction: column; gap: 15px; backdrop-filter: blur(10px); 
   }
   .b-header { display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
   .b-sprite { width: 80px; height: 80px; object-fit: contain; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5)); }
-  
   .b-info { flex: 1; }
   .b-name { font-size: 1.8rem; font-weight: 900; text-transform: capitalize; color: #fff; line-height: 1.1; }
   .b-types { display: flex; gap: 5px; margin-top: 6px; }
   .type-badge { padding: 3px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
 
-  /* SECTIONS */
   .b-sect-title { font-size: 1rem; font-weight: 700; color: #888; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 8px; }
-  
-  /* FORMS */
-  .form-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 5px; }
-  .form-chip {
-      background: #333; color: #aaa; padding: 4px 8px; border-radius: 4px; font-size: 1rem; 
-      cursor: pointer; border: 1px solid transparent; transition: 0.2s;
-  }
-  .form-chip:hover { color: #fff; background: #444; }
-  .form-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(255,255,255,0.05); font-weight: 700; }
+  /* Remove border for specific sections if needed via inline style, or helper class */
+  .no-border { border-bottom: none !important; margin-bottom: 0 !important; }
 
-  /* ABILITIES */
+  /* ITEMS ROW */
+  .item-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .item-chip {
+      font-size: 0.75rem; background: #222; border: 1px solid #444; color: #aaa; padding: 4px 8px; 
+      border-radius: 4px; cursor: pointer; text-transform: uppercase; font-weight: 700; transition: 0.2s;
+  }
+  .item-chip:hover { color: #fff; border-color: #666; }
+  .item-chip.active-item { background: var(--accent); color: #000; border-color: var(--accent); }
+
+  /* ABILITIES (Interactive) */
   .abil-row { display: flex; flex-wrap: wrap; gap: 8px; }
   .abil-wrapper { position: relative; }
   .abil-tag { 
       background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 4px; font-size: 1.1rem; color: #ddd; 
-      cursor: help; transition: 0.2s;
+      cursor: pointer; transition: 0.2s; border: 1px solid transparent; user-select: none;
   }
-  .abil-tag:hover { background: var(--accent); color: #000; }
+  .abil-tag:hover { background: #444; }
+  .abil-tag.active-abil { 
+      background: var(--accent); color: #000; border-color: #fff; font-weight: 700; box-shadow: 0 0 10px var(--accent);
+  }
   .abil-hidden { border: 1px dashed #666; color: #aaa; }
 
+  /* HOVER POPUP */
   .desc-popup {
-      position: absolute; 
-      top: 0; left: 100%; 
-      margin-left: 10px; 
-      width: 220px; 
+      position: absolute; top: 0; left: 100%; margin-left: 10px; width: 220px; 
       background: #000; border: 1px solid #444; padding: 10px; border-radius: 6px;
       font-size: 1rem; color: #ccc; z-index: 100; display: none; box-shadow: 0 5px 15px rgba(0,0,0,0.8);
       line-height: 1.4; pointer-events: none;
@@ -112,29 +91,23 @@
       border-width: 6px; border-style: solid; border-color: transparent #444 transparent transparent;
   }
 
-  /* STATS GRID */
+  /* STATS */
   .stat-grid { display: flex; flex-direction: column; gap: 6px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; }
   .stat-row { display: flex; align-items: center; gap: 10px; height: 24px; }
   .stat-lbl { width: 40px; font-size: 1rem; font-weight: 800; color: #888; text-transform: uppercase; text-align: right; }
-  .stat-base { width: 30px; font-size: 1.1rem; font-weight: 700; color: #fff; text-align: center; }
+  .stat-base { width: 40px; font-size: 1.1rem; font-weight: 700; color: #fff; text-align: center; }
+  .stat-boosted { color: #00e5ff; text-shadow: 0 0 5px #00e5ff; } /* Cyan for boosted stats */
   
   .stat-bar-track { flex: 1; height: 6px; background: #333; border-radius: 3px; overflow: hidden; position: relative; }
   .stat-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
   
-  .stat-range { 
-      width: 90px; font-size: 1.1rem; color: #666; text-align: right; font-family: monospace; 
-      display: flex; justify-content: space-between; padding-left: 10px;
-  }
+  .stat-range { width: 90px; font-size: 1.1rem; color: #666; text-align: right; font-family: monospace; display: flex; justify-content: space-between; padding-left: 10px; }
   .stat-range span:first-child { color: #ff5555; }
   .stat-range span:last-child { color: #55ff55; }
 
   /* DEFENSES */
   .def-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-  .def-tag { 
-      padding: 4px 0; border-radius: 4px; font-size: 1.1rem; font-weight: 700; 
-      display: flex; align-items: center; gap: 6px;
-  }
-  
+  .def-tag { padding: 4px 0; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
   .mult-4 { color: #44ff44; } 
   .mult-2 { color: #88ff88; } 
   .mult-05 { color: #ff8888; opacity: 0.9; } 
@@ -143,7 +116,6 @@
 
   .b-close { position: absolute; top: 10px; right: 10px; cursor: pointer; color: #555; transition: 0.2s; }
   .b-close:hover { color: #ff4444; }
-
   @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
   
   .t-normal { background:#A8A77A; } .t-fire { background:#EE8130; } .t-water { background:#6390F0; }
@@ -152,6 +124,12 @@
   .t-flying { background:#A98FF3; } .t-psychic { background:#F95587; } .t-bug { background:#A6B91A; }
   .t-rock { background:#B6A136; } .t-ghost { background:#735797; } .t-dragon { background:#6F35FC; }
   .t-dark { background:#705746; } .t-steel { background:#B7B7CE; } .t-fairy { background:#D685AD; }
+  
+  /* FORMS */
+  .form-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 5px; }
+  .form-chip { background: #333; color: #aaa; padding: 4px 8px; border-radius: 4px; font-size: 1rem; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
+  .form-chip:hover { color: #fff; background: #444; }
+  .form-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(255,255,255,0.05); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -173,36 +151,57 @@
   });
   if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
 
+  // --- ABILITY EFFECTS DATABASE ---
+  const ABILITY_MAP = {
+      'levitate': { typeMod: {'ground': 0} },
+      'flash-fire': { typeMod: {'fire': 0} },
+      'volt-absorb': { typeMod: {'electric': 0} },
+      'lightning-rod': { typeMod: {'electric': 0} },
+      'motor-drive': { typeMod: {'electric': 0} },
+      'water-absorb': { typeMod: {'water': 0} },
+      'storm-drain': { typeMod: {'water': 0} },
+      'sap-sipper': { typeMod: {'grass': 0} },
+      'earth-eater': { typeMod: {'ground': 0} },
+      'dry-skin': { typeMod: {'water': 0, 'fire': 1.25} },
+      'thick-fat': { typeMod: {'fire': 0.5, 'ice': 0.5} },
+      'heatproof': { typeMod: {'fire': 0.5} },
+      'water-bubble': { typeMod: {'fire': 0.5} },
+      'purifying-salt': { typeMod: {'ghost': 0.5} },
+      'fluffy': { typeMod: {'fire': 2} },
+      'wonder-guard': { special: 'wonder_guard' },
+      
+      'huge-power': { statMod: {'attack': 2} },
+      'pure-power': { statMod: {'attack': 2} },
+      'fur-coat': { statMod: {'defense': 2} },
+      'gorilla-tactics': { statMod: {'attack': 1.5} },
+      'intrepid-sword': { statMod: {'attack': 1.5} },
+      'dauntless-shield': { statMod: {'defense': 1.5} }
+  };
+
+  // --- ITEM EFFECTS DATABASE ---
+  const ITEM_MAP = {
+      'band': { statMod: {'attack': 1.5} },
+      'specs': { statMod: {'special-attack': 1.5} },
+      'scarf': { statMod: {'speed': 1.5} },
+      'orb': { statMod: {'attack': 1.3, 'special-attack': 1.3} },
+      'vest': { statMod: {'special-defense': 1.5} },
+      'eviolite': { statMod: {'defense': 1.5, 'special-defense': 1.5} }
+  };
+
   // --- AUTOCOMPLETE LOGIC ---
   let allPokemonNames = [];
-  
-  // Fetch full list on load
   fetch('https://pokeapi.co/api/v2/pokemon?limit=10000')
-      .then(res => res.json())
-      .then(data => {
-          allPokemonNames = data.results.map(p => p.name);
-      });
+      .then(res => res.json()).then(data => { allPokemonNames = data.results.map(p => p.name); });
 
   function handleInput(val) {
       const list = document.getElementById('autocomplete-list');
       list.innerHTML = '';
-      if (!val) {
-          list.style.display = 'none';
-          return;
-      }
-
-      // Filter matches (limit 10 for performance)
+      if (!val) { list.style.display = 'none'; return; }
       const matches = allPokemonNames.filter(n => n.includes(val.toLowerCase())).slice(0, 10);
-
-      if (matches.length === 0) {
-          list.style.display = 'none';
-          return;
-      }
-
+      if (matches.length === 0) { list.style.display = 'none'; return; }
       matches.forEach(name => {
           const div = document.createElement('div');
           div.className = 'auto-item';
-          // Highlight match
           const regex = new RegExp(`(${val})`, 'gi');
           div.innerHTML = name.replace(regex, '<span class="auto-match">$1</span>');
           div.onclick = () => {
@@ -214,22 +213,16 @@
       });
       list.style.display = 'block';
   }
-
-  // Close list when clicking outside
   document.addEventListener('click', (e) => {
-      if (!e.target.closest('.search-row')) {
-          document.getElementById('autocomplete-list').style.display = 'none';
-      }
+      if (!e.target.closest('.search-row')) document.getElementById('autocomplete-list').style.display = 'none';
   });
 
-  // --- CLEAR ALL FUNCTION (No Confirmation) ---
+  // --- CLEAR FUNCTION ---
   function clearAllCards() {
-      const grid = document.getElementById('battle-grid');
-      grid.innerHTML = "";
+      document.getElementById('battle-grid').innerHTML = "";
   }
 
-
-  // --- EXISTING LOGIC ---
+  // --- DATA LOADING ---
   const typeChart = {
     normal: { fighting: 2, ghost: 0 },
     fire: { fire: 0.5, water: 2, grass: 0.5, ice: 0.5, ground: 2, bug: 0.5, rock: 2, steel: 0.5, fairy: 0.5 },
@@ -257,14 +250,10 @@
       const input = document.getElementById('poke-search');
       const val = input.value;
       if(!val) return;
-
       const list = val.split('/');
-
       for(let raw of list) {
-          let name = raw.trim().toLowerCase();
-          name = name.replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+          let name = raw.trim().toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
           if(!name) continue;
-
           try {
               const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
               if(!res.ok) throw new Error("Not Found");
@@ -275,40 +264,80 @@
           } catch(e) { console.error(e); }
       }
       input.value = "";
-      document.getElementById('autocomplete-list').style.display = 'none'; // Close list
+      document.getElementById('autocomplete-list').style.display = 'none';
   }
 
   function renderCard(p, s) {
       const container = document.getElementById('battle-grid');
       const div = document.createElement('div');
       div.className = 'b-card';
-      div.id = `card-${p.name}`; 
-      updateCardContent(div, p, s);
+      div.id = `card-${p.name}-${Date.now()}`; 
+      
+      div._pData = p;
+      div._sData = s;
+      div._activeAbility = null; 
+      div._activeItem = null; // New Item Tracker
+
+      updateCardContent(div);
       container.insertBefore(div, container.firstChild);
   }
 
-  function updateCardContent(cardEl, p, s) {
+  // --- MAIN RENDER FUNCTION ---
+  function updateCardContent(cardEl) {
+      const p = cardEl._pData;
+      const s = cardEl._sData;
+      const activeAbilName = cardEl._activeAbility;
+      const activeItem = cardEl._activeItem;
+
+      // 1. Calculate Weaknesses
       const types = p.types.map(t => t.type.name);
-      const defenses = calcDefenses(types);
+      const defenses = calcDefenses(types, activeAbilName);
       const typeHtml = types.map(t => `<span class="type-badge t-${t}">${t}</span>`).join('');
       
+      // 2. Prepare Stats
       const statsObj = {};
       p.stats.forEach(st => statsObj[st.stat.name] = st.base_stat);
-      
+
+      // 3. Render Abilities
       const abilHtml = p.abilities.map(a => {
-          const name = a.ability.name.replace(/-/g,' ');
+          const nameClean = a.ability.name; 
+          const nameDisp = nameClean.replace(/-/g,' ');
           const url = a.ability.url;
+          const isActive = (nameClean === activeAbilName) ? 'active-abil' : '';
           return `
             <div class="abil-wrapper" 
                  onmouseenter="showAbilDesc(this, '${url}')" 
                  onmouseleave="hideAbilDesc(this)">
-                <div class="abil-tag ${a.is_hidden ? 'abil-hidden' : ''}">
-                     ${name} ${a.is_hidden ? '<i style="font-size:0.9em">(H)</i>' : ''}
+                <div class="abil-tag ${a.is_hidden ? 'abil-hidden' : ''} ${isActive}" 
+                     onclick="toggleAbility('${cardEl.id}', '${nameClean}')">
+                     ${nameDisp} ${a.is_hidden ? '<i style="font-size:1em">(H)</i>' : ''}
                 </div>
                 <div class="desc-popup">Loading...</div>
             </div>`;
       }).join('');
 
+      // 4. Render Items (SPLIT INTO TWO ROWS)
+      const row1Items = [
+          {id: 'band', label: 'Choice Band'},
+          {id: 'specs', label: 'Choice Specs'},
+          {id: 'scarf', label: 'Choice Scarf'}
+      ];
+      
+      const row2Items = [
+          {id: 'orb', label: 'Life Orb'},
+          {id: 'vest', label: 'Assault Vest'}
+      ];
+      
+      // Helper to generate HTML for a list
+      const renderItemRow = (list) => list.map(itm => {
+          const isActive = (itm.id === activeItem) ? 'active-item' : '';
+          return `<div class="item-chip ${isActive}" onclick="toggleItem('${cardEl.id}', '${itm.id}')">${itm.label}</div>`;
+      }).join('');
+
+      const row1Html = renderItemRow(row1Items);
+      const row2Html = renderItemRow(row2Items);
+
+      // 5. Render Forms
       let formsHtml = "";
       if(s && s.varieties.length > 1) {
           formsHtml = `<div class="b-sect-title">Forms</div><div class="form-row">`;
@@ -332,25 +361,42 @@
 
           ${formsHtml}
 
-          <div class="b-sect-title">Base Stats (Lvl 100 Range)</div>
+          <div class="b-sect-title">Base Stats</div>
+          
+          <div class="item-row" style="margin-bottom: 4px;">${row1Html}</div>
+          <div class="item-row">${row2Html}</div>
+
           <div class="stat-grid">
               ${makeStat('HP', statsObj.hp, true)}
-              ${makeStat('Atk', statsObj.attack)}
-              ${makeStat('Def', statsObj.defense)}
-              ${makeStat('SpA', statsObj['special-attack'])}
-              ${makeStat('SpD', statsObj['special-defense'])}
-              ${makeStat('Spe', statsObj.speed)}
+              ${makeStat('Atk', statsObj.attack, false, 'attack', activeAbilName, activeItem)}
+              ${makeStat('Def', statsObj.defense, false, 'defense', activeAbilName, activeItem)}
+              ${makeStat('SpA', statsObj['special-attack'], false, 'special-attack', activeAbilName, activeItem)}
+              ${makeStat('SpD', statsObj['special-defense'], false, 'special-defense', activeAbilName, activeItem)}
+              ${makeStat('Spe', statsObj.speed, false, 'speed', activeAbilName, activeItem)}
           </div>
 
-          <div class="b-sect-title">Abilities</div>
+          <div class="b-sect-title">Abilities (Click to Activate)</div>
           <div class="abil-row">${abilHtml}</div>
 
           <div class="b-sect-title">Weaknesses</div>
           <div class="def-grid">${defenses}</div>
       `;
-      
-      cardEl._speciesData = s; 
   }
+
+  // --- INTERACTIVITY ---
+  window.toggleAbility = function(cardId, abilName) {
+      const card = document.getElementById(cardId);
+      if(!card) return;
+      card._activeAbility = (card._activeAbility === abilName) ? null : abilName;
+      updateCardContent(card);
+  };
+
+  window.toggleItem = function(cardId, itemId) {
+      const card = document.getElementById(cardId);
+      if(!card) return;
+      card._activeItem = (card._activeItem === itemId) ? null : itemId;
+      updateCardContent(card);
+  };
 
   async function switchForm(cardId, url) {
       const cardEl = document.getElementById(cardId);
@@ -359,54 +405,60 @@
       try {
           const res = await fetch(url);
           const newP = await res.json();
-          const s = cardEl._speciesData;
-          updateCardContent(cardEl, newP, s);
+          cardEl._pData = newP;
+          cardEl._activeAbility = null;
+          // Keep active item on form switch? Yes, usually preferred.
+          updateCardContent(cardEl);
           cardEl.style.opacity = "1";
       } catch(e) { console.error(e); }
   }
 
-  async function showAbilDesc(wrapper, url) {
-      const popup = wrapper.querySelector('.desc-popup');
-      if(!popup) return;
-      popup.style.display = 'block';
+  // --- STAT CALCULATOR (With Ability & Item Mods) ---
+  function makeStat(lbl, val, isHP = false, statName = null, activeAbil = null, activeItem = null) {
+      let displayVal = val;
+      let isBoosted = false;
       
-      if(popup.dataset.loaded === "true") return;
-
-      try {
-          const res = await fetch(url);
-          const data = await res.json();
-          const entry = data.effect_entries.find(e => e.language.name === 'en');
-          popup.innerText = entry ? entry.short_effect : "No description available.";
-          popup.dataset.loaded = "true";
-      } catch(e) {
-          popup.innerText = "Error loading description.";
+      // 1. Ability Mods
+      if(activeAbil && !isHP && ABILITY_MAP[activeAbil] && ABILITY_MAP[activeAbil].statMod) {
+          const mods = ABILITY_MAP[activeAbil].statMod;
+          if(mods[statName]) {
+              displayVal = Math.floor(displayVal * mods[statName]);
+              isBoosted = true;
+          }
       }
-  }
 
-  function hideAbilDesc(wrapper) {
-      const popup = wrapper.querySelector('.desc-popup');
-      if(popup) popup.style.display = 'none';
-  }
+      // 2. Item Mods
+      if(activeItem && !isHP && ITEM_MAP[activeItem] && ITEM_MAP[activeItem].statMod) {
+          const iMods = ITEM_MAP[activeItem].statMod;
+          if(iMods[statName]) {
+              displayVal = Math.floor(displayVal * iMods[statName]);
+              isBoosted = true;
+          }
+      }
 
-  function makeStat(lbl, val, isHP = false) {
-      let pct = Math.min(100, (val / 180) * 100);
+      let pct = Math.min(100, (displayVal / 180) * 100);
+      
       let min, max;
       if (isHP) {
           min = (2 * val) + 110; 
           max = (2 * val + 31 + 63) + 110;
       } else {
-          min = Math.floor(((2 * val) + 5) * 0.9);
-          max = Math.floor(((2 * val + 31 + 63) + 5) * 1.1);
+          // Approximate effect on final stats based on Base
+          // If boosted, we show the boosted base roughly
+          min = Math.floor(((2 * displayVal) + 5) * 0.9);
+          max = Math.floor(((2 * displayVal + 31 + 63) + 5) * 1.1);
       }
 
       let color = "#ff4444"; 
-      if(val >= 100) color = "#44ff44"; 
-      else if(val >= 60) color = "#ffcc00"; 
+      if(displayVal >= 100) color = "#44ff44"; 
+      else if(displayVal >= 60) color = "#ffcc00"; 
+      
+      if(isBoosted) color = "#00e5ff"; // Cyan for boost
 
       return `
           <div class="stat-row">
               <div class="stat-lbl">${lbl}</div>
-              <div class="stat-base">${val}</div>
+              <div class="stat-base ${isBoosted ? 'stat-boosted' : ''}">${displayVal}</div>
               <div class="stat-bar-track">
                   <div class="stat-fill" style="width:${pct}%; background:${color}"></div>
               </div>
@@ -418,7 +470,8 @@
       `;
   }
 
-  function calcDefenses(types) {
+  // --- DEFENSE CALCULATOR ---
+  function calcDefenses(types, activeAbil) {
       let mults = {};
       Object.keys(typeChart).forEach(t => mults[t] = 1);
 
@@ -431,9 +484,22 @@
           }
       });
 
+      if (activeAbil && ABILITY_MAP[activeAbil]) {
+          const effect = ABILITY_MAP[activeAbil];
+          if (effect.special === 'wonder_guard') {
+              Object.keys(mults).forEach(t => {
+                  if (mults[t] <= 1) mults[t] = 0; 
+              });
+          }
+          if (effect.typeMod) {
+              for (const [type, mod] of Object.entries(effect.typeMod)) {
+                  if (mults[type] !== undefined) mults[type] *= mod;
+              }
+          }
+      }
+
       let html = "";
       const sorted = Object.keys(mults).filter(k => mults[k] !== 1).sort((a,b) => mults[b] - mults[a]);
-      
       sorted.forEach(t => {
           let m = mults[t];
           let cls = "";
@@ -442,11 +508,28 @@
           else if(m === 0) cls = "mult-0";
           else if(m <= 0.25) cls = "mult-025";
           else cls = "mult-05";
-          
           html += `<div class="def-tag ${cls}"><span class="type-badge t-${t}" style="font-size:0.8rem;">${t}</span> x${m}</div>`;
       });
-      
       return html || "<span style='color:#666; font-size:1rem;'>Neutral to everything</span>";
+  }
+
+  // Hover logic
+  async function showAbilDesc(wrapper, url) {
+      const popup = wrapper.querySelector('.desc-popup');
+      if(!popup) return;
+      popup.style.display = 'block';
+      if(popup.dataset.loaded === "true") return;
+      try {
+          const res = await fetch(url);
+          const data = await res.json();
+          const entry = data.effect_entries.find(e => e.language.name === 'en');
+          popup.innerText = entry ? entry.short_effect : "No description available.";
+          popup.dataset.loaded = "true";
+      } catch(e) { popup.innerText = "Error loading description."; }
+  }
+  function hideAbilDesc(wrapper) {
+      const popup = wrapper.querySelector('.desc-popup');
+      if(popup) popup.style.display = 'none';
   }
 </script>
 </body>
