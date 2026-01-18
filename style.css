@@ -620,3 +620,41 @@ body::before {
     font-size: 1.5rem;
 }
 .chat-send-btn:hover { filter: brightness(1.2); }
+
+/* --- GLOWING NAME OVERLAY --- */
+
+/* 1. Ensure slots allow positioning */
+.slot {
+    position: relative !important;
+}
+
+/* 2. The Text Style */
+.slot-overlay-name {
+    position: absolute;
+    bottom: 4px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #fff; /* White Text */
+    
+    /* THE GLOW EFFECT */
+    text-shadow: 
+        0 0 5px var(--col-glow), 
+        0 0 10px var(--col-glow),
+        -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* Black Outline */
+        
+    pointer-events: none;
+    z-index: 10;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 4px;
+}
+
+/* 3. Assign Glow Colors per Column */
+#slots-alb { --col-glow: var(--p1-color, #ff4444); }
+#slots-biu { --col-glow: var(--p2-color, #4488ff); }

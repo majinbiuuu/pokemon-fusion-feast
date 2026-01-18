@@ -19,7 +19,7 @@ function applyThemeColor(color) {
     document.documentElement.style.setProperty('--theme-green', color);
     window.currentAccent = color; 
 
-    ['frame-play', 'frame-gen', 'frame-music', 'frame-hist', 'frame-lib'].forEach(id => {
+    ['frame-play', 'frame-gen', 'frame-music', 'frame-hist', 'frame-lib', 'frame-battle'].forEach(id => {
         const frame = document.getElementById(id);
         if(frame && frame.contentWindow) {
             try {

@@ -25,7 +25,7 @@
 
   html { 
       box-sizing: border-box; 
-      font-size: 20px; /* Default is usually 16px. Try 20px or 22px to see a huge difference. */
+      font-size: 20px; 
     }
   *, *:before, *:after { box-sizing: inherit; }
 
@@ -39,10 +39,9 @@
     height: 100vh; 
     overflow-y: auto; 
     width: 100%;
-
   }
 
-  /* PEER HOVER STYLES (DYNAMIC COLOR) */
+  /* PEER HOVER STYLES */
   .peer-interactive {
       border-color: var(--peer-color) !important;
       box-shadow: 0 0 15px var(--peer-color) !important;
@@ -110,7 +109,7 @@
   .c-val { font-size: 1.6rem; font-weight: 900; color: #fff; line-height: 1.1; }
   .c-note { font-size: 0.85rem; color: var(--theme-green); font-style: italic; margin-top: 5px; }
 
-  /* --- QUICK GEN --- */
+  /* --- QUICK GEN CONTROLS --- */
   .qg-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .qg-row { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
   
@@ -142,7 +141,7 @@
   .x3-lbl { font-weight: 800; font-size: 0.9rem; color: #888; }
   .x3-switch-container.active .x3-lbl { color: var(--theme-green); }
   
-  /* NEW QUICK GEN STYLES */
+  /* --- UPDATED QUICK GEN BAR (25% / 75% Layout) --- */
   .qg-unified-bar {
       display: flex; align-items: center; justify-content: space-between;
       width: 100%; height: 60px;
@@ -152,19 +151,43 @@
       margin-top: 15px;
   }
 
+  /* Fixed width labels with clickable pointer */
   .qg-name-label {
       font-size: 0.8rem; font-weight: 900; letter-spacing: 1px;
-      min-width: 40px;
+      width: 100px; /* Fixed width */
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      cursor: pointer; /* Indicates clickable */
+      transition: 0.2s;
+  }
+  .qg-name-label:hover {
+      filter: brightness(1.3);
+      text-shadow: 0 0 8px currentColor;
   }
 
+  /* The container for the actual results */
   .qg-content-area {
-      flex: 1; display: flex; align-items: center; justify-content: center;
-      gap: 5px; height: 100%;
+      flex: 1; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      height: 100%;
+      margin: 0 10px;
+  }
+
+  /* Force 50% width for each side */
+  #qg-cont-a, #qg-cont-b {
+      flex: 1;
+      width: 50%; /* Force equal width */
+      display: flex; 
+      justify-content: center; 
+      align-items: center;
+      text-align: center;
   }
 
   .qg-mid-divider {
       width: 2px; height: 70%;
-      background: #444; margin: 0 15px;
+      background: #444; margin: 0; 
+      flex-shrink: 0;
       box-shadow: 0 0 5px rgba(0,0,0,0.5);
   }
 
@@ -179,10 +202,7 @@
       color: var(--theme-green);
       transform: translateY(-1px);
   }
-  
-  .qg-mini-sep {
-      color: #555; font-size: 0.9rem; margin: 0 2px; font-weight: 300;
-  }
+  .qg-mini-sep { color: #555; font-size: 0.9rem; margin: 0 2px; font-weight: 300; }
 
   /* --- RECORD SECTION --- */
   .rec-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; height: 32px; }
@@ -215,13 +235,7 @@
   .rec-wrapper { display: flex; gap: 20px; align-items: stretch; }
   .rec-games { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
   
-  .rec-winner-box { 
-      width: 140px; 
-      display: flex; 
-      flex-direction: column; 
-      gap: 10px; 
-  }
-
+  .rec-winner-box { width: 140px; display: flex; flex-direction: column; gap: 10px; }
   .rec-winner-box .g-dot { height: 100% !important; min-height: 80px; }
 
   .g-col { display: flex; flex-direction: column; gap: 8px; text-align: center; transition: 0.3s; }
@@ -240,7 +254,6 @@
     cursor: pointer; display: flex; align-items: center; justify-content: center; 
     font-weight: 900; font-size: 2rem; transition: 0.1s; 
   }
-  /* Dynamic styles injected via JS */
   
   .g-input { 
     background: #111; border: 1px solid #333; color: #aaa; border-radius: 4px; padding: 8px; 
@@ -256,7 +269,7 @@
 
   /* --- TOKEN CENTER --- */
   .token-center {
-    display: none; /* CHANGED: Starts hidden */
+    display: none; 
     flex-direction: column; align-items: center; gap: 15px; margin-top: 15px;
     background: var(--glass-bg); border: 1px solid var(--glass-border);
     border-radius: 12px; padding: 20px; 
@@ -382,7 +395,7 @@
     <div class="qg-controls">
       <div class="qg-row">
         <button class="qg-btn anim-click" id="btn-qg-type" onclick="safeCall('runQGen', 'Type')">Type</button>
-        <button class="qg-btn anim-click" id="btn-qg-leg" onclick="safeCall('runQGen', 'Legendary Trio')">Legendary Trio</button>
+        <button class="qg-btn anim-click" id="btn-qg-leg" onclick="safeCall('rollLegendaryTrio')">Legendary Trio</button>
         <button class="qg-btn anim-click" id="btn-qg-col" onclick="safeCall('runQGen', 'Colour')">Colour</button>
         <button class="qg-btn anim-click" id="btn-qg-rng" onclick="safeCall('runQGen', 'RNG (1-9)')">RNG (1-9)</button>
         <button class="qg-btn btn-shit anim-click" id="btn-qg-shit" onclick="safeCall('runShitWheel')">SHIT WHEEL 💩</button>
@@ -396,7 +409,7 @@
     </div>
 
     <div class="qg-unified-bar">
-        <div class="qg-name-label" style="color:var(--p1-color); text-align:left;" id="lbl-qg-a">P1</div>
+        <div class="qg-name-label" style="color:var(--p1-color); text-align:left;" id="lbl-qg-a" onclick="safeCall('rerollSide', 'a')" title="Click to Reroll P1">P1</div>
 
         <div class="qg-content-area">
             <div id="qg-cont-a" style="display:flex; gap:2px; align-items:center;">-</div>
@@ -406,7 +419,7 @@
             <div id="qg-cont-b" style="display:flex; gap:2px; align-items:center;">-</div>
         </div>
 
-        <div class="qg-name-label" style="color:var(--p2-color); text-align:right;" id="lbl-qg-b">P2</div>
+        <div class="qg-name-label" style="color:var(--p2-color); text-align:right;" id="lbl-qg-b" onclick="safeCall('rerollSide', 'b')" title="Click to Reroll P2">P2</div>
     </div>
   </div>
 
@@ -416,7 +429,6 @@
             <div class="rec-toggle" id="tog-mode" onclick="safeCall('setRecMode')">Regular</div>
             <input id="chal-points-input" class="rec-points-input" placeholder="Pts" oninput="safeCall('setChalPoints', this.value)">
         </div>
-        
         <div id="reg-mode-display" class="rec-info-display"></div>
         <div class="rec-toggle" id="tog-fmt" onclick="safeCall('setRecFormat')">BO3</div>
     </div>
@@ -498,6 +510,7 @@
     var appData = {};
     window.p1Name = "ALB"; window.p2Name = "BIU";
 
+    // --- PARENT MESSAGING & THEME SYNC ---
     window.addEventListener('message', (event) => {
         if (event.data) {
             if (event.data.type === 'THEME_UPDATE') {
@@ -511,7 +524,6 @@
                 if(event.data.p2Name) window.p2Name = event.data.p2Name;
                 updateDynamicLabels();
             }
-            // --- PRESENCE SYNC (DYNAMIC COLOR) ---
             if(event.data.type === 'PEER_INTERACTION') {
                 handlePeerInteraction(event.data);
             }
@@ -520,12 +532,11 @@
 
     if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
 
-    // --- NEW: UNIVERSAL INTERACTION REPORTER ---
+    // --- INTERACTION REPORTERS ---
     document.body.addEventListener('mouseover', reportInteraction);
     document.body.addEventListener('click', reportInteraction);
 
     function reportInteraction(e) {
-        // Find closest interactive element
         let t = e.target.closest('button, input, select, .p-card, .g-dot, .token-center');
         if (t && t.id) {
             window.parent.postMessage({
@@ -537,18 +548,12 @@
     }
 
     function handlePeerInteraction(data) {
-        // 1. Remove old glows
         document.querySelectorAll('.peer-interactive').forEach(el => el.classList.remove('peer-interactive'));
-        
-        // 2. Find target
         if(data.id) {
             let el = document.getElementById(data.id);
             if(el) {
-                // 3. Set Color & Apply Class
                 el.style.setProperty('--peer-color', data.color);
                 el.classList.add('peer-interactive');
-                
-                // Auto-remove after a few seconds if no updates
                 clearTimeout(el.peerTimeout);
                 el.peerTimeout = setTimeout(() => {
                     el.classList.remove('peer-interactive');
@@ -557,16 +562,11 @@
         }
     }
 
-    // --- HOVER REPORTING (Legacy but kept) ---
-    document.addEventListener('mouseover', e => {
-        let t = e.target.closest('[id]'); 
-        if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
-    });
-
     window.safeCall = function(fnName, ...args) {
         if (typeof window[fnName] === 'function') window[fnName](...args);
     };
 
+    // --- DATA ---
     const TYPES = [
       "🔥 Fire", "💧 Water", "🍃 Grass", "⚡ Electric", "🔮 Psychic", "❄️ Ice", 
       "🐉 Dragon", "🌑 Dark", "🎀 Fairy", "🙂 Normal", "🥊 Fighting", "🌪️ Flying", 
@@ -574,13 +574,12 @@
     ];
     const COLORS = ["Black", "Blue", "Brown", "Green", "Pink", "Purple", "Red", "White", "Yellow"];
 
-    // Changed to .on() for live updates
+    // --- FIREBASE LISTENERS ---
     db.ref('library').on('value', snap => {
         window.appData = snap.val() || {};
         populateDropdowns();
     });
     
-    // --- LOAD CONFIG FOR NAMES ---
     db.ref('config').on('value', snap => {
         const c = snap.val() || {};
         if(c.p1Name) window.p1Name = c.p1Name;
@@ -591,19 +590,19 @@
     });
 
     function updateDynamicLabels() {
-        // Quick Gen Labels
-        const lblA = document.getElementById('lbl-qg-a');
-        const lblB = document.getElementById('lbl-qg-b');
-        if(lblA && lblA.innerText !== 'NAME') lblA.innerText = window.p1Name;
-        if(lblB && lblB.innerText !== 'NOTE') lblB.innerText = window.p2Name;
-        
-        // Token Labels
+        // Only update these if we are NOT in Legend Mode (handled by Gen listener)
+        if(window.lastQType !== 'Legendary Trio' && window.lastQType !== 'ShitWheel') {
+            const lblA = document.getElementById('lbl-qg-a');
+            const lblB = document.getElementById('lbl-qg-b');
+            if(lblA) lblA.innerText = window.p1Name;
+            if(lblB) lblB.innerText = window.p2Name;
+        }
+
         const tkA = document.getElementById('tk-lbl-a');
         const tkB = document.getElementById('tk-lbl-b');
         if(tkA) tkA.innerText = window.p1Name;
         if(tkB) tkB.innerText = window.p2Name;
         
-        // Redraw dots to update initials/colors
         if(window.recState) renderDots(window.recState.dots || {});
     }
 
@@ -624,20 +623,28 @@
         updateRegInfoText();
     });
 
+    // --- MAIN GENERATOR LISTENER ---
     db.ref('gen').on('value', snap => {
         const g = snap.val() || {};
-        window.lastGenState = g; // Store for reroll logic
+        window.lastGenState = g; 
         
-        // Update Names
+        // --- UPDATED LABEL LOGIC ---
         let lblA = document.getElementById('lbl-qg-a');
         let lblB = document.getElementById('lbl-qg-b');
+        
         if(g.t === 'ShitWheel') {
             lblA.innerText = "NAME";
             lblB.innerText = "NOTE";
-        } else {
+        } 
+        else if (g.t === 'Legendary Trio') {
+            lblA.innerText = g.titleA || "TRIO";
+            lblB.innerText = g.titleB || "TRIO";
+        }
+        else {
             lblA.innerText = window.p1Name;
             lblB.innerText = window.p2Name;
         }
+        // ---------------------------
 
         window.lastQType = g.t || "";
         window.isX3 = g.x3 || false;
@@ -645,7 +652,6 @@
         const x3Btn = document.getElementById('btn-qg-x3');
         if(window.isX3) x3Btn.classList.add('active'); else x3Btn.classList.remove('active');
 
-        // Render Clickable Items
         renderQGBlock('a', g.a || "-", g.t);
         renderQGBlock('b', g.b || "-", g.t);
     });
@@ -654,13 +660,11 @@
         const container = document.getElementById('qg-cont-' + side);
         if(!container) return;
         
-        // If Shitwheel or invalid, just show text (no click-to-reroll)
         if(type === 'ShitWheel' || text === '-') {
             container.innerHTML = `<span style="font-size:1.1rem; font-weight:700; color:#fff;">${text}</span>`;
             return;
         }
 
-        // Split by delimiter " / " and create spans
         const parts = text.toString().split(' / ');
         let html = parts.map((part, idx) => {
             return `<span class="qg-item" onclick="safeCall('rerollOne', '${side}', ${idx})">${part}</span>`;
@@ -673,8 +677,6 @@
         const t = snap.val() || { alb:0, biu:0 };
         document.getElementById('tk-alb').innerText = t.alb || 0;
         document.getElementById('tk-biu').innerText = t.biu || 0;
-        
-        // Sync Token Display Result
         let resDisplay = document.getElementById('token-result-display');
         if(resDisplay) resDisplay.innerText = t.result || '-';
     });
@@ -683,11 +685,9 @@
         const r = snap.val() || {};
         window.recState = r; 
         updateToggleUI(r.settings || {});
-        const dots = r.dots || {};
+        renderDots(r.dots || {});
         const links = r.links || {};
         const details = r.details || {}; 
-
-        renderDots(dots);
 
         for(let i=0; i<5; i++) {
             let l = document.getElementById('lnk-'+i);
@@ -700,7 +700,7 @@
                 if(sSel && document.activeElement !== sSel) sSel.value = (details[i] && details[i].side) ? details[i].side : "";
             }
         }
-        calculateWinner(dots, r.settings ? r.settings.format : 'BO3');
+        calculateWinner(r.dots || {}, r.settings ? r.settings.format : 'BO3');
     });
     
     function renderDots(dots) {
@@ -708,27 +708,19 @@
             let d = document.getElementById('dot-'+i);
             if(d) {
                 let val = dots[i] || '';
-                // Logic: A=P1, B=P2. Display Initials.
-                d.style.backgroundColor = '';
-                d.style.color = '';
-                d.style.borderColor = '';
-                d.innerText = '';
-                
+                d.style.backgroundColor = ''; d.style.color = ''; d.style.borderColor = ''; d.innerText = '';
                 if (val === 'A') {
                     d.innerText = window.p1Name.charAt(0);
-                    d.style.color = 'var(--p1-color)';
-                    d.style.borderColor = 'var(--p1-color)';
-                    d.style.backgroundColor = 'rgba(255,255,255,0.05)';
+                    d.style.color = 'var(--p1-color)'; d.style.borderColor = 'var(--p1-color)'; d.style.backgroundColor = 'rgba(255,255,255,0.05)';
                 } else if (val === 'B') {
                     d.innerText = window.p2Name.charAt(0);
-                    d.style.color = 'var(--p2-color)';
-                    d.style.borderColor = 'var(--p2-color)';
-                    d.style.backgroundColor = 'rgba(255,255,255,0.05)';
+                    d.style.color = 'var(--p2-color)'; d.style.borderColor = 'var(--p2-color)'; d.style.backgroundColor = 'rgba(255,255,255,0.05)';
                 }
             }
         }
     }
 
+    // --- ACTIONS ---
     window.roll = function(key, listKey, noteKey) {
         const lib = window.appData || {};
         if(!lib[listKey]) return;
@@ -754,6 +746,7 @@
             'dashboard/points': "-", 'dashboard/pointsNote': "",
             'dashboard/sp': "-", 'dashboard/spNote': "",
             'gen/a': "-", 'gen/b': "-", 'gen/t': "", 'gen/x3': false,
+            'gen/titleA': null, 'gen/titleB': null,
             'record': null
         });
     };
@@ -780,7 +773,7 @@
         if(type === 'Type') pool = [...TYPES];
         else if(type === 'Colour') pool = [...COLORS];
         else if(type === 'RNG (1-9)') pool = [1,2,3,4,5,6,7,8,9];
-        else if(type === 'Legendary Trio') pool = lib.trio ? lib.trio.map(t => t.text) : ["Err"];
+        else if(type === 'Legendary Trio') pool = (lib.trios || []).map(t => t.text);
         else return ["-"];
 
         pool = pool.filter(item => !excludeItems.includes(item));
@@ -798,19 +791,73 @@
         let count = window.isX3 ? 3 : 1;
         let valA = generateSet(type, count, []);
         let valB = generateSet(type, count, valA.split(' / ').map(s => isNaN(s) ? s : parseInt(s)));
-        db.ref('gen').update({ a:valA, b:valB, t:type });
+        db.ref('gen').update({ a:valA, b:valB, t:type, titleA: null, titleB: null });
     };
 
-    // --- UPDATED SHITWHEEL LOGIC ---
+    // --- NEW REROLL FUNCTION ---
+    window.rerollSide = function(side) {
+        const type = window.lastQType;
+        if(!type || type === "ShitWheel") return;
+
+        // Handle Legendary Trio special case
+        if (type === 'Legendary Trio') {
+            let libraryData = (window.appData && window.appData.trios) ? window.appData.trios : [];
+            let trioList = Array.isArray(libraryData) ? libraryData : Object.values(libraryData);
+            trioList = trioList.filter(item => item && item.note);
+            
+            if (trioList.length === 0) return;
+
+            const pick = trioList[Math.floor(Math.random() * trioList.length)];
+            
+            let updates = {};
+            updates['gen/' + side] = pick.note; 
+            updates['gen/title' + side.toUpperCase()] = pick.text;
+            db.ref().update(updates);
+            return;
+        }
+
+        // Standard Reroll (Type, Color, RNG)
+        let count = window.isX3 ? 3 : 1;
+        
+        // Get other side data to avoid duplicates
+        let otherSide = (side === 'a' ? 'b' : 'a');
+        let otherVal = window.lastGenState ? window.lastGenState[otherSide] : "";
+        let exclude = [];
+        if (otherVal && otherVal !== '-') {
+            exclude = otherVal.toString().split(' / ').map(s => isNaN(s) ? s : parseInt(s));
+        }
+
+        let newVal = generateSet(type, count, exclude);
+        db.ref('gen/' + side).set(newVal);
+    };
+
+    window.rollLegendaryTrio = function() {
+        let libraryData = (window.appData && window.appData.trios) ? window.appData.trios : [];
+        let trioList = [];
+        if (Array.isArray(libraryData)) {
+            trioList = libraryData.filter(item => item && item.note);
+        } else {
+            trioList = Object.values(libraryData).filter(item => item && item.note);
+        }
+
+        if (trioList.length === 0) return alert("No Trios found in Library!");
+
+        const p1Group = trioList[Math.floor(Math.random() * trioList.length)];
+        const p2Group = trioList[Math.floor(Math.random() * trioList.length)];
+
+        db.ref('gen').update({ 
+            a: p1Group.note, 
+            b: p2Group.note,
+            titleA: p1Group.text,
+            titleB: p2Group.text,
+            t: 'Legendary Trio'
+        });
+    };
+
     window.runShitWheel = function() {
         const lib = window.appData || {};
-        // Try strict name, then lowercase, then fallback
         let raw = lib.ShitWheelList || lib.shitWheelList || lib.shitWheel;
-        
-        if(!raw) {
-              const keys = Object.keys(lib).join(", ");
-              return alert(`Error: 'ShitWheelList' not found in Library.\n\nItems currently in your database:\n${keys}`);
-        }
+        if(!raw) return alert("Wheel List empty");
         
         const list = Object.values(raw);
         if(list.length === 0) return alert("Wheel List is empty!");
@@ -819,32 +866,20 @@
         const pick = (typeof rand === 'object' && rand.text) ? rand.text : rand;
         const note = (typeof rand === 'object' && rand.note) ? rand.note : "";
         
-        // Put Name in A, Note in B
-        db.ref('gen').update({ a: pick, b: note, t: "ShitWheel" });
+        db.ref('gen').update({ a: pick, b: note, t: "ShitWheel", titleA: null, titleB: null });
     };
 
     window.rerollOne = function(side, idx) {
         if(!window.lastQType || window.lastQType === "ShitWheel") return;
-
         let g = window.lastGenState || {};
         let currentStr = g[side] || "";
         let parts = currentStr.toString().split(' / ');
-
-        // 1. Collect everything currently on board to avoid dupes
         let otherSide = (side === 'a' ? 'b' : 'a');
         let otherStr = g[otherSide] || "";
         let allCurrent = [...parts, ...otherStr.split(' / ')];
-        
-        // Clean up data for exclude list
         let exclude = allCurrent.map(s => isNaN(s) ? s : parseInt(s));
-
-        // 2. Generate ONE new item
         let newItem = generateSet(window.lastQType, 1, exclude);
-
-        // 3. Replace the specific index
         parts[idx] = newItem;
-
-        // 4. Save back to DB
         db.ref('gen/' + side).set(parts.join(' / '));
     };
 
@@ -852,37 +887,25 @@
         db.ref('tokens/' + p).transaction(curr => (curr || 0) + val);
     };
 
-    // --- UPDATED TOKEN LOGIC ---
     window.rollToken = function() {
         const lib = window.appData || {};
         let raw = lib.TokenList || lib.tokenList || lib.tokens;
-        
-        if(!raw) {
-              const keys = Object.keys(lib).join(", ");
-              return alert(`Error: 'TokenList' not found in Library.\n\nItems currently in your database:\n${keys}`);
-        }
-        
+        if(!raw) return alert("Token List empty");
         const list = Object.values(raw);
-        if(list.length === 0) return alert("Token List is empty!");
-        
         const rand = list[Math.floor(Math.random() * list.length)];
         const pick = (typeof rand === 'object' && rand.text) ? rand.text : rand;
-        
         db.ref('tokens').update({ result: pick });
     };
     
-    window.clearToken = function() {
-        db.ref('tokens').update({ result: "-" });
-    };
+    window.clearToken = function() { db.ref('tokens').update({ result: "-" }); };
 
-    // --- REFACTORED: Challenge Mode Sync Logic ---
     window.setRecMode = function() {
         let curr = window.recState?.settings?.mode || 'Regular';
         let next = curr === 'Regular' ? 'Challenge' : 'Regular';
         let updates = { 'record/settings/mode': next };
         if(next === 'Challenge') {
             updates['dashboard/sp'] = '4';
-            updates['dashboard/points'] = ""; // Ensure blank on start
+            updates['dashboard/points'] = "";
             updates['dashboard/pointsNote'] = "Challenge Mode";
         }
         db.ref().update(updates);
@@ -894,7 +917,6 @@
         db.ref('record/settings/format').set(next);
     };
 
-    // --- REFACTORED: Update Card + Note when typing ---
     window.setChalPoints = function(val) { 
         db.ref().update({
             'dashboard/points': val,
@@ -905,15 +927,13 @@
     function updateToggleUI(settings) {
         let mode = settings.mode || 'Regular';
         let fmt = settings.format || 'BO3';
-        let mTog = document.getElementById('tog-mode');
-        if(mTog) {
-            mTog.innerText = mode;
-            if(mode === 'Challenge') mTog.classList.add('active'); else mTog.classList.remove('active');
+        if(document.getElementById('tog-mode')) {
+            document.getElementById('tog-mode').innerText = mode;
+            document.getElementById('tog-mode').classList.toggle('active', mode === 'Challenge');
         }
-        let fTog = document.getElementById('tog-fmt');
-        if(fTog) {
-            fTog.innerText = fmt;
-            if(fmt === 'BO5') fTog.classList.add('active'); else fTog.classList.remove('active');
+        if(document.getElementById('tog-fmt')) {
+            document.getElementById('tog-fmt').innerText = fmt;
+            document.getElementById('tog-fmt').classList.toggle('active', fmt === 'BO5');
         }
         document.getElementById('chal-points-input').style.display = (mode === 'Challenge') ? 'block' : 'none';
         document.getElementById('reg-mode-display').style.display = (mode === 'Regular') ? 'block' : 'none';
@@ -953,17 +973,11 @@
     };
 
     window.togDot = function(i) {
-        let d = document.getElementById('dot-'+i);
-        let currVal = 'EMPTY';
-        // Check current state based on color or text, but data stored as A/B
-        // Simpler: Read from window.recState
         let dbVal = window.recState?.dots?.[i] || '';
-        
         let nextVal = '';
         if(dbVal === '') nextVal = 'A';
         else if(dbVal === 'A') nextVal = 'B';
         else nextVal = '';
-        
         db.ref(`record/dots/${i}`).set(nextVal);
     };
 
@@ -976,18 +990,11 @@
         let wEl = document.getElementById('win-res');
         if(wEl) { 
             wEl.innerText = winner;
-            wEl.style.color = '';
-            wEl.style.borderColor = '#333';
-            wEl.style.background = '';
-            
+            wEl.style.color = ''; wEl.style.borderColor = '#333'; wEl.style.background = '';
             if (winner === window.p1Name) {
-                wEl.style.color = 'var(--p1-color)';
-                wEl.style.borderColor = 'var(--p1-color)';
-                wEl.style.background = 'rgba(255,255,255,0.05)';
+                wEl.style.color = 'var(--p1-color)'; wEl.style.borderColor = 'var(--p1-color)'; wEl.style.background = 'rgba(255,255,255,0.05)';
             } else if (winner === window.p2Name) {
-                wEl.style.color = 'var(--p2-color)';
-                wEl.style.borderColor = 'var(--p2-color)';
-                wEl.style.background = 'rgba(255,255,255,0.05)';
+                wEl.style.color = 'var(--p2-color)'; wEl.style.borderColor = 'var(--p2-color)'; wEl.style.background = 'rgba(255,255,255,0.05)';
             }
         }
     }
@@ -1004,16 +1011,11 @@
         if(winner === '-' || winner === '') return alert("No winner yet.");
         let settings = window.recState?.settings || { mode: 'Regular', format: 'BO3' };
         
-        // Save using current Names
-        let winnerCode = (winner === window.p1Name) ? 'ALB' : 'BIU'; // Fallback for data consistency if needed, but lets use names
-        
         let payload = { timestamp: Date.now(), winner, settings, record: [], links: [] };
         let count = settings.format === 'BO3' ? 3 : 5;
         for(let i=0; i<count; i++) {
-            // Get Result as A/B from state
             let dbVal = window.recState?.dots?.[i] || '';
             let resName = (dbVal === 'A') ? window.p1Name : (dbVal === 'B' ? window.p2Name : '-');
-            
             let lVal = document.getElementById('lnk-'+i).value || '';
             let gameInfo = { result: resName };
             if(settings.mode === 'Challenge') {
