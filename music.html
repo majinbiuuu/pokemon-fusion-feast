@@ -11,7 +11,6 @@
   /* --- GLOBAL VARIABLES --- */
   :root {
     --theme-c: #00ff9d; 
-    /* UPDATED: More Transparent (0.9 -> 0.7) */
     --glass-bg: rgba(10, 10, 10, 0.7);
     --border-c: rgba(255,255,255,0.1);
   }
@@ -184,19 +183,30 @@
   var musicStatus = { state: "PAUSED", currentId: "", currentTitle: "Ready", timestamp: 0, shuffle: false, repeat: 0 };
   let dragSrcEl = null;
   let hasScannedTitles = false;
+  let isInitialLoad = true; // Prevent autoplay on load
 
-  // --- THEME SYNC ---
-  setInterval(() => {
-    try {
-        if(window.parent) {
-            let parentStyles = window.parent.getComputedStyle(window.parent.document.documentElement);
-            let parentTheme = parentStyles.getPropertyValue('--theme-color') || parentStyles.getPropertyValue('--accent');
-            if(parentTheme) document.documentElement.style.setProperty('--theme-c', parentTheme.trim());
-        }
-    } catch(e) {}
-  }, 500);
+  // --- THEME & CONTROL SYNC (From Parent) ---
+  window.addEventListener('message', (event) => {
+      // 1. Theme
+      if (event.data && event.data.type === 'THEME_UPDATE') {
+          document.documentElement.style.setProperty('--theme-c', event.data.color);
+      }
+      
+      // 2. Volume from Top Bar
+      if(event.data.type === 'setVolume') {
+          setLocalVolume(event.data.value, true); 
+          const slider = document.getElementById('vol-slider');
+          if(slider) slider.value = event.data.value;
+      }
 
-  // --- PARENT MESSAGES ---
+      // 3. Media Controls from Top Bar
+      if (event.data && event.data.type === 'mediaControl') {
+          handleMediaControl(event.data.action);
+      }
+  });
+  if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
+
+  // --- PARENT MESSAGING (Updates Up) ---
   function setLocalVolume(val, fromSync = false) {
       localVol = val;
       if(val > 0) lastVol = val;
@@ -205,11 +215,17 @@
       if(player && player.setVolume) player.setVolume(val);
       updateVolIcon(val);
 
-      // ONLY send to parent if this was a manual change (not from sync)
       if (!fromSync && window.parent) {
           window.parent.postMessage({ type: 'UPDATE_TOP_VOL', value: val }, '*');
       }
   };
+
+  function handleMediaControl(action) {
+      if(!player) return;
+      if(action === 'play') togglePlayState();
+      else if(action === 'next') doNext();
+      else if(action === 'prev') doPrev();
+  }
 
   function onPlayerReady(event) {
      player.setVolume(localVol);
@@ -218,7 +234,7 @@
      if(musicStatus.currentId) player.cueVideoById(musicStatus.currentId);
   }
 
-  // --- LISTENERS ---
+  // --- DB LISTENERS ---
   db.ref('music/playlists').on('value', snap => {
       const data = snap.val() || {};
       playlists.list1 = data.list1 || [];
@@ -239,25 +255,42 @@
       document.getElementById('btn-shuffle').classList.toggle('active', musicStatus.shuffle);
       document.getElementById('btn-repeat').classList.toggle('active', musicStatus.repeat === 1);
 
+      // Track Change
       if(musicStatus.currentId && musicStatus.currentId !== currentId) {
           currentId = musicStatus.currentId;
           updateNowPlaying(musicStatus.currentTitle, musicStatus.currentId);
-          if(player && player.loadVideoById) player.loadVideoById(currentId, Math.max(0, musicStatus.timestamp));
+          // Load but don't play yet if first load
+          if(player && player.loadVideoById) {
+              if (isInitialLoad) player.cueVideoById(currentId);
+              else player.loadVideoById(currentId, Math.max(0, musicStatus.timestamp));
+          }
           renderQueue(); 
       }
       
+      // State Change (Play/Pause)
       let isPlaying = (musicStatus.state === 'PLAYING');
       document.getElementById('main-player-ui').classList.toggle('playing', isPlaying);
+      
+      // Update Local Button
       document.getElementById('btn-play-pause').innerHTML = isPlaying ? '<span class="material-icons">pause</span>' : '<span class="material-icons">play_arrow</span>';
       
+      // Notify Parent Top Bar
+      if(window.parent) window.parent.postMessage({ type: 'PLAYER_STATE', state: isPlaying ? 'playing' : 'paused' }, '*');
+
       if(player && player.getPlayerState) {
           let pState = player.getPlayerState();
-          if(isPlaying) {
-              if(pState !== 1 && pState !== 3) player.playVideo();
-              let localTime = player.getCurrentTime();
-              if(Math.abs(localTime - musicStatus.timestamp) > 2) player.seekTo(musicStatus.timestamp, true);
+          
+          if(isInitialLoad) {
+              // On first load, never auto-play. Just sync data.
+              isInitialLoad = false;
           } else {
-              if(pState === 1) player.pauseVideo();
+              if(isPlaying) {
+                  if(pState !== 1 && pState !== 3) player.playVideo();
+                  let localTime = player.getCurrentTime();
+                  if(Math.abs(localTime - musicStatus.timestamp) > 2) player.seekTo(musicStatus.timestamp, true);
+              } else {
+                  if(pState === 1) player.pauseVideo();
+              }
           }
       }
   });
@@ -307,17 +340,6 @@
           div.addEventListener('dragend', handleDragEnd);
           div.dataset.index = index;
           container.appendChild(div);
-
-          window.addEventListener('message', (event) => {
-    if(event.data.type === 'setVolume') {
-        // IMPORTANT: The 'true' tells the player "This came from the top bar, don't send it back!"
-        setLocalVolume(event.data.value, true); 
-        
-        // Also update the local slider visual
-        const slider = document.getElementById('vol-slider');
-        if(slider) slider.value = event.data.value;
-    }
-  })
       });
   }
 
@@ -368,30 +390,18 @@
   function doNext() {
       const list = (currentList === 1) ? playlists.list1 : playlists.list2;
       if(list.length === 0) return;
-      
-      // REPEAT ONE LOGIC
-      if (musicStatus.repeat === 1) {
-          player.seekTo(0);
-          player.playVideo();
-          return;
-      }
+      if (musicStatus.repeat === 1) { player.seekTo(0); player.playVideo(); return; }
 
       let nextItem;
       if (musicStatus.shuffle) {
-          // SHUFFLE (Avoid same song)
           let possible = list.filter(x => x.id !== currentId);
-          if(possible.length > 0) {
-             nextItem = possible[Math.floor(Math.random() * possible.length)];
-          } else {
-             nextItem = list[0];
-          }
-      }
-      else {
+          if(possible.length > 0) nextItem = possible[Math.floor(Math.random() * possible.length)];
+          else nextItem = list[0];
+      } else {
           let idx = list.findIndex(x => x.id === currentId);
           if(idx < list.length - 1) nextItem = list[idx+1];
           else nextItem = list[0];
       }
-      
       if(nextItem) playSpecific(nextItem);
   }
   
@@ -415,7 +425,6 @@
       if(id.length === 11) {
           let title = "Video " + id;
           let duration = "-:-";
-          
           let apiSuccess = false;
           try {
              const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${id}&key=${firebaseConfig.apiKey}`);
@@ -433,7 +442,6 @@
           }
 
           let item = { id: id, title: title, thumb: "https://img.youtube.com/vi/"+id+"/mqdefault.jpg", duration: duration };
-          
           if(currentList === 1) playlists.list1.push(item); else playlists.list2.push(item);
           db.ref('music/playlists').set(playlists);
           document.getElementById('add-link-input').value = "";
@@ -520,6 +528,15 @@
       let txt = document.getElementById('np-title-main');
       if(txt.offsetWidth > 250) { wrap.innerHTML += `<span>${title}</span>`; wrap.classList.add('scroll-active'); } 
       else { wrap.classList.remove('scroll-active'); }
+
+      // SYNC TO TOP BAR
+      if(window.parent) {
+          window.parent.postMessage({
+              type: 'TRACK_UPDATE',
+              title: title,
+              img: "https://img.youtube.com/vi/"+id+"/mqdefault.jpg"
+          }, '*');
+      }
   }
 
   setInterval(() => {
@@ -536,7 +553,8 @@
   function fmt(s) { let m=Math.floor(s/60); let sec=Math.floor(s%60); return m+":"+(sec<10?"0":"")+sec; }
 
   function onLocalPlayerStateChange(e) { 
-      if (e.data === 1) { 
+      // 1 = Playing, 2 = Paused
+      if (e.data === 1 || e.data === 2) { 
           if(player && player.getVideoData) {
               var vData = player.getVideoData();
               if(vData && vData.title) {
@@ -562,8 +580,6 @@
       if(found) db.ref('music/playlists').set(playlists);
   }
 
-  // --- API CALLBACK DEFINITION MUST BE GLOBAL/ACCESSIBLE ---
-  // We place it at the end to ensure all previous functions are defined.
   function onYouTubeIframeAPIReady() {
     console.log("API Ready - Functions Loaded");
     player = new YT.Player('yt-player-mount', {
