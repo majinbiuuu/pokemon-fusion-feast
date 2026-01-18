@@ -136,7 +136,7 @@
       <div class="p-header">
           <div class="p-name" id="disp-p1-name" style="color:var(--p1-color)">P1</div>
           <div class="p-score" id="score-alb">0</div>
-          <div class="p-ctrls">
+          <div class="p-ctrls" style="display:flex; flex-direction:column; gap:5px; margin-left:8px;">
               <div class="tiny-btn" onclick="modScore('alb', 'add')">+</div>
               <div class="tiny-btn" onclick="modScore('alb', 'sub')">-</div>
           </div>
@@ -163,10 +163,10 @@
         </button>
 
         <div class="tab track-hover" data-id="tab-battle" onclick="switchTab('battle', this)" style="padding:0 15px;">
-            <i class="material-icons" style="font-size:22px;">catching_pokemon</i>
+            <i class="material-icons" style=" font-size:30px;">catching_pokemon</i>
         </div>
 
-        <div class="tab active track-hover" data-id="tab-play" onclick="switchTab('play', this)">
+        <div class="tab active track-hover" data-id="tab-play" onclick="switchTab('play', this)" >
             Play
             <div class="tab-badges"></div>
         </div>
@@ -209,7 +209,7 @@
       <div class="p-header">
           <div class="p-name" id="disp-p2-name" style="color:var(--p2-color)">P2</div>
           <div class="p-score" id="score-biu">0</div>
-          <div class="p-ctrls">
+          <div class="p-ctrls" style="display:flex; flex-direction:column; gap:5px; margin-left:8px;">
               <div class="tiny-btn" onclick="modScore('biu', 'add')">+</div>
               <div class="tiny-btn" onclick="modScore('biu', 'sub')">-</div>
           </div>

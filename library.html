@@ -15,8 +15,8 @@
   :root {
     --theme-purple: #9c27b0;
     --theme-red: #d32f2f;
-    --card-bg: rgba(30, 30, 30, 0.6);        
-    --card-header-bg: rgba(50, 50, 50, 0.7); 
+    --card-bg: rgba(30, 30, 30, 0.8);        
+    --card-header-bg: rgba(50, 50, 50, 0.9); 
     --card-header-txt: #eee; 
   }
 
@@ -32,38 +32,26 @@
     flex-direction: column;
   }
 
-  /* PEER HOVER STYLES */
-  .peer-hover-alb { border-color: #ff4444 !important; box-shadow: 0 0 15px #ff4444 !important; z-index: 100; position:relative; }
-  .peer-hover-biu { border-color: #4488ff !important; box-shadow: 0 0 15px #4488ff !important; z-index: 100; position:relative; }
-
-  /* --- LIBRARY LAYOUT --- */
+  /* --- LAYOUT --- */
   .lib-container { display: flex; height: 100%; gap: 0; }
 
   /* SIDEBAR */
   .lib-sidebar {
-      width: 200px; background: rgba(0, 0, 0, 0.5); border-right: 1px solid rgba(255, 255, 255, 0.1);
+      width: 200px; background: rgba(0, 0, 0, 0.6); border-right: 1px solid rgba(255, 255, 255, 0.1);
       display: flex; flex-direction: column; padding: 15px; flex-shrink: 0;
   }
   .lib-sidebar h3 {
-      margin-top: 15px; color: #666; font-size: 18px; text-transform: uppercase; letter-spacing: 1px;
-      padding-bottom: 5px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 5px; font-weight: 800;
+      margin-top: 15px; color: #888; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;
+      padding-bottom: 5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 5px; font-weight: 800;
   }
   .lib-sidebar h3:first-child { margin-top: 0; }
   .lib-sidebar ul { list-style: none; padding: 0; margin: 0; overflow-y: auto; }
   .lib-cat-item {
       padding: 8px 12px; margin-bottom: 2px; background: transparent; border-radius: 6px; cursor: pointer;
-      transition: all 0.2s ease; color: #aaa; font-weight: 600; font-size: 16px; text-transform: uppercase; border-left: 3px solid transparent;
+      transition: all 0.2s ease; color: #aaa; font-weight: 600; font-size: 15px; text-transform: capitalize; border-left: 3px solid transparent;
   }
-  .lib-cat-item:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
-  .lib-cat-item.active { background: rgba(255,255,255,0.1); color: var(--accent); border-left-color: var(--accent); }
-
-  /* THEME OVERRIDES */
-  .lib-container[data-theme="purple"] .lib-cat-item.active { color: var(--theme-purple); border-left-color: var(--theme-purple); }
-  .lib-container[data-theme="purple"] .lib-btn.action { border-color: var(--theme-purple); color: var(--theme-purple); }
-  .lib-container[data-theme="purple"] .lib-btn.action:hover { background: var(--theme-purple); color: #fff; }
-  .lib-container[data-theme="red"] .lib-cat-item.active { color: var(--theme-red); border-left-color: var(--theme-red); }
-  .lib-container[data-theme="red"] .lib-btn.action { border-color: var(--theme-red); color: var(--theme-red); }
-  .lib-container[data-theme="red"] .lib-btn.action:hover { background: var(--theme-red); color: #fff; }
+  .lib-cat-item:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+  .lib-cat-item.active { background: rgba(255,255,255,0.15); color: var(--accent); border-left-color: var(--accent); }
 
   /* EDITOR AREA */
   .lib-editor {
@@ -78,10 +66,10 @@
       margin: 0; font-size: 2rem; color: #fff; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;
   }
 
-  /* --- GRID LAYOUT FOR CARDS --- */
+  /* --- CARD GRID --- */
   .lib-scroll-area {
       flex: 1; overflow-y: auto; padding-right: 5px; display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       grid-auto-rows: min-content; gap: 20px; align-content: start; 
   }
 
@@ -89,71 +77,76 @@
   .lib-card {
       background: var(--card-bg); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;
       border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s, box-shadow 0.2s;
-      position: relative; animation: fadeIn 0.3s ease;
-      backdrop-filter: blur(10px); 
+      position: relative; animation: fadeIn 0.3s ease; backdrop-filter: blur(10px);
+      cursor: grab; 
   }
-  .lib-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); border-color: #555; }
+  .lib-card:active { cursor: grabbing; transform: scale(0.98); }
+  .lib-card:hover { border-color: #666; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+  .lib-card.dragging { opacity: 0.5; border: 2px dashed var(--accent); }
 
-  /* CARD HEADER (Dark Part) */
   .lc-header {
-      background: var(--card-header-bg);
-      padding: 12px 15px; display: flex; align-items: center; justify-content: center;
-      border-bottom: 1px solid #444;
+      background: var(--card-header-bg); padding: 12px 15px; display: flex; align-items: center; justify-content: center;
+      border-bottom: 1px solid #444; position: relative;
+  }
+  .lc-title {
+      font-size: 1.4rem; font-weight: 900; color: var(--card-header-txt); text-align: center; 
+      text-transform: uppercase; margin: 0; width: 100%; white-space: normal; /* Allow wrap in view mode */
+      line-height: 1.2;
   }
 
-  /* CARD BODY (Content Part) */
-  .lc-body {
-      padding: 20px; 
-      display: flex; flex-direction: column; gap: 15px; flex: 1;
-      justify-content: center;
-  }
+  .lc-body { padding: 20px; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; }
+  .lc-note { font-size: 1.1rem; color: #ccc; line-height: 1.4; white-space: pre-wrap; }
 
-  /* TRIO GRID */
-  .trio-grid {
-      display: flex; flex-wrap: wrap;
-      gap: 15px; justify-content: center; margin-bottom: 10px;
+  /* EDIT BTN ON CARD */
+  .card-edit-btn {
+      position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; 
+      background: rgba(0,0,0,0.5); border: 1px solid #555; border-radius: 4px; color: #ccc; 
+      cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center;
   }
-  .trio-sprite {
-      width: 70px; height: 70px; 
-      object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); transition: transform 0.2s;
-  }
-  .trio-sprite:hover { transform: scale(1.1); }
+  .card-edit-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
 
-  /* INPUTS & TEXTAREAS (Updated for Wrapping) */
-  .inp-title {
-      width: 100%; background: transparent; border: none;
-      font-size: 1.6rem; 
-      font-weight: 900; color: var(--card-header-txt); 
-      text-align: center; outline: none; text-transform: uppercase; font-family: 'Segoe UI', sans-serif;
-      resize: none; overflow: hidden; height: auto;
-  }
-  .inp-title::placeholder { color: #666; }
+  /* TRIO IMAGES */
+  .trio-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 10px; }
+  .trio-sprite { width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
 
-  .inp-note {
-      width: 100%; background: transparent; border: none;
-      font-size: 1.4rem; 
-      color: #ccc; text-align: center; outline: none; font-family: 'Segoe UI', sans-serif;
-      resize: none; overflow: hidden; height: auto; line-height: 1.4;
+  /* --- MODAL STYLES --- */
+  .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85); z-index: 1000; display: none;
+      align-items: center; justify-content: center; backdrop-filter: blur(5px);
   }
+  .modal-box {
+      background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 500px; padding: 25px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 15px;
+      animation: popIn 0.2s ease;
+  }
+  .modal-title { font-size: 1.5rem; font-weight: 900; color: #fff; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 10px; }
   
-  /* DELETE BTN */
-  .card-del-btn {
-      position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; background: transparent;
-      border: none; color: #666; cursor: pointer; opacity: 0; transition: 0.2s; z-index: 10;
+  .modal-inp-group { display: flex; flex-direction: column; gap: 5px; }
+  .modal-label { font-size: 0.9rem; color: #888; font-weight: 700; text-transform: uppercase; }
+  
+  /* UPDATED INPUT STYLES FOR WRAPPING */
+  .modal-input {
+      background: #000; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 6px;
+      font-family: 'Segoe UI', sans-serif; font-size: 1.1rem; outline: none; 
+      resize: vertical; min-height: 40px;
   }
-  .card-del-btn:hover { color: #d32f2f; transform: scale(1.2); }
-  .lib-card:hover .card-del-btn { opacity: 1; }
+  .modal-input:focus { border-color: var(--accent); }
 
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+  
   .lib-btn {
-      padding: 8px 16px; background: #222; border: 1px solid #444; color: #ccc; font-weight: 700;
-      cursor: pointer; border-radius: 4px; transition: 0.2s; text-transform: uppercase; font-size: 12px;
-      display: flex; align-items: center; gap: 6px;
+      padding: 8px 20px; background: #333; border: 1px solid #555; color: #ccc; font-weight: 700;
+      cursor: pointer; border-radius: 4px; transition: 0.2s; text-transform: uppercase; font-size: 0.9rem;
   }
-  .lib-btn:hover { background: #333; color: #fff; }
-  .lib-btn.action { border-color: var(--accent); color: var(--accent); }
-  .lib-btn.action:hover { background: var(--accent); color: #000; }
+  .lib-btn:hover { background: #444; color: #fff; }
+  .lib-btn.save { background: var(--accent); color: #000; border-color: var(--accent); }
+  .lib-btn.save:hover { filter: brightness(1.2); }
+  .lib-btn.del { background: #3e0000; border-color: #600; color: #f88; }
+  .lib-btn.del:hover { background: #600; color: #fff; }
 
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>
 </head>
 <body>
@@ -163,12 +156,34 @@
       <div class="lib-editor">
           <div class="lib-header">
               <h2 id="lib-current-title">Category</h2>
-              <button class="lib-btn action" id="btn-add-new" onclick="addItemToLibrary()">
+              <button class="lib-btn save" onclick="openEditModal(null)">
                   <i class="fas fa-plus"></i> Add New
               </button>
           </div>
           <div id="lib-item-list" class="lib-scroll-area">
               <div style="padding:20px; text-align:center; color:#555;">Loading...</div>
+          </div>
+      </div>
+  </div>
+
+  <div class="modal-overlay" id="edit-modal">
+      <div class="modal-box">
+          <div class="modal-title" id="modal-heading">Edit Item</div>
+          
+          <div class="modal-inp-group">
+              <div class="modal-label">Title</div>
+              <textarea class="modal-input" id="edit-title" rows="2" placeholder="Item Title"></textarea>
+          </div>
+
+          <div class="modal-inp-group">
+              <div class="modal-label" id="lbl-note">Note / Description</div>
+              <textarea class="modal-input" id="edit-note" rows="5" placeholder="Details..."></textarea>
+          </div>
+
+          <div class="modal-actions">
+              <button class="lib-btn del" id="btn-delete" onclick="deleteCurrentItem()">Delete</button>
+              <button class="lib-btn" onclick="closeModal()">Cancel</button>
+              <button class="lib-btn save" onclick="saveCurrentItem()">Save</button>
           </div>
       </div>
   </div>
@@ -193,21 +208,10 @@
       if (event.data && event.data.type === 'THEME_UPDATE') {
           document.documentElement.style.setProperty('--accent', event.data.color);
       }
-      if(event.data.type === 'PEER_HOVER') {
-          document.querySelectorAll('.peer-hover-alb, .peer-hover-biu').forEach(el=>el.classList.remove('peer-hover-alb','peer-hover-biu'));
-          if(event.data.id && event.data.role) {
-              let el = document.getElementById(event.data.id);
-              if(el) el.classList.add('peer-hover-'+event.data.role);
-          }
-      }
   });
   if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
-  document.addEventListener('mouseover', e => {
-      let t = e.target.closest('[id]'); 
-      if(t && t.id) window.parent.postMessage({ type: 'HOVER_REPORT', id: t.id }, '*');
-  });
 
-  // --- LIBRARY CONFIG ---
+  // CONFIG
   const LIBRARY_SECTIONS = {
       "Global Effects": {
           "Rewards": { path: "library/rewards", theme: "purple" },
@@ -227,25 +231,13 @@
   const DEFAULT_TRIOS = [
     { text: "Kanto Birds", note: "Articuno, Zapdos, Moltres" },
     { text: "Johto Beasts", note: "Suicune, Entei, Raikou" },
-    { text: "Weather Trio", note: "Groudon, Kyogre, Rayquaza" },
-    { text: "Creation Trio", note: "Dialga, Palkia, Giratina" },
-    { text: "Tao Trio", note: "Reshiram, Zekrom, Kyurem" },
-    { text: "Aura Trio", note: "Xerneas, Yveltal, Zygarde" },
-    { text: "Light Trio", note: "Solgaleo, Lunala, Necrozma" },
-    { text: "Galar Legends", note: "Zacian, Zamazenta, Urshifu" },
-    { text: "Loyal Three +", note: "Okidogi, Munkidori, Fezandipiti, Ogerpon" },
-    { text: "Swords of Justice", note: "Terrakion, Virizion, Cobalion" },
-    { text: "Forces of Nature", note: "Tornadus, Thundurus, Landorus, Enamorus" },
-    { text: "Treasures of Ruin", note: "Wo-chien, Chien-Pao, Ting-Lu, Chi-Yu" },
-    { text: "Psychic Legends", note: "Mewtwo, Ho-Oh, Lugia" },
-    { text: "Paradox Legends", note: "Koraidon, Miraidon, Terapagos" },
-    { text: "Regi Titans", note: "Regirock, Regice, Registeel, Regigigas, Regieleki, Regidrago" },
-    { text: "Tapu Guardians", note: "Tapu-Koko, Tapu-Lele, Tapu-Bulu, Tapu-Fini" }
+    { text: "Weather Trio", note: "Groudon, Kyogre, Rayquaza" }
   ];
 
   let currentLibPath = null;
   let currentType = "std";
-  let libListener = null;
+  let currentItems = []; // Array to hold ordered items
+  let editingKey = null; // Key of item currently being edited
 
   function initLibrarySidebar() {
       const listContainer = document.getElementById('lib-cat-list');
@@ -279,8 +271,9 @@
       const libContainer = document.querySelector('.lib-container');
       if(libContainer) libContainer.setAttribute('data-theme', theme || 'default');
 
-      if(currentLibPath === dbPath) return;
-      if(currentLibPath && libListener) db.ref(currentLibPath).off('value', libListener);
+      if(currentLibPath && currentLibPath !== dbPath) {
+          db.ref(currentLibPath).off();
+      }
 
       currentLibPath = dbPath;
       currentType = type;
@@ -288,50 +281,61 @@
       const container = document.getElementById('lib-item-list');
       container.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">Loading...</div>';
 
-      libListener = db.ref(currentLibPath).on('value', snap => {
+      db.ref(currentLibPath).on('value', snap => {
           let val = snap.val();
           if(type === 'trio' && !val) {
              db.ref(currentLibPath).set(DEFAULT_TRIOS);
              return;
           }
-          renderLibraryItems(val);
+          parseData(val);
+          renderItems();
       });
   }
 
-  function renderLibraryItems(data) {
+  function parseData(data) {
+      currentItems = [];
+      if (!data) return;
+
+      if (Array.isArray(data)) {
+          data.forEach((val, idx) => { if(val !== null) currentItems.push({ key: idx, val: val }); });
+      } else if (typeof data === 'object') {
+          Object.keys(data).forEach(key => currentItems.push({ key: key, val: data[key] }));
+      }
+  }
+
+  function renderItems() {
       const container = document.getElementById('lib-item-list');
       container.innerHTML = '';
 
-      if (!data) {
+      if (currentItems.length === 0) {
           container.innerHTML = '<div style="padding:20px; text-align:center; color:#555;">List is empty. Add a new item.</div>';
           return; 
       }
 
-      let items = [];
-      if (Array.isArray(data)) {
-          data.forEach((val, idx) => { if(val !== null) items.push({ key: idx, val: val }); });
-      } else if (typeof data === 'object') {
-          Object.keys(data).forEach(key => items.push({ key: key, val: data[key] }));
-      }
-
-      items.forEach(item => {
+      currentItems.forEach((item, index) => {
           let textVal = (typeof item.val === 'object') ? (item.val.text || "") : item.val;
           let noteVal = (typeof item.val === 'object') ? (item.val.note || "") : "";
 
           const card = document.createElement('div');
           card.className = 'lib-card';
-          card.id = 'lib-row-' + item.key;
+          card.setAttribute('draggable', 'true');
+          card.dataset.index = index;
+          card.dataset.key = item.key;
 
-          // Title Input (Textarea for wrap)
+          // Drag Events
+          card.addEventListener('dragstart', dragStart);
+          card.addEventListener('dragover', dragOver);
+          card.addEventListener('drop', drop);
+          card.addEventListener('dragenter', dragEnter);
+          card.addEventListener('dragleave', dragLeave);
+
           const header = document.createElement('div');
           header.className = 'lc-header';
           header.innerHTML = `
-             <textarea class="inp-title" rows="1"
-                    oninput="autoResize(this); updateLibItem('${item.key}', 'text', this.value)"
-                    placeholder="Title">${textVal}</textarea>
-             <button class="card-del-btn" onclick="deleteLibItem('${item.key}')"><i class="fas fa-times"></i></button>
+             <div class="lc-title">${textVal}</div>
+             <button class="card-edit-btn" onclick="openEditModal('${item.key}')"><i class="fas fa-pen"></i></button>
           `;
-          
+
           const body = document.createElement('div');
           body.className = 'lc-body';
 
@@ -342,55 +346,118 @@
                   if(clean.includes('urshifu')) clean = 'urshifu-single-strike';
                   return `<img class="trio-sprite" src="https://img.pokemondb.net/sprites/home/normal/${clean}.png" title="${p}" onerror="this.style.display='none'">`;
               }).join('');
-              
-              // Note Input (Textarea for wrap)
-              body.innerHTML = `
-                  <div class="trio-grid">${spriteHtml}</div>
-                  <textarea class="inp-note" rows="1" oninput="autoResize(this); updateLibItem('${item.key}', 'note', this.value)" placeholder="List Pokemon...">${noteVal}</textarea>
-              `;
+              body.innerHTML = `<div class="trio-grid">${spriteHtml}</div><div class="lc-note">${noteVal}</div>`;
           } else {
-              body.innerHTML = `
-                  <textarea class="inp-note" rows="1" oninput="autoResize(this); updateLibItem('${item.key}', 'note', this.value)" placeholder="Description / Note...">${noteVal}</textarea>
-              `;
+              body.innerHTML = `<div class="lc-note">${noteVal}</div>`;
           }
 
           card.appendChild(header);
           card.appendChild(body);
           container.appendChild(card);
-          
-          // Auto resize initially
-          setTimeout(() => {
-              card.querySelectorAll('textarea').forEach(tx => autoResize(tx));
-          }, 0);
       });
   }
 
-  // --- AUTO RESIZE FUNCTION ---
-  window.autoResize = function(el) {
-      el.style.height = 'auto';
-      el.style.height = el.scrollHeight + 'px';
-  };
+  // --- DRAG AND DROP LOGIC ---
+  let dragSrcEl = null;
 
-  window.addItemToLibrary = function() {
-      if(!currentLibPath) return;
-      const newRef = db.ref(currentLibPath).push();
-      newRef.set({ text: "New Item", note: "" });
-  };
+  function dragStart(e) {
+      dragSrcEl = this;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', this.innerHTML);
+      this.classList.add('dragging');
+  }
 
-  window.updateLibItem = function(key, field, val) {
-      if(!currentLibPath) return;
-      db.ref(currentLibPath + '/' + key).once('value', snap => {
-          let current = snap.val();
-          let payload = (typeof current === 'object') ? { ...current } : { text: current, note: "" };
-          payload[field] = val;
-          db.ref(currentLibPath + '/' + key).set(payload);
-      });
-  };
+  function dragOver(e) {
+      if (e.preventDefault) e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      return false;
+  }
 
-  window.deleteLibItem = function(key) {
+  function dragEnter(e) { this.style.borderColor = 'var(--accent)'; }
+  function dragLeave(e) { this.style.borderColor = 'rgba(255,255,255,0.1)'; }
+
+  function drop(e) {
+      if (e.stopPropagation) e.stopPropagation();
+      if (dragSrcEl !== this) {
+          let srcIdx = parseInt(dragSrcEl.dataset.index);
+          let targetIdx = parseInt(this.dataset.index);
+
+          // Swap in array
+          let movedItem = currentItems[srcIdx];
+          currentItems.splice(srcIdx, 1);
+          currentItems.splice(targetIdx, 0, movedItem);
+
+          // Re-upload entire array to Firebase to maintain order
+          saveReorderedList();
+      }
+      return false;
+  }
+
+  function saveReorderedList() {
+      let newArr = currentItems.map(i => i.val);
+      db.ref(currentLibPath).set(newArr);
+  }
+
+  // --- MODAL LOGIC ---
+  const modal = document.getElementById('edit-modal');
+  const inpTitle = document.getElementById('edit-title');
+  const inpNote = document.getElementById('edit-note');
+  const lblNote = document.getElementById('lbl-note');
+  const btnDel = document.getElementById('btn-delete');
+
+  window.openEditModal = function(key) {
+      editingKey = key;
+      modal.style.display = 'flex';
+
+      if(key === null) {
+          // ADD NEW
+          document.getElementById('modal-heading').innerText = "Add New Item";
+          inpTitle.value = "";
+          inpNote.value = "";
+          btnDel.style.display = 'none';
+      } else {
+          // EDIT EXISTING
+          document.getElementById('modal-heading').innerText = "Edit Item";
+          let item = currentItems.find(i => i.key == key);
+          if(item) {
+              let t = (typeof item.val === 'object') ? (item.val.text || "") : item.val;
+              let n = (typeof item.val === 'object') ? (item.val.note || "") : "";
+              inpTitle.value = t;
+              inpNote.value = n;
+          }
+          btnDel.style.display = 'block';
+      }
+
+      lblNote.innerText = (currentType === 'trio') ? "Pokemon List (Comma Separated)" : "Note / Description";
+  }
+
+  window.closeModal = function() {
+      modal.style.display = 'none';
+      editingKey = null;
+  }
+
+  window.saveCurrentItem = function() {
       if(!currentLibPath) return;
-      if(confirm("Delete this item?")) db.ref(currentLibPath + '/' + key).set(null);
-  };
+      
+      let newTitle = inpTitle.value;
+      let newNote = inpNote.value;
+      let payload = { text: newTitle, note: newNote };
+
+      if(editingKey === null) {
+          db.ref(currentLibPath).push(payload);
+      } else {
+          db.ref(currentLibPath + '/' + editingKey).set(payload);
+      }
+      closeModal();
+  }
+
+  window.deleteCurrentItem = function() {
+      if(!currentLibPath || !editingKey) return;
+      if(confirm("Are you sure you want to delete this item?")) {
+          db.ref(currentLibPath + '/' + editingKey).set(null);
+          closeModal();
+      }
+  }
 
   initLibrarySidebar();
 </script>
