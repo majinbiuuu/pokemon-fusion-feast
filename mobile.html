@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fusion Feast Mobile</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <link href="style-global.css" rel="stylesheet">
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <style>
+        /* --- MOBILE SPECIFIC OVERRIDES --- */
+        :root {
+            --nav-height: 50px;
+            --safe-area-bottom: env(safe-area-inset-bottom);
+            --glass-strong: rgba(20, 20, 20, 0.95);
+        }
+
+        body {
+            background-color: #000;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #eee;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0; padding: 0;
+            height: 100vh;
+            overflow: hidden; 
+            display: flex; flex-direction: column;
+        }
+
+        /* DARK OVERLAY */
+        body::before {
+            content: ''; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.6); z-index: -1; pointer-events: none;
+        }
+
+        /* --- TOP HEADER (Live Status) --- */
+        .mobile-header {
+            padding: 8px 20px;
+            display: flex; align-items: center;
+            z-index: 100;
+        }
+        .status-badge { 
+            display: flex; align-items: center; gap: 6px; 
+            font-weight: 800; color: #fff; font-size: 0.7rem; 
+            background: rgba(0,0,0,0.6); padding: 4px 10px; /* REDUCED PADDING */
+            border-radius: 30px; border: 1px solid #444; 
+            text-transform: uppercase; letter-spacing: 1px;
+            backdrop-filter: blur(5px);
+        }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff0044; box-shadow: 0 0 10px #ff0044; }
+
+        /* --- VIEW CONTAINER --- */
+        .view-container {
+            flex: 1; position: relative; overflow: hidden; width: 100%;
+        }
+
+        .view-section {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            overflow-y: auto;
+            padding: 0 20px 100px 20px;
+            box-sizing: border-box;
+            display: none;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .view-section.active { display: block; opacity: 1; }
+
+        /* --- SCOREBOARD (HOME) --- */
+        .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; margin-bottom: 15px; }
+
+        .score-card {
+            background: var(--glass-strong);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        
+        .p-label { font-size: 1.1rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .p-score { font-size: 4rem; font-weight: 900; line-height: 1; color: #fff; text-shadow: 0 0 20px rgba(0,0,0,0.5); }
+
+        /* --- HOME STATS (UPDATED) --- */
+        .home-stats-box {
+            background: rgba(0,0,0,0.4); border-radius: 12px; padding: 15px 20px;
+            margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .stats-text-row { display: flex; justify-content: space-between; align-items: flex-end; }
+        .stat-val { font-size: 1.4rem; font-weight: 900; line-height: 1; }
+        .stat-lbl { font-size: 0.7rem; text-transform: uppercase; color: #888; letter-spacing: 1px; font-weight: 700; margin-top: 4px; }
+        
+        .wr-progress-bg {
+            height: 8px; background: #222; border-radius: 4px; overflow: hidden;
+            display: flex; width: 100%;
+        }
+        .wr-bar-fill { height: 100%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* --- MATCH CARD STYLES --- */
+        .match-card {
+            background: var(--glass-strong);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; gap: 10px;
+            position: relative;
+        }
+
+        /* Header: Left (Date/Badge/Edit) | Right (Winner) */
+        .mc-header {
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.1); 
+            padding-bottom: 8px; margin-bottom: 2px;
+            min-height: 30px;
+        }
+        .mh-left { display: flex; align-items: center; gap: 8px; flex: 1; overflow: hidden; }
+        .mh-right { flex: 0 0 auto; text-align: right; }
+
+        .mc-date-small { 
+            font-size: 0.8rem; color: #aaa; font-weight: 700; 
+             white-space: nowrap;
+        }
+        .mc-winner { 
+            font-size: 0.9rem; font-weight: 900; text-transform: uppercase; 
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .mc-edit-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 0.9rem; padding: 4px; }
+        .mc-edit-btn:hover { color: #fff; }
+
+        .chal-badge {
+            background: rgba(0, 0, 0, 0.3); color: var(--accent); 
+            border: 1px solid var(--accent); font-size: 0.6rem; padding: 2px 6px;
+            border-radius: 4px; font-weight: 900; text-transform: uppercase;
+            box-shadow: 0 0 5px var(--accent); white-space: nowrap;
+        }
+
+        /* Stats Grid */
+        .mc-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .mc-stat-item { display: flex; flex-direction: column; }
+        .mc-lbl { font-size: 0.6rem; color: #aaa; text-transform: uppercase; font-weight: 700; }
+        .mc-val { font-size: 0.9rem; color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Action Row */
+        .mc-action-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; margin-top: 5px;
+        }
+        .mc-record-group { display: flex; gap: 4px; }
+        .rec-dot { 
+            width: 20px; height: 20px; border-radius: 4px; 
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 900; 
+            background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #555;
+        }
+        .replay-chip {
+            background: #222; border: 1px solid #444; color: #ccc;
+            font-size: 0.65rem; padding: 3px 8px; border-radius: 4px;
+            text-decoration: none; font-weight: 700; display: inline-block;
+        }
+
+        /* Expand Button */
+        .mc-expand-btn {
+            width: 100%; border: none; background: transparent; color: #666;
+            padding: 8px 0; cursor: pointer; transition: color 0.2s;
+            display: flex; justify-content: center; z-index: 10;
+        }
+        .mc-expand-btn:active { color: #fff; }
+
+        /* Details */
+        .mc-details {
+            display: none; background: rgba(0,0,0,0.3);
+            border-radius: 6px; padding: 10px; margin-top: 5px;
+        }
+        .det-row {
+            display: grid; grid-template-columns: 30px 1fr 1fr; gap: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05); padding: 6px 0;
+            font-size: 0.8rem; align-items: center;
+        }
+        .det-row:last-child { border-bottom: none; }
+        .det-lbl { color: #888; font-weight: 700; }
+        .det-val { color: #ccc; }
+
+        /* --- EDIT MODAL STYLES --- */
+        .ed-row { display: flex; gap: 10px; }
+        .ed-group { flex: 1; display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        .ed-lbl { font-size: 0.7rem; color: #888; font-weight: 700; text-transform: uppercase; }
+        .ed-inp { background: #000; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; }
+        .ed-select { background: #000; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; width: 100%; }
+
+        .ed-game-row { 
+            background: rgba(255,255,255,0.03); padding: 10px; border-radius: 6px; 
+            margin-bottom: 8px; border: 1px solid #333;
+        }
+        .chal-toggle { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: #222; padding: 10px; border-radius: 8px; }
+        .chal-chk { width: 20px; height: 20px; accent-color: var(--accent); }
+
+        /* --- LIBRARY & OTHER STYLES (UPDATED) --- */
+        .cat-select { 
+            width: 100%; padding: 12px; background: #000; color: #fff; 
+            border: 1px solid #444; border-radius: 8px; font-size: 1rem; margin-bottom: 15px; 
+        }
+        
+        .glass-item { 
+            background: var(--glass-strong); backdrop-filter: blur(8px); 
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; 
+            padding: 15px; margin-bottom: 10px; 
+        }
+        
+        .lib-item { 
+            display: flex; justify-content: space-between; align-items: center; /* Centers button vertically */
+        }
+        
+        .lib-text { font-weight: 700; font-size: 1rem; color: #fff; }
+        .lib-note { color: #aaa; font-size: 0.85rem; margin-top: 4px; line-height: 1.3; }
+        
+        /* NEW EDIT BUTTON STYLE */
+        .edit-btn { 
+            background: rgba(255,255,255,0.05); /* Subtle background */
+            border: 1px solid rgba(255,255,255,0.1); 
+            color: #888; 
+            font-size: 1rem; 
+            width: 42px; height: 42px; /* Large touch target */
+            border-radius: 50%; /* Circle */
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-left: 10px;
+            flex-shrink: 0; /* Prevents button from squishing */
+        }
+        
+        /* Hover State (Desktop/Mouse) */
+        .edit-btn:hover { 
+            background: rgba(255,255,255,0.15); 
+            color: #fff; 
+            border-color: rgba(255,255,255,0.3);
+        }
+        
+        /* Active State (Touch Press) - Turns Accent Color */
+        .edit-btn:active { 
+            background: var(--accent); 
+            color: #000; 
+            border-color: var(--accent); 
+            transform: scale(0.9); /* Satisfying click shrink */
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        /* --- CHAT --- */
+        /* --- CHAT STYLES (UPDATED) --- */
+        #view-chat { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%; 
+            padding-bottom: calc(var(--nav-height) + var(--safe-area-bottom) + 10px) !important; 
+        }
+        
+        .chat-area { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+        }
+        
+        .chat-input-bar { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            padding: 8px 10px; /* Reduced padding */
+            background: #111; 
+            border-top: 1px solid #333; 
+            display: flex; 
+            gap: 8px; 
+            align-items: center; 
+            z-index: 10; 
+            box-sizing: border-box; /* Fixes the clipping issue */
+        }
+        
+        /* Positioning above the bottom nav */
+        #view-chat .chat-input-bar { 
+        /* Added + 20px buffer to lift it up clearly away from the nav */
+        bottom: calc(var(--nav-height) + var(--safe-area-bottom) + 10px); 
+        padding-bottom: 10px; 
+        transition: bottom 0.3s ease; /* Smooth movement if needed */
+}
+        
+        .c-msg { font-size: 1rem; line-height: 1.4; word-break: break-word; color: #ddd; }
+        .c-user { font-weight: 800; margin-right: 5px; font-size: 0.9rem; text-transform: uppercase; }
+        
+        .m-input { 
+            flex: 1; 
+            min-width: 0; /* Prevents overflow */
+            background: #222; 
+            border: 1px solid #444; 
+            color: #fff; 
+            padding: 10px 15px; 
+            border-radius: 20px; 
+            outline: none; 
+            font-size: 0.95rem; 
+        }
+        
+        .m-send { 
+            background: var(--accent); 
+            width: 36px; /* Smaller button */
+            height: 36px; 
+            border-radius: 50%; 
+            border: none; 
+            color: #000; 
+            font-weight: 900; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 1rem; 
+            flex-shrink: 0; /* Prevents button from squishing */
+        }
+
+        /* --- SETTINGS STYLES (FINAL) --- */
+        .set-group { margin-bottom: 20px; }
+        .set-label { 
+            font-size: 0.75rem; color: var(--accent); font-weight: 800; 
+            text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; 
+        }
+        
+        /* NEW: Grid Layout for Automatic Stacking */
+        .settings-row {
+            display: grid;
+            /* This magically handles "Side-by-side if fits, Stack if small" */
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px; 
+            width: 100%;
+            margin-bottom: 20px; /* Adds space before Backgrounds section */
+        }
+        
+        .settings-row .glass-item {
+            margin-bottom: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-sizing: border-box; /* Prevents padding from clipping content */
+        }
+
+        .flex-row { display: flex; gap: 10px; margin-bottom: 0; align-items: center; }
+        
+        .inp-set { 
+            flex: 1; 
+            background: #000; border: 1px solid #333; 
+            color: #fff; padding: 12px; border-radius: 6px; 
+            font-family: inherit; font-size: 0.95rem;
+            min-width: 0; 
+        }
+        
+        .inp-color { 
+            width: 45px; height: 42px; 
+            padding: 0; border: none; background: none; 
+            border-radius: 6px; overflow: hidden; cursor: pointer;
+            flex-shrink: 0; /* Ensures color picker never squishes */
+        }
+        
+        .saved-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+        .saved-thumb { 
+            aspect-ratio: 16/9; background: #222; border: 1px solid #444; 
+            border-radius: 6px; background-size: cover; background-position: center; 
+        }
+
+        /* --- MODAL (MAX WIDTH) --- */
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.9); z-index: 2000; 
+            display: none; align-items: center; justify-content: center; 
+        }
+        
+        .modal-box { 
+            background: #151515; 
+            width: 98%; /* Uses full available width on mobile */
+            max-width: 600px; 
+            max-height: 90vh; 
+            padding: 25px; 
+            border-radius: 12px; border: 1px solid #333; 
+            display: flex; flex-direction: column; gap: 10px; 
+            box-shadow: 0 0 40px rgba(0,0,0,0.9); 
+            overflow-y: auto; 
+            box-sizing: border-box;
+        }
+        
+        /* --- NAV --- */
+        .btm-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: calc(var(--nav-height) + var(--safe-area-bottom)); background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(15px); border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-around; align-items: flex-start; padding-top: 12px; z-index: 1000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #666; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; background: none; border: none; width: 20%; }
+        .nav-item i {
+        font-size: 1rem; /* <--- Change ICON size here (default is around 1rem-1.3rem) */
+        margin-bottom: 5px; /* Adjust spacing between icon and text */}
+        .nav-item.active { color: var(--accent); }
+        .nav-item.active i { transform: translateY(-3px); text-shadow: 0 0 10px var(--accent); }
+
+        /* --- MODAL --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        .modal-box { background: #151515; width: 85%; max-width: 400px; max-height: 85vh; padding: 25px; border-radius: 12px; border: 1px solid #333; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 0 30px rgba(0,0,0,0.8); overflow-y: auto; }
+        .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
+        .btn { padding: 12px 20px; border-radius: 6px; border:none; font-weight: 700; text-transform: uppercase; font-size: 0.9rem; }
+        .btn.save { background: var(--accent); color: #000; }
+        .btn.cancel { background: #333; color: #ccc; }
+        .btn.del { background: #330000; color: #ff4444; border: 1px solid #500; }
+        .fab { position: fixed; bottom: 90px; right: 20px; width: 55px; height: 55px; background: var(--accent); color: #000; border-radius: 50%; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; z-index: 500; }
+        .section-header { font-size: 1.4rem; font-weight: 900; color: var(--accent); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; padding-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="view-container">
+        
+        <div id="view-dash" class="view-section active">
+            
+            <div class="mobile-header">
+                <div class="status-badge">
+                    <div class="status-dot"></div>
+                    <span>Live</span>
+                </div>
+            </div>
+
+            <div class="score-grid">
+                <div class="score-card" style="border-top: 4px solid var(--p1-color, #ff4444);">
+                    <div class="p-label" id="lbl-p1" style="color:var(--p1-color)">P1</div>
+                    <div class="p-score" id="score-p1">0</div>
+                </div>
+                <div class="score-card" style="border-top: 4px solid var(--p2-color, #4488ff);">
+                    <div class="p-label" id="lbl-p2" style="color:var(--p2-color)">P2</div>
+                    <div class="p-score" id="score-p2">0</div>
+                </div>
+            </div>
+
+            <div class="home-stats-box">
+                <div class="stats-text-row">
+                    <div style="text-align:left">
+                        <div class="stat-val" id="st-p1-rate" style="color:var(--p1-color)">0%</div>
+                        <div class="stat-lbl" id="lbl-p1-wr" style="text-align:left">P1 WR</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div class="stat-val" id="st-p2-rate" style="color:var(--p2-color)">0%</div>
+                        <div class="stat-lbl" id="lbl-p2-wr" style="text-align:right">P2 WR</div>
+                    </div>
+                </div>
+                <div class="wr-progress-bg">
+                    <div id="wr-bar-p1" class="wr-bar-fill" style="width:50%; background:var(--p1-color)"></div>
+                    <div id="wr-bar-p2" class="wr-bar-fill" style="width:50%; background:var(--p2-color)"></div>
+                </div>
+            </div>
+
+            <div class="set-label">LATEST ACTIVITY</div>
+            <div id="latest-match-container">
+                <div style="text-align:center; padding:20px; color:#666; font-style:italic;">No matches yet...</div>
+            </div>
+        </div>
+
+        <div id="view-lib" class="view-section">
+            <div class="section-header">Library</div>
+            <select id="lib-cat-select" class="cat-select" onchange="loadLibraryPath(this.value)"></select>
+            <div id="lib-list-container" style="padding-bottom:60px;"></div>
+            <button class="fab" onclick="openLibModal(null)"><i class="fas fa-plus"></i></button>
+        </div>
+
+        <div id="view-hist" class="view-section">
+            <div class="section-header">Match History</div>
+            <div id="full-hist-list"></div>
+        </div>
+
+        <div id="view-chat" class="view-section">
+            <div class="chat-area" id="m-chat-output"></div>
+            <div class="chat-input-bar">
+                <input id="m-chat-input" class="m-input" placeholder="Say something..." autocomplete="off">
+                <button class="m-send" onclick="sendMobileChat()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+
+        <div id="view-set" class="view-section">
+            <div class="section-header">Settings</div>
+            
+            <div class="settings-row">
+                <div class="glass-item set-group">
+                    <div class="set-label">PLAYER 1</div>
+                    <div class="flex-row">
+                        <input class="inp-set" id="set-p1-name" placeholder="Name" onchange="saveConfig('p1Name', this.value)">
+                        <input type="color" class="inp-color" id="set-p1-color" onchange="saveConfig('p1Color', this.value)">
+                    </div>
+                </div>
+
+                <div class="glass-item set-group">
+                    <div class="set-label">PLAYER 2</div>
+                    <div class="flex-row">
+                        <input class="inp-set" id="set-p2-name" placeholder="Name" onchange="saveConfig('p2Name', this.value)">
+                        <input type="color" class="inp-color" id="set-p2-color" onchange="saveConfig('p2Color', this.value)">
+                    </div>
+                </div>
+            </div>
+            <div class="glass-item set-group">
+                <div class="set-label">BACKGROUNDS</div>
+                <input type="file" id="bg-upload" style="width:100%; margin-bottom:10px; font-size:0.9rem;">
+                <div style="font-size:0.8rem; color:#888; margin-bottom:10px;">Select from Saved:</div>
+                <div class="saved-grid" id="saved-bg-list"></div>
+            </div>
+            
+            <div style="text-align:center; margin-top:30px; opacity:0.5; font-size:0.8rem;">FUSION FEAST MOBILE v1.7</div>
+        </div>
+        </div>
+    </div>
+
+    <div class="btm-nav">
+        <button class="nav-item active" onclick="switchView('dash', this)"><i class="fas fa-home"></i> Home</button>
+        <button class="nav-item" onclick="switchView('lib', this)"><i class="fas fa-book"></i> Library</button>
+        <button class="nav-item" onclick="switchView('hist', this)"><i class="fas fa-history"></i> History</button>
+        <button class="nav-item" onclick="switchView('chat', this)"><i class="fas fa-comment-alt"></i> Chat</button>
+        <button class="nav-item" onclick="switchView('set', this)"><i class="fas fa-cog"></i> Settings</button>
+    </div>
+
+    <div class="modal-overlay" id="lib-modal">
+        <div class="modal-box">
+            <h3 style="margin:0; color:var(--accent); text-transform:uppercase;">Edit Item</h3>
+            <input type="hidden" id="lib-edit-key">
+            <input class="inp-set" id="lib-edit-title" placeholder="Title">
+            <textarea class="inp-set" id="lib-edit-note" rows="5" placeholder="Description / Note"></textarea>
+            <div class="btn-row">
+                <button class="btn cancel" onclick="closeLibModal()">Cancel</button>
+                <button class="btn save" onclick="saveLibItem()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal-box">
+            <h3 style="margin:0; color:var(--accent); text-transform:uppercase;">Edit Match</h3>
+            
+            <div class="chal-toggle">
+                <input type="checkbox" id="ed-is-chal" class="chal-chk" onchange="toggleEditMode()">
+                <label style="font-weight:700; color:#fff; font-size:0.9rem;">Challenge Mode</label>
+            </div>
+
+            <div class="ed-row" id="grp-global-mode">
+                <div class="ed-group"><div class="ed-lbl">Mode</div><input id="ed-mode" class="ed-inp"></div>
+                <div class="ed-group"><div class="ed-lbl">Side</div><input id="ed-side" class="ed-inp"></div>
+            </div>
+
+            <div class="ed-row">
+                <div class="ed-group"><div class="ed-lbl">Points</div><input id="ed-points" class="ed-inp"></div>
+                <div class="ed-group"><div class="ed-lbl">SP</div><input id="ed-sp" class="ed-inp"></div>
+            </div>
+
+            <div class="ed-group">
+                <div class="ed-lbl">Winner</div>
+                <select id="ed-winner" class="ed-select">
+                    <option value="-">-</option>
+                    <option value="P1">P1</option>
+                    <option value="P2">P2</option>
+                </select>
+            </div>
+
+            <div style="margin-top:10px;">
+                <div class="ed-lbl" style="margin-bottom:5px;">Games & Links</div>
+                <div id="ed-games-container"></div> 
+            </div>
+
+            <div class="btn-row">
+                <button class="btn del" onclick="deleteMatch()">Delete</button>
+                <button class="btn cancel" onclick="document.getElementById('edit-modal').style.display='none'">Cancel</button>
+                <button class="btn save" onclick="saveMatch()">Save</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- 1. FIREBASE CONFIG ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDz82Dp56EISYqk3hza3upJ2pAjsStgMKo",
+        authDomain: "pokemon-masters-d153a.firebaseapp.com",
+        databaseURL: "https://pokemon-masters-d153a-default-rtdb.firebaseio.com",
+        projectId: "pokemon-masters-d153a",
+        storageBucket: "pokemon-masters-d153a.firebasestorage.app",
+        messagingSenderId: "67655442054",
+        appId: "1:67655442054:web:705baa26ffda58b5d3fb07",
+        measurementId: "G-LGW9RJZDP3"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // --- 2. GLOBAL STATE ---
+    let currentLibPath = "";
+    let p1Name = "P1", p2Name = "P2";
+    let editingMatchId = null;
+
+    // --- 3. NAVIGATION ---
+    window.switchView = function(viewId, btn) {
+        document.querySelectorAll('.view-section').forEach(el => {
+            el.classList.remove('active');
+            el.style.display = 'none'; // Force hide
+        });
+
+        const target = document.getElementById('view-' + viewId);
+        if (target) {
+            target.classList.add('active');
+            if(viewId === 'chat') target.style.display = 'flex'; 
+            else target.style.display = 'block';
+        }
+
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+    };
+
+    // --- 4. DATA SYNC ---
+    db.ref('dashboard').on('value', snap => {
+        const d = snap.val() || {};
+        const sP1 = document.getElementById('score-p1');
+        const sP2 = document.getElementById('score-p2');
+        if(sP1) sP1.innerText = d.scoreAlb || 0;
+        if(sP2) sP2.innerText = d.scoreBiu || 0;
+    });
+
+    db.ref('config').on('value', snap => {
+        const c = snap.val() || {};
+        if(c.theme) document.documentElement.style.setProperty('--accent', c.theme);
+        if(c.bgUrl) document.body.style.backgroundImage = `url('${c.bgUrl}')`;
+        if(c.p1Color) {
+            document.documentElement.style.setProperty('--p1-color', c.p1Color);
+            const p1c = document.getElementById('set-p1-color');
+            if(p1c) p1c.value = c.p1Color;
+        }
+        if(c.p2Color) {
+            document.documentElement.style.setProperty('--p2-color', c.p2Color);
+            const p2c = document.getElementById('set-p2-color');
+            if(p2c) p2c.value = c.p2Color;
+        }
+        p1Name = c.p1Name || "ALB";
+        p2Name = c.p2Name || "BIU";
+        
+        const lblP1 = document.getElementById('lbl-p1'); if(lblP1) lblP1.innerText = p1Name;
+        const lblP2 = document.getElementById('lbl-p2'); if(lblP2) lblP2.innerText = p2Name;
+        // --- ADD THESE TWO LINES ---
+        const lblP1WR = document.getElementById('lbl-p1-wr'); if(lblP1WR) lblP1WR.innerText = p1Name + " WR";
+        const lblP2WR = document.getElementById('lbl-p2-wr'); if(lblP2WR) lblP2WR.innerText = p2Name + " WR";
+        // ---------------------------
+        const inpP1 = document.getElementById('set-p1-name'); if(inpP1) inpP1.value = p1Name;
+        const inpP2 = document.getElementById('set-p2-name'); if(inpP2) inpP2.value = p2Name;
+
+        const bgContainer = document.getElementById('saved-bg-list');
+        if(bgContainer) {
+            bgContainer.innerHTML = '';
+            if(c.savedWallpapers) {
+                c.savedWallpapers.forEach(url => {
+                    let div = document.createElement('div');
+                    div.className = 'saved-thumb';
+                    div.style.backgroundImage = `url('${url}')`;
+                    div.onclick = () => saveConfig('bgUrl', url);
+                    bgContainer.appendChild(div);
+                });
+            }
+        }
+    });
+
+    window.saveConfig = function(key, val) { db.ref('config/' + key).set(val); };
+
+    // --- 5. LIBRARY LOGIC ---
+    const LIB_MAP = {
+        "Rewards": "library/rewards", "Rules": "library/rules", "Game Modes": "library/gameModes",
+        "Side Options": "library/sides", "Points List": "library/points", "SP List": "library/sp", "Shit Wheel": "library/ShitWheelList"
+    };
+    
+    const sel = document.getElementById('lib-cat-select');
+    if(sel) {
+        for(const [name, path] of Object.entries(LIB_MAP)) {
+            let opt = document.createElement('option');
+            opt.value = path; opt.innerText = name; sel.appendChild(opt);
+        }
+        loadLibraryPath(Object.values(LIB_MAP)[0]);
+    }
+
+    function loadLibraryPath(path) {
+        if(currentLibPath) db.ref(currentLibPath).off();
+        currentLibPath = path;
+        const cont = document.getElementById('lib-list-container');
+        if(!cont) return;
+        cont.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">Loading...</div>';
+        
+        db.ref(path).on('value', snap => {
+            cont.innerHTML = '';
+            const data = snap.val();
+            if(!data) { cont.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">Empty List</div>'; return; }
+            
+            let items = [];
+            if(Array.isArray(data)) data.forEach((v, k) => { if(v) items.push({key:k, val:v}); });
+            else Object.keys(data).forEach(k => items.push({key:k, val:data[k]}));
+
+            items.forEach(item => {
+                let text = (typeof item.val === 'object') ? item.val.text : item.val;
+                let note = (typeof item.val === 'object') ? item.val.note : "";
+                const div = document.createElement('div');
+                div.className = 'glass-item lib-item';
+                div.innerHTML = `
+                    <div style="flex:1;">
+                        <div class="lib-text">${text}</div>
+                        ${note ? `<div class="lib-note">${note}</div>` : ''}
+                    </div>
+                    <button class="edit-btn" onclick="openLibModal('${item.key}', '${text.replace(/'/g, "\\'")}', '${note.replace(/'/g, "\\'")}')"><i class="fas fa-pen"></i></button>`;
+                cont.appendChild(div);
+            });
+        });
+    }
+
+    window.openLibModal = function(key, text="", note="") {
+        document.getElementById('lib-modal').style.display = 'flex';
+        document.getElementById('lib-edit-key').value = (key === null) ? "NEW" : key;
+        document.getElementById('lib-edit-title').value = text;
+        document.getElementById('lib-edit-note').value = note;
+    };
+    window.closeLibModal = function() { document.getElementById('lib-modal').style.display = 'none'; };
+    window.saveLibItem = function() {
+        const key = document.getElementById('lib-edit-key').value;
+        const payload = { text: document.getElementById('lib-edit-title').value, note: document.getElementById('lib-edit-note').value };
+        if(key === "NEW") db.ref(currentLibPath).push(payload); else db.ref(currentLibPath + "/" + key).update(payload);
+        closeLibModal();
+    };
+
+    // --- 6. MATCH BUILDER (Updated for Top 3) ---
+    function createMatchCard(data, key, domSuffix = '') {
+        let mode = data.dashSnapshot ? data.dashSnapshot.mode : (data.mode || "Mixed");
+        let side = data.dashSnapshot ? data.dashSnapshot.side : (data.side || "-");
+        let points = data.dashSnapshot ? data.dashSnapshot.points : (data.points || "-");
+        let sp = data.dashSnapshot ? data.dashSnapshot.sp : (data.sp || "-");
+        
+        let winnerName = "-";
+        let winnerColor = "#888";
+        let w = (data.winner || "").toUpperCase();
+        if(w === p1Name.toUpperCase() || w === 'ALB' || w === 'P1') { winnerName = p1Name; winnerColor = "var(--p1-color)"; }
+        else if(w === p2Name.toUpperCase() || w === 'BIU' || w === 'P2') { winnerName = p2Name; winnerColor = "var(--p2-color)"; }
+
+        let dateObj = new Date(data.timestamp);
+        let dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        let isChallenge = (data.settings && data.settings.mode === 'Challenge') || (mode === 'Challenge');
+        let chalBadge = isChallenge ? `<div class="chal-badge">CHALLENGE</div>` : "";
+
+        let recordHtml = "";
+        let detailsHtml = "";
+        let games = Array.isArray(data.record) ? data.record : [];
+        if(games.length === 0 && typeof data.record === 'string') {
+            let parts = data.record.split(/[\s-]+/);
+            parts.forEach(p => { if(p) games.push({ result: p }); });
+        }
+
+        if(games.length > 0) {
+            games.forEach((g, i) => {
+                let r = g.result ? g.result.toUpperCase() : '-';
+                let col = '#555';
+                let displayChar = r.charAt(0);
+
+                if(r === 'A' || r === 'ALB' || r === 'P1') { 
+                    col = 'var(--p1-color)'; 
+                    displayChar = p1Name.charAt(0); 
+                }
+                if(r === 'B' || r === 'BIU' || r === 'P2') { 
+                    col = 'var(--p2-color)'; 
+                    displayChar = p2Name.charAt(0); 
+                }
+                
+                recordHtml += `<div class="rec-dot" style="color:${col}; border-color:${col}">${displayChar}</div>`;
+
+                let gMode = g.mode || "-";
+                let gSide = g.side || "-";
+                detailsHtml += `<div class="det-row"><div class="det-lbl">G${i+1}</div><div class="det-val">${gMode}</div><div class="det-val" style="text-align:right">${gSide}</div></div>`;
+            });
+        } else {
+            recordHtml = `<span style="font-size:0.8rem; color:#666;">-</span>`;
+        }
+
+        let linksHtml = "";
+        let links = data.links || [];
+        if(typeof links === 'string') links = links.split(',');
+        links.forEach((l, i) => {
+            let clean = l.replace(/^G\d+:\s*/, '').trim();
+            if(clean) linksHtml += `<a class="replay-chip" href="${clean}" target="_blank">G${i+1}</a>`;
+        });
+
+        // GENERATE UNIQUE ID: Key + Suffix (e.g. "match123-home")
+        // This ensures the expand button on Home doesn't accidentally toggle the one in History
+        let safeKey = (key ? key + domSuffix : Math.random().toString(36).substr(2, 9));
+        
+        let expandSection = "";
+        if(isChallenge) {
+            expandSection = `
+                <button class="mc-expand-btn" id="btn-${safeKey}" onclick="toggleDetails('${safeKey}')"><i class="fas fa-chevron-down"></i></button>
+                <div class="mc-details" id="det-${safeKey}">
+                    <div class="det-row" style="border-bottom:1px solid #444; margin-bottom:5px;">
+                        <div class="det-lbl">#</div><div class="det-lbl">Mode</div><div class="det-lbl" style="text-align:right">Side</div>
+                    </div>
+                    ${detailsHtml}
+                </div>`;
+        }
+
+        return `
+            <div class="match-card">
+                <div class="mc-header">
+                    <div class="mh-left">
+                        <div class="mc-date-small">${dateStr}</div>
+                        ${chalBadge}
+                        <button class="mc-edit-btn" onclick="openEditModal('${key}')"><i class="fas fa-pen"></i></button>
+                    </div>
+                    <div class="mh-right">
+                        <div class="mc-winner" style="color:${winnerColor}">WINNER: ${winnerName}</div>
+                    </div>
+                </div>
+                <div class="mc-stats-grid">
+                    <div class="mc-stat-item"><span class="mc-lbl">Mode</span><span class="mc-val">${mode}</span></div>
+                    <div class="mc-stat-item"><span class="mc-lbl">Side Quest</span><span class="mc-val">${side}</span></div>
+                    <div class="mc-stat-item"><span class="mc-lbl">Points</span><span class="mc-val">${points}</span></div>
+                    <div class="mc-stat-item"><span class="mc-lbl">SP</span><span class="mc-val">${sp}</span></div>
+                </div>
+                <div class="mc-action-row">
+                    <div class="mc-record-group">${recordHtml}</div>
+                    <div style="display:flex; gap:5px;">${linksHtml}</div>
+                </div>
+                ${expandSection}
+            </div>
+        `;
+    }
+
+    window.toggleDetails = function(id) {
+        const det = document.getElementById('det-' + id);
+        const btn = document.getElementById('btn-' + id);
+        if(det && btn) {
+            if(det.style.display === 'block') { det.style.display = 'none'; btn.style.transform = 'rotate(0deg)'; }
+            else { det.style.display = 'block'; btn.style.transform = 'rotate(180deg)'; }
+        }
+    };
+
+    // --- 7. HISTORY & STATS (Updated for Top 3) ---
+    db.ref('history').limitToLast(50).on('value', snap => {
+        const raw = snap.val();
+        const container = document.getElementById('full-hist-list');
+        const latestContainer = document.getElementById('latest-match-container');
+        if(!container || !latestContainer) return;
+        
+        container.innerHTML = "";
+        latestContainer.innerHTML = "";
+
+        if(!raw) {
+            container.innerHTML = "<div style='text-align:center; padding:20px; color:#666;'>No matches found.</div>";
+            latestContainer.innerHTML = "<div style='text-align:center; padding:20px; color:#666; font-style:italic;'>No matches yet...</div>";
+            const stP1 = document.getElementById('st-p1-rate'); if(stP1) stP1.innerText = "0%";
+            const stP2 = document.getElementById('st-p2-rate'); if(stP2) stP2.innerText = "0%";
+            document.getElementById('wr-bar-p1').style.width = "50%";
+            document.getElementById('wr-bar-p2').style.width = "50%";
+            return;
+        }
+
+        const entries = Object.entries(raw).sort((a,b) => (b[1].timestamp||0) - (a[1].timestamp||0));
+        
+        // 1. POPULATE FULL HISTORY (No suffix)
+        entries.forEach(([key, data]) => {
+            container.innerHTML += createMatchCard(data, key);
+        });
+
+        // 2. POPULATE HOME TAB (Top 3 Recent, with '-home' suffix)
+        const recentGames = entries.slice(0, 3);
+        if(recentGames.length > 0) {
+            recentGames.forEach(([key, data]) => {
+                latestContainer.innerHTML += createMatchCard(data, key, '-home');
+            });
+        } else {
+            latestContainer.innerHTML = "<div style='text-align:center; padding:20px; color:#666; font-style:italic;'>No matches yet...</div>";
+        }
+
+        // STATS CALC
+        let total = entries.length;
+        let p1Wins = 0, p2Wins = 0;
+        entries.forEach(([key, d]) => {
+            let w = (d.winner || "").toUpperCase();
+            if(w === 'ALB' || w === 'P1') p1Wins++;
+            if(w === 'BIU' || w === 'P2') p2Wins++;
+        });
+        
+        let p1Pct = total > 0 ? (p1Wins / total) * 100 : 50;
+        let p2Pct = total > 0 ? (p2Wins / total) * 100 : 50;
+
+        const stP1 = document.getElementById('st-p1-rate'); if(stP1) stP1.innerText = (total > 0 ? p1Pct.toFixed(0) : 0) + "%";
+        const stP2 = document.getElementById('st-p2-rate'); if(stP2) stP2.innerText = (total > 0 ? p2Pct.toFixed(0) : 0) + "%";
+        
+        document.getElementById('wr-bar-p1').style.width = p1Pct + "%";
+        document.getElementById('wr-bar-p2').style.width = p2Pct + "%";
+    });
+
+    // --- 8. CHAT ---
+    const chatOut = document.getElementById('m-chat-output');
+    db.ref('chat').limitToLast(30).on('child_added', snap => {
+        const msg = snap.val();
+        if(chatOut) {
+            const div = document.createElement('div');
+            div.className = 'c-msg';
+            div.innerHTML = `<span class="c-user" style="color:${msg.color}">${msg.name}</span> ${msg.text}`;
+            chatOut.appendChild(div);
+            chatOut.scrollTop = chatOut.scrollHeight;
+        }
+    });
+
+    window.sendMobileChat = function() {
+        const inp = document.getElementById('m-chat-input');
+        if(!inp) return;
+        const txt = inp.value.trim();
+        if(!txt) return;
+        db.ref('chat').push({ name: "Mobile", color: "#aaa", text: txt, timestamp: Date.now() });
+        inp.value = "";
+    };
+
+    // --- 9. BG UPLOAD ---
+    const bgInput = document.getElementById('bg-upload');
+    if(bgInput) {
+        bgInput.addEventListener('change', function(e) {
+            if(e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const url = evt.target.result;
+                    db.ref('config/bgUrl').set(url);
+                    db.ref('config/savedWallpapers').once('value', snap => {
+                        let list = snap.val() || [];
+                        if(!list.includes(url)) { list.push(url); db.ref('config/savedWallpapers').set(list); }
+                    });
+                    alert("Wallpaper updated!");
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+    }
+
+    // --- 10. EDIT MODAL LOGIC ---
+    // Inject Input Rows for Games if not already present
+    const gamesCont = document.getElementById('ed-games-container');
+    if(gamesCont && gamesCont.innerHTML === "") {
+        for(let i=0; i<5; i++) {
+            gamesCont.insertAdjacentHTML('beforeend', `
+                <div class="ed-game-row">
+                    <div class="ed-game-grid g-chal-input" style="display:none; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:5px;">
+                        <input id="g-mode-${i}" class="ed-inp" placeholder="Mode" style="font-size:0.8rem">
+                        <input id="g-side-${i}" class="ed-inp" placeholder="Side" style="font-size:0.8rem">
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <select id="g-res-${i}" class="ed-select" style="width:70px;">
+                            <option value="-">-</option><option value="P1">P1</option><option value="P2">P2</option>
+                        </select>
+                        <input id="g-link-${i}" class="ed-inp" placeholder="Link" style="flex:1;">
+                    </div>
+                </div>
+            `);
+        }
+    }
+
+    window.openEditModal = function(key) {
+        editingMatchId = key;
+        document.getElementById('edit-modal').style.display = 'flex';
+        
+        db.ref('history/' + key).once('value', snap => {
+            const data = snap.val() || {};
+            let isChal = (data.settings && data.settings.mode === 'Challenge') || (data.mode === 'Challenge');
+            document.getElementById('ed-is-chal').checked = isChal;
+            toggleEditMode();
+
+            document.getElementById('ed-mode').value = data.mode || "";
+            document.getElementById('ed-side').value = data.side || "";
+            document.getElementById('ed-points').value = (data.points || data.dashSnapshot?.points || "");
+            document.getElementById('ed-sp').value = (data.sp || data.dashSnapshot?.sp || "");
+            
+            let w = (data.winner || "").toUpperCase();
+            let sel = document.getElementById('ed-winner');
+            if(w === 'ALB' || w === 'P1' || w === p1Name.toUpperCase()) sel.value = "P1";
+            else if(w === 'BIU' || w === 'P2' || w === p2Name.toUpperCase()) sel.value = "P2";
+            else sel.value = "-";
+
+            let games = data.record || [];
+            let links = data.links || [];
+            if(typeof links === 'string') links = links.split(',');
+
+            for(let i=0; i<5; i++) {
+                let g = games[i] || {};
+                let r = g.result || "-";
+                if(r === 'A' || r === 'ALB') r = "P1";
+                if(r === 'B' || r === 'BIU') r = "P2";
+                document.getElementById(`g-res-${i}`).value = r;
+                document.getElementById(`g-mode-${i}`).value = g.mode || "";
+                document.getElementById(`g-side-${i}`).value = g.side || "";
+                let l = links[i] || "";
+                document.getElementById(`g-link-${i}`).value = l.replace(/^G\d+:\s*/, '');
+            }
+        });
+    };
+
+    window.toggleEditMode = function() {
+        const isChal = document.getElementById('ed-is-chal').checked;
+        const globalMode = document.getElementById('grp-global-mode');
+        const gameInputs = document.querySelectorAll('.g-chal-input');
+        if(isChal) {
+            globalMode.style.display = 'none';
+            gameInputs.forEach(el => el.style.display = 'grid');
+        } else {
+            globalMode.style.display = 'flex';
+            gameInputs.forEach(el => el.style.display = 'none');
+        }
+    };
+
+    window.saveMatch = function() {
+        if(!editingMatchId) return;
+        const isChal = document.getElementById('ed-is-chal').checked;
+        let record = [];
+        let links = [];
+
+        for(let i=0; i<5; i++) {
+            let res = document.getElementById(`g-res-${i}`).value;
+            let link = document.getElementById(`g-link-${i}`).value;
+            let gm = document.getElementById(`g-mode-${i}`).value;
+            let gs = document.getElementById(`g-side-${i}`).value;
+
+            if(res !== '-') {
+                let entry = { result: res };
+                if(isChal) { entry.mode = gm; entry.side = gs; }
+                record.push(entry);
+            }
+            if(link) links.push(`G${i+1}: ${link}`);
+        }
+
+        let winnerVal = document.getElementById('ed-winner').value;
+        if(winnerVal === 'P1') winnerVal = 'ALB';
+        if(winnerVal === 'P2') winnerVal = 'BIU';
+
+        const payload = {
+            mode: isChal ? "Challenge" : document.getElementById('ed-mode').value,
+            side: isChal ? "-" : document.getElementById('ed-side').value,
+            points: document.getElementById('ed-points').value,
+            sp: document.getElementById('ed-sp').value,
+            winner: winnerVal,
+            record: record,
+            links: links,
+            settings: { mode: isChal ? "Challenge" : "Standard" }
+        };
+
+        db.ref('history/' + editingMatchId).update(payload);
+        document.getElementById('edit-modal').style.display = 'none';
+    };
+
+    window.deleteMatch = function() {
+        if(confirm("Delete this match?")) {
+            db.ref('history/' + editingMatchId).remove();
+            document.getElementById('edit-modal').style.display = 'none';
+        }
+    };
+
+    // --- 11. INITIALIZATION FIX ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const homeBtn = document.querySelector('.nav-item');
+        if(homeBtn) window.switchView('dash', homeBtn);
+        document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
+        const style = document.createElement('style');
+        style.innerHTML = `button, .nav-item, .fab { touch-action: manipulation; }`;
+        document.head.appendChild(style);
+    });
+
+</script>
+</body>
+</html>
