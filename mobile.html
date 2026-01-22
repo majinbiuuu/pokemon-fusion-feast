@@ -16,7 +16,7 @@
     <style>
         /* --- MOBILE SPECIFIC OVERRIDES --- */
         :root {
-            --nav-height: 50px;
+            --nav-height: 75px;
             --safe-area-bottom: env(safe-area-inset-bottom);
             --glass-strong: rgba(20, 20, 20, 0.95);
         }
@@ -55,6 +55,46 @@
             backdrop-filter: blur(5px);
         }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff0044; box-shadow: 0 0 10px #ff0044; }
+        
+        /* Update Header to spread items apart */
+        .mobile-header {
+            justify-content: space-between; /* Pushes badge left, buttons right */
+        }
+
+        /* Container for the new buttons */
+        .header-actions {
+            display: flex;
+            gap: 15px; /* Space between the two buttons */
+        }
+
+        /* The Buttons */
+        .hdr-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.3s ease, transform 0.2s;
+        }
+
+        .hdr-btn:active {
+            transform: scale(0.9);
+            color: #fff;
+        }
+
+        /* Active State for Party Mode (Glowing) */
+        .hdr-btn.party-on {
+            color: #ffcc00; /* Gold/Yellow */
+            text-shadow: 0 0 10px #ffcc00, 0 0 20px #ffaa00;
+            animation: pulseParty 1s infinite alternate;
+        }
+
+        @keyframes pulseParty {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
 
         /* --- VIEW CONTAINER --- */
         .view-container {
@@ -76,8 +116,9 @@
         .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; margin-bottom: 15px; }
 
         .score-card {
-            background: var(--glass-strong);
-            backdrop-filter: blur(12px);
+            /* background: var(--glass-strong);*/
+            backdrop-filter: blur(8px);
+            background: rgba(20, 20, 20, 0.6) !important;
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 16px;
             padding: 20px;
@@ -92,7 +133,8 @@
 
         /* --- HOME STATS (UPDATED) --- */
         .home-stats-box {
-            background: rgba(0,0,0,0.4); border-radius: 12px; padding: 15px 20px;
+            background: rgba(20, 20, 20, 0.6) !important; 
+            backdrop-filter: blur(8px); /* Optional: Keeps the blur effect */; border-radius: 12px; padding: 15px 20px;
             margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1);
             display: flex; flex-direction: column; gap: 10px;
         }
@@ -108,7 +150,7 @@
 
         /* --- MATCH CARD STYLES --- */
         .match-card {
-            background: var(--glass-strong);
+            background: rgba(20, 20, 20, 0.6) !important; 
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px;
@@ -215,7 +257,8 @@
         }
         
         .glass-item { 
-            background: var(--glass-strong); backdrop-filter: blur(8px); 
+            background: rgba(20, 20, 20, 0.6) !important; 
+            backdrop-filter: blur(8px); 
             border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; 
             padding: 15px; margin-bottom: 10px; 
         }
@@ -257,75 +300,69 @@
             box-shadow: 0 0 15px var(--accent);
         }
 
-        /* --- CHAT --- */
-        /* --- CHAT STYLES (UPDATED) --- */
+        /* --- CHAT STYLES (BUBBLES) --- */
         #view-chat { 
-            display: flex; 
-            flex-direction: column; 
-            height: 100%; 
+            display: flex; flex-direction: column; height: 100%; 
             padding-bottom: calc(var(--nav-height) + var(--safe-area-bottom) + 10px) !important; 
         }
-        
+
         .chat-area { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 15px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
+            flex: 1; overflow-y: auto; padding: 15px; 
+            display: flex; flex-direction: column; gap: 12px; 
         }
+
+        /* Message Row Container */
+        .message-row { display: flex; flex-direction: column; max-width: 75%; }
         
+        /* RECEIVED (Left Side) */
+        .message-row.received { align-self: flex-start; }
+        .message-row.received .bubble {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 18px 18px 18px 4px; /* Tail bottom-left */
+        }
+        .message-row.received .sender-name {
+            font-size: 0.7rem; color: #888; margin-bottom: 4px; margin-left: 5px; font-weight: 700;
+        }
+
+        /* SENT (Right Side - You) */
+        .message-row.sent { align-self: flex-end; align-items: flex-end; }
+        .message-row.sent .bubble {
+            background: rgba(var(--accent-rgb, 0, 190, 255), 0.3); /* Uses your theme color or default blue */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-radius: 18px 18px 4px 18px; /* Tail bottom-right */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Bubble Common */
+        .bubble {
+            padding: 10px 14px;
+            font-size: 0.95rem; line-height: 1.4;
+            position: relative; word-wrap: break-word;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Input Bar */
         .chat-input-bar { 
-            position: absolute; 
-            bottom: 0; 
-            left: 0; 
-            width: 100%; 
-            padding: 8px 10px; /* Reduced padding */
-            background: #111; 
-            border-top: 1px solid #333; 
-            display: flex; 
-            gap: 8px; 
-            align-items: center; 
-            z-index: 10; 
-            box-sizing: border-box; /* Fixes the clipping issue */
+            position: absolute; bottom: 0; left: 0; width: 100%; 
+            padding: 10px; background: #111; border-top: 1px solid #333; 
+            display: flex; gap: 8px; align-items: center; z-index: 10; 
+            box-sizing: border-box;
+            /* Positioning above nav */
+            bottom: calc(var(--nav-height) + var(--safe-area-bottom) + 10px);
         }
-        
-        /* Positioning above the bottom nav */
-        #view-chat .chat-input-bar { 
-        /* Added + 20px buffer to lift it up clearly away from the nav */
-        bottom: calc(var(--nav-height) + var(--safe-area-bottom) + 10px); 
-        padding-bottom: 10px; 
-        transition: bottom 0.3s ease; /* Smooth movement if needed */
-}
-        
-        .c-msg { font-size: 1rem; line-height: 1.4; word-break: break-word; color: #ddd; }
-        .c-user { font-weight: 800; margin-right: 5px; font-size: 0.9rem; text-transform: uppercase; }
-        
+
         .m-input { 
-            flex: 1; 
-            min-width: 0; /* Prevents overflow */
-            background: #222; 
-            border: 1px solid #444; 
-            color: #fff; 
-            padding: 10px 15px; 
-            border-radius: 20px; 
-            outline: none; 
-            font-size: 0.95rem; 
+            flex: 1; min-width: 0; background: #222; border: 1px solid #444; 
+            color: #fff; padding: 10px 15px; border-radius: 20px; 
+            outline: none; font-size: 0.95rem; 
         }
-        
         .m-send { 
-            background: var(--accent); 
-            width: 36px; /* Smaller button */
-            height: 36px; 
-            border-radius: 50%; 
-            border: none; 
-            color: #000; 
-            font-weight: 900; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 1rem; 
-            flex-shrink: 0; /* Prevents button from squishing */
+            background: var(--accent); width: 40px; height: 40px; 
+            border-radius: 50%; border: none; color: #000; font-weight: 900; 
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
 
         /* --- SETTINGS STYLES (FINAL) --- */
@@ -396,12 +433,12 @@
             overflow-y: auto; 
             box-sizing: border-box;
         }
-        
+
         /* --- NAV --- */
         .btm-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: calc(var(--nav-height) + var(--safe-area-bottom)); background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(15px); border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-around; align-items: flex-start; padding-top: 12px; z-index: 1000; }
         .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #666; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; background: none; border: none; width: 20%; }
         .nav-item i {
-        font-size: 1rem; /* <--- Change ICON size here (default is around 1rem-1.3rem) */
+        font-size: 1.1rem; /* <--- Change ICON size here (default is around 1rem-1.3rem) */
         margin-bottom: 5px; /* Adjust spacing between icon and text */}
         .nav-item.active { color: var(--accent); }
         .nav-item.active i { transform: translateY(-3px); text-shadow: 0 0 10px var(--accent); }
@@ -428,6 +465,10 @@
                 <div class="status-badge">
                     <div class="status-dot"></div>
                     <span>Live</span>
+                </div>
+                <div class="header-actions">
+                    <button class="hdr-btn" onclick="cycleTheme()"><i class="fas fa-palette"></i></button>
+                    <button class="hdr-btn" id="btn-party" onclick="toggleParty()"><i class="fas fa-bolt"></i></button>
                 </div>
             </div>
 
@@ -618,18 +659,13 @@
     };
 
     // --- 4. DATA SYNC ---
-    db.ref('dashboard').on('value', snap => {
-        const d = snap.val() || {};
-        const sP1 = document.getElementById('score-p1');
-        const sP2 = document.getElementById('score-p2');
-        if(sP1) sP1.innerText = d.scoreAlb || 0;
-        if(sP2) sP2.innerText = d.scoreBiu || 0;
-    });
-
     db.ref('config').on('value', snap => {
         const c = snap.val() || {};
-        if(c.theme) document.documentElement.style.setProperty('--accent', c.theme);
+        
+        // Background
         if(c.bgUrl) document.body.style.backgroundImage = `url('${c.bgUrl}')`;
+        
+        // Player Colors
         if(c.p1Color) {
             document.documentElement.style.setProperty('--p1-color', c.p1Color);
             const p1c = document.getElementById('set-p1-color');
@@ -640,18 +676,46 @@
             const p2c = document.getElementById('set-p2-color');
             if(p2c) p2c.value = c.p2Color;
         }
+
+        // Names
         p1Name = c.p1Name || "ALB";
         p2Name = c.p2Name || "BIU";
         
+        // Update Name Labels in DOM
         const lblP1 = document.getElementById('lbl-p1'); if(lblP1) lblP1.innerText = p1Name;
         const lblP2 = document.getElementById('lbl-p2'); if(lblP2) lblP2.innerText = p2Name;
-        // --- ADD THESE TWO LINES ---
         const lblP1WR = document.getElementById('lbl-p1-wr'); if(lblP1WR) lblP1WR.innerText = p1Name + " WR";
         const lblP2WR = document.getElementById('lbl-p2-wr'); if(lblP2WR) lblP2WR.innerText = p2Name + " WR";
-        // ---------------------------
         const inpP1 = document.getElementById('set-p1-name'); if(inpP1) inpP1.value = p1Name;
         const inpP2 = document.getElementById('set-p2-name'); if(inpP2) inpP2.value = p2Name;
 
+        // --- UPDATED THEME / PARTY LOGIC ---
+        const partyBtn = document.getElementById('btn-party');
+        
+        if (c.partyMode === true) {
+            // 1. Activate Visuals
+            if(partyBtn) partyBtn.classList.add('party-on');
+            
+            // 2. Start the Smooth Color Loop
+            startPartyLoop();
+        } else {
+            // 1. Deactivate Visuals
+            if(partyBtn) partyBtn.classList.remove('party-on');
+            
+            // 2. Stop Loop & Restore Static Color
+            stopPartyLoop(c.theme || '#00beff');
+            
+            // 3. Helper to set RGB for transparency when static
+            // (Quick hex-to-rgb for the static color)
+            let hex = c.theme || '#00beff';
+            let r = parseInt(hex.substring(1,3), 16);
+            let g = parseInt(hex.substring(3,5), 16);
+            let b = parseInt(hex.substring(5,7), 16);
+            document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
+        }
+        // -----------------------------------
+
+        // Saved Wallpapers
         const bgContainer = document.getElementById('saved-bg-list');
         if(bgContainer) {
             bgContainer.innerHTML = '';
@@ -898,15 +962,33 @@
         document.getElementById('wr-bar-p2').style.width = p2Pct + "%";
     });
 
-    // --- 8. CHAT ---
+    // --- 8. CHAT (BUBBLES) ---
     const chatOut = document.getElementById('m-chat-output');
-    db.ref('chat').limitToLast(30).on('child_added', snap => {
+    
+    // Identify who "I" am for this session
+    const MY_NAME = "Mobile"; 
+
+    db.ref('chat').limitToLast(50).on('child_added', snap => {
         const msg = snap.val();
         if(chatOut) {
             const div = document.createElement('div');
-            div.className = 'c-msg';
-            div.innerHTML = `<span class="c-user" style="color:${msg.color}">${msg.name}</span> ${msg.text}`;
+            
+            // Check if I sent this or someone else
+            const isMe = (msg.name === MY_NAME);
+            
+            // Apply classes
+            div.className = isMe ? 'message-row sent' : 'message-row received';
+            
+            // HTML Structure: Name (only for others) + Bubble
+            let nameHtml = isMe ? '' : `<div class="sender-name" style="color:${msg.color}">${msg.name}</div>`;
+            
+            div.innerHTML = `
+                ${nameHtml}
+                <div class="bubble">${msg.text}</div>
+            `;
+            
             chatOut.appendChild(div);
+            // Auto-scroll to bottom
             chatOut.scrollTop = chatOut.scrollHeight;
         }
     });
@@ -916,7 +998,15 @@
         if(!inp) return;
         const txt = inp.value.trim();
         if(!txt) return;
-        db.ref('chat').push({ name: "Mobile", color: "#aaa", text: txt, timestamp: Date.now() });
+        
+        // Push message with standard "Mobile" name
+        db.ref('chat').push({ 
+            name: MY_NAME, 
+            color: "#aaa", // You can change this color to match your theme
+            text: txt, 
+            timestamp: Date.now() 
+        });
+        
         inp.value = "";
     };
 
@@ -1069,6 +1159,72 @@
         style.innerHTML = `button, .nav-item, .fab { touch-action: manipulation; }`;
         document.head.appendChild(style);
     });
+
+    // --- THEME & PARTY BUTTONS (UPDATED) ---
+
+// 1. Standard Theme Toggle
+const THEME_COLORS = ['#00beff', '#ff4444', '#00ff88', '#aa00ff', '#ffaa00', '#ff00cc'];
+
+window.cycleTheme = function() {
+    let current = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    let idx = THEME_COLORS.indexOf(current);
+    // If current color isn't in list (or we are in party mode), start from 0
+    let nextColor = (idx === -1) ? THEME_COLORS[0] : THEME_COLORS[(idx + 1) % THEME_COLORS.length];
+    
+    // Turn off party mode if we manually pick a color
+    db.ref('config/partyMode').set(false);
+    db.ref('config/theme').set(nextColor);
+};
+
+// 2. Party Mode Logic
+window.toggleParty = function() {
+    db.ref('config/partyMode').once('value', snap => {
+        db.ref('config/partyMode').set(!snap.val());
+    });
+};
+
+// 3. The Smooth Loop
+let partyFrameId;
+
+function startPartyLoop() {
+    if (partyFrameId) return; // Already running
+
+    function loop() {
+        // Calculate hue based on time for infinite smoothness
+        const time = Date.now() / 15; // Divide by 15 controls speed (Lower = Faster)
+        const hue = time % 360;
+
+        // Set the Main Accent Color
+        const colorString = `hsl(${hue}, 100%, 50%)`;
+        document.documentElement.style.setProperty('--accent', colorString);
+
+        // Set the RGB version (Important for glass/transparency effects)
+        // Simple HSL to RGB conversion for Saturation 100%, Lightness 50%
+        const f = (n, k = (n + hue / 30) % 12) => 0.5 - 0.5 * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+        const r = Math.round(f(0) * 255);
+        const g = Math.round(f(8) * 255);
+        const b = Math.round(f(4) * 255);
+        document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
+
+        partyFrameId = requestAnimationFrame(loop);
+    }
+    loop();
+}
+
+function stopPartyLoop(originalHex) {
+    if (partyFrameId) {
+        cancelAnimationFrame(partyFrameId);
+        partyFrameId = null;
+    }
+    // Revert to the specific color saved in Firebase
+    if(originalHex) {
+        document.documentElement.style.setProperty('--accent', originalHex);
+        // We rely on the hex-to-rgb conversion (if you have one) or just let it be.
+        // For simplicity, we can let the next Firebase update fix the RGB variable.
+    }
+}
+
+
 
 </script>
 </body>
