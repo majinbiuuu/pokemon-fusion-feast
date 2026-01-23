@@ -69,11 +69,9 @@
           
           <div class="section-box">
               <div class="setting-label">Background Wallpaper</div>
-              
               <div id="drop-zone" ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)" ondrop="dropHandler(event)">
                   DROP IMAGE HERE
               </div>
-
               <div class="flex-row">
                   <input type="text" id="st-bg-url" class="st-input" placeholder="Paste URL..." onchange="saveConfig('bgUrl', this.value)">
                   <button class="st-btn action" onclick="addCurrentToSaved()">Save</button>
@@ -81,7 +79,6 @@
               </div>
               <div class="saved-grid" id="saved-bg-list"></div>
           </div>
-
       </div>
   </div>
 
@@ -100,6 +97,18 @@
     </div>
 
     <div class="top-center">
+        
+        <div class="top-score-box p1-win">
+            <div class="ts-row">
+                <div class="ts-name" id="disp-p1-name" style="color:var(--p1-color)">P1</div>
+                <div class="ts-score" id="score-alb">0</div>
+                <div class="ts-ctrls">
+                    <div class="mini-plus" onclick="modScore('alb', 'add')">+</div>
+                    <div class="mini-plus" onclick="modScore('alb', 'sub')">-</div>
+                </div>
+            </div>
+        </div>
+
         <div class="np-widget">
             <img id="np-img-top" class="np-thumb-mini" src="">
             <div class="np-info">
@@ -119,6 +128,18 @@
                 <input type="range" class="top-vol-slider" id="top-vol-slider" min="0" max="100" value="100" oninput="sendVolume(this.value)">
             </div>
         </div>
+
+        <div class="top-score-box p2-win">
+            <div class="ts-row">
+                <div class="ts-name" id="disp-p2-name" style="color:var(--p2-color)">P2</div>
+                <div class="ts-score" id="score-biu">0</div>
+                <div class="ts-ctrls">
+                    <div class="mini-plus" onclick="modScore('biu', 'add')">+</div>
+                    <div class="mini-plus" onclick="modScore('biu', 'sub')">-</div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <div class="top-right">
@@ -134,21 +155,10 @@
   <div class="stage">
     
     <div class="col-p" id="col-alb">
-      <div class="p-header">
-          <div class="p-name" id="disp-p1-name" style="color:var(--p1-color)">P1</div>
-          <div class="p-score" id="score-alb">0</div>
-          <div class="p-ctrls" style="display:flex; flex-direction:column; gap:5px; margin-left:8px;">
-              <div class="tiny-btn" onclick="modScore('alb', 'add')">+</div>
-              <div class="tiny-btn" onclick="modScore('alb', 'sub')">-</div>
-          </div>
-      </div>
       
       <div class="ctrl-row">
           <button class="col-btn collapse-btn" onclick="toggleCollapse()" title="Collapse/Expand">
               <i class="fas fa-compress-alt"></i>
-          </button>
-          <button class="col-btn export" id="export-alb" onclick="exportTeam('alb')" title="Export to Showdown">
-              <i class="fas fa-file-export"></i> Export Team
           </button>
       </div>
 
@@ -190,38 +200,22 @@
       </div>
       
       <div id="view-battle" class="tab-content"><iframe id="frame-battle" src="battle.html" style="width:100%;height:100%;border:none;"></iframe></div>
-
       <div id="view-play" class="tab-content active"><iframe id="frame-play" src="play.html" style="width:100%;height:100%;border:none;"></iframe></div>
-      
       <div id="view-gen" class="tab-content" ondragover="allowReturnDrop(event)" ondrop="returnDrop(event)">
         <iframe id="frame-gen" src="gen.html" style="width:100%;height:100%;border:none; pointer-events:all;"></iframe>
       </div>
-      
       <div id="view-music" class="tab-content"><iframe id="frame-music" src="music.html" style="width:100%;height:100%;border:none;"></iframe></div>
-      
       <div id="view-hist" class="tab-content"><iframe id="frame-hist" src="history.html" style="width:100%;height:100%;border:none;"></iframe></div>
-
       <div id="view-lib" class="tab-content">
           <iframe id="frame-lib" src="library.html" style="width:100%;height:100%;border:none;"></iframe>
       </div>
     </div>
 
     <div class="col-p" id="col-biu">
-      <div class="p-header">
-          <div class="p-name" id="disp-p2-name" style="color:var(--p2-color)">P2</div>
-          <div class="p-score" id="score-biu">0</div>
-          <div class="p-ctrls" style="display:flex; flex-direction:column; gap:5px; margin-left:8px;">
-              <div class="tiny-btn" onclick="modScore('biu', 'add')">+</div>
-              <div class="tiny-btn" onclick="modScore('biu', 'sub')">-</div>
-          </div>
-      </div>
-
+      
       <div class="ctrl-row">
           <button class="col-btn collapse-btn" onclick="toggleCollapse()" title="Collapse/Expand">
               <i class="fas fa-compress-alt"></i>
-          </button>
-          <button class="col-btn export" id="export-biu" onclick="exportTeam('biu')" title="Export to Showdown">
-              <i class="fas fa-file-export"></i> Export Team
           </button>
       </div>
 
