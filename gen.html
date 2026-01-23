@@ -85,16 +85,57 @@
   @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
   /* GRID */
-  #gen-grid { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; padding-bottom: 60px; }
-  .poke-card { background: #111; border: 1px solid #333; border-radius: 12px; width: 150px; padding: 15px 10px; text-align: center; cursor: grab; position: relative; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 8px 20px rgba(0,0,0,0.5); user-select: none; }
+  /* --- DYNAMIC GRID SIZING --- */
+  #gen-grid { 
+      display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; padding-bottom: 60px;
+      
+      /* Default sizes for 11+ items */
+      --card-w: 150px;
+      --img-s: 110px;
+      --font-s: 18px;
+      --type-s: 12px;
+  }
+
+  /* 1 Pokemon: Huge */
+  #gen-grid[data-count="1"] { --card-w: 320px; --img-s: 240px; --font-s: 30px; --type-s: 20px;}
+
+  /* 2 Pokemon: Large */
+  #gen-grid[data-count="2"] { --card-w: 260px; --img-s: 190px; --font-s: 25px; --type-s: 18px;}
+
+  /* 3 Pokemon: Medium-Large */
+  #gen-grid[data-count="3"] { --card-w: 210px; --img-s: 150px; --font-s: 23px; --type-s: 16px;}
+
+  /* 4 to 10 Pokemon: Medium */
+  #gen-grid[data-range="medium"] { --card-w: 180px; --img-s: 130px; --font-s: 21px; --type-s: 14px;}
+
+  /* --- CARD STYLES --- */
+  .poke-card { 
+      background: #111; border: 1px solid #333; border-radius: 12px; 
+      width: var(--card-w); 
+      padding: 15px 10px; text-align: center; cursor: grab; position: relative; 
+      transition: transform 0.2s, box-shadow 0.2s, width 0.3s; 
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5); user-select: none; 
+  }
   .poke-card:hover { transform: translateY(-5px); border-color: var(--theme-green); box-shadow: 0 0 20px var(--theme-green); }
   .poke-card.used { opacity: 0.2; filter: grayscale(1); border-style: dashed; pointer-events: none; }
   
-  /* SPRITES */
-  .poke-img { width: 110px; height: 110px; object-fit: contain; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.6)); transition: 0.2s; margin-bottom: 5px; pointer-events: none; }
+  .poke-img { 
+      width: var(--img-s); height: var(--img-s); 
+      object-fit: contain; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.6)); 
+      transition: 0.2s; margin-bottom: 5px; pointer-events: none; 
+  }
   
-  .poke-name { color: #fff; font-weight: 900; font-size: 14px; margin-top: 5px; text-transform: capitalize; }
-  .poke-type { font-size: 11px; font-weight: 700; color: #888; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .poke-name { 
+      color: #fff; font-weight: 900; 
+      font-size: var(--font-s); 
+      margin-top: 5px; text-transform: capitalize; 
+  }
+
+  .poke-type { 
+      font-weight: 700; color: #888; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px;
+      font-size: var(--type-s); /* This now auto-calculates based on name size */
+  }
+
   .shiny-star { position: absolute; top: 10px; right: 10px; font-size: 14px; color: #ffff00; text-shadow: 0 0 5px orange; animation: sparkle 2s infinite; }
   .shiny-star::after { content: '\2726'; }
   @keyframes sparkle { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(1.2);} }
@@ -468,11 +509,28 @@
   function renderGrid(team) {
     var g = document.getElementById('gen-grid'); 
     g.innerHTML=''; 
+    
+    // --- START NEW CODE ---
+    var count = team ? team.length : 0;
+    
+    // Set the exact count attribute
+    g.setAttribute('data-count', count);
+    
+    // Set a range attribute for groups (4 to 9)
+    if(count >= 4 && count <= 10) {
+        g.setAttribute('data-range', 'medium');
+    } else {
+        g.removeAttribute('data-range');
+    }
+    // --- END NEW CODE ---
+
     if(!team || team.length === 0) return; 
 
     team.forEach(function(item) {
+       // ... existing code inside the loop remains exactly the same ...
        var p = item.data;
        var shiny = item.shiny;
+       // (Keep the rest of your existing loop logic here)
        if(shiny === undefined || shiny === false) {
            if(activeColorsLength() === 0 && Math.random() < 0.01) shiny = true;
        }
@@ -489,8 +547,8 @@
        var backupImg = "https://play.pokemonshowdown.com/sprites/" + backupFolder + "/" + spriteName + ".png";
 
        var typeHtml = types.map(function(t) { 
-            var found = TYPES.find(obj => obj.v === t.toLowerCase());
-            return found ? found.t : t;
+           var found = TYPES.find(obj => obj.v === t.toLowerCase());
+           return found ? found.t : t;
        }).join(' / ');
 
        var d=document.createElement('div'); d.className='poke-card';

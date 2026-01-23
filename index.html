@@ -15,12 +15,19 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-  <script src="constants.js"></script>          <script src="sync-manager.js"></script>        <script src="theme-manager.js"></script>       <script src="drag-drop-manager.js"></script>   <script src="export-manager.js"></script>       <script src="main.js"></script>
+  <script src="constants.js"></script>          <script src="sync-manager.js"></script>        <script src="theme-manager.js"></script>       <script src="drag-drop-manager.js"></script> <script src="poke-run.js"></script>  <script src="export-manager.js"></script>       <script src="main.js"></script> 
   <script src="chat-manager.js"></script> </head>
 <body>
   
   <div id="settings-modal" onclick="if(event.target===this) toggleSettings()">
       <div class="modal-box">
+        <div class="setting-group">
+    <div class="setting-label">Pokemon Mascots</div>
+    <div class="flex-row">
+        <button class="st-btn" id="mascot-btn-on" onclick="setMascotState(true)">ON</button>
+        <button class="st-btn" id="mascot-btn-off" onclick="setMascotState(false)">OFF</button>
+    </div>
+</div>
           <div class="modal-header">
               <div class="modal-title">DASHBOARD SETTINGS</div>
               <div class="modal-close" onclick="toggleSettings()">&times;</div>
