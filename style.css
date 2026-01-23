@@ -60,7 +60,7 @@ body::before {
     /* 👇 IMPORTANT: Stops it from overflowing */
     min-width: 0; 
     padding: 0 20px;
-    gap: 15px;
+    gap: 50px;
 }
 
 /* MUSIC WIDGET (The "Squishy" Part) */
@@ -72,7 +72,7 @@ body::before {
     min-width: 150px; /* Don't shrink smaller than this */
     
     height: 55px; 
-    background: rgba(0,0,0,0.4); 
+    background: rgba(0,0,0,0.6); 
     border: var(--border); 
     border-radius: 12px; 
     display: flex; 
@@ -85,7 +85,7 @@ body::before {
 .top-score-box {
     flex: 0 0 auto; /* Keep rigid */
     /* ... keep your existing styles below ... */
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.6);
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 10px;
     padding: 5px 12px;
@@ -127,7 +127,7 @@ body::before {
     min-width: 300px; 
     
     height: 60px; 
-    background: rgba(0,0,0,0.4); 
+    background: rgba(0,0,0,0.6); 
     border: var(--border); 
     border-radius: 12px; 
     display: flex; 
@@ -209,7 +209,7 @@ body::before {
     flex-direction: column; 
     gap: 10px; 
     
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
 
 
     /* ANIMATION MAGIC 👇 */
@@ -336,7 +336,7 @@ body::before {
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
     justify-items: center;
-    background: rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0.6);
     padding: 12px; 
     border-radius: 8px;
     margin-bottom: 10px;
@@ -377,10 +377,10 @@ body::before {
 /* --- CENTER COLUMN (DYNAMIC) --- */
 .col-c { 
     display: flex; flex-direction: column; 
-    background: rgba(15,15,15,0.5); backdrop-filter: blur(6px); 
+    background: rgba(15,15,15,0.6); backdrop-filter: blur(6px); 
     border: var(--border); border-radius: 16px; 
     overflow: hidden; position: relative; 
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
     
     /* ADDED FOR ANIMATION */
     transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1), min-height 0.4s ease;
@@ -412,7 +412,7 @@ body::before {
     align-items: center; 
     gap: 15px; 
     
-    background: rgba(0, 0, 0, 0.4); 
+    background: rgba(0, 0, 0, 0.6); 
     border-bottom: 1px solid rgba(255,255,255,0.05); 
     flex-shrink: 0; 
     
@@ -482,7 +482,7 @@ body::before {
 
 .tab:hover { color: #ccc; }
 .tab.active { color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.3); }
-.tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 3px; background: var(--accent); border-radius: 2px; box-shadow: 0 -2px 10px var(--accent); }
+.tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 50px; height: 5px; background: var(--accent); border-radius: 2px; box-shadow: 0 -2px 10px var(--accent); }
 
 /* New Tab Button (Collapse) */
 .tab-btn-collapse {
@@ -846,4 +846,93 @@ body::before {
     white-space: nowrap;
     overflow: hidden;
     padding: 0 5px;
+}
+
+/* --- MASCOT SYSTEM V2 (Multiple Entry Points) --- */
+
+.mascot {
+    position: fixed;
+    z-index: 2000; /* High enough to be over glass columns */
+    pointer-events: none;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6));
+    width: 70px; /* Default size */
+}
+
+/* 1. RUNNER (Bottom) */
+.mascot.run-bottom {
+    bottom: -10px;
+    animation: runAcross 10s linear forwards;
+}
+.mascot.run-bottom[data-dir="left"] {
+    animation: runLeft 10s linear forwards;
+    left: auto; 
+}
+
+/* 2. PEEK BOTTOM (Classic) */
+.mascot.peek-bottom {
+    bottom: -100px;
+    left: 20%; /* Randomize this in JS if you want, defaults left-ish */
+    animation: peekUp 5s ease-in-out forwards;
+}
+
+/* 3. PEEK TOP (The Scoreboard Peepers) */
+.mascot.peek-top-L {
+    top: -100px; /* Start hidden above */
+    left: 150px; /* Near P1 Score */
+    transform: rotate(180deg); /* Upside down! Like a bat */
+    animation: peekDown 5s ease-in-out forwards;
+}
+.mascot.peek-top-R {
+    top: -100px;
+    right: 150px; /* Near P2 Score */
+    transform: rotate(180deg);
+    animation: peekDown 5s ease-in-out forwards;
+}
+
+/* 4. PEEK SIDES (The Column Peepers) */
+.mascot.peek-side-L {
+    left: -100px; /* Start hidden left */
+    /* Top is set by JS randomly */
+    transform: rotate(90deg); /* Sideways */
+    animation: peekRight 5s ease-in-out forwards;
+}
+.mascot.peek-side-R {
+    right: -100px; /* Start hidden right */
+    /* Top is set by JS randomly */
+    transform: scaleX(-1) rotate(90deg); /* Flipped & Sideways */
+    animation: peekLeft 5s ease-in-out forwards;
+}
+
+
+/* --- KEYFRAME ANIMATIONS --- */
+
+@keyframes runAcross { 0% { left: -100px; } 100% { left: 110vw; } }
+@keyframes runLeft   { 0% { right: -100px; } 100% { right: 110vw; } }
+
+@keyframes peekUp {
+    0% { bottom: -90px; }
+    20% { bottom: -10px; } /* Pop up */
+    80% { bottom: -10px; } /* Stay */
+    100% { bottom: -90px; }
+}
+
+@keyframes peekDown {
+    0% { top: -90px; }
+    20% { top: -10px; } /* Drop down */
+    80% { top: -10px; }
+    100% { top: -90px; }
+}
+
+@keyframes peekRight { /* From Left Wall */
+    0% { left: -80px; }
+    20% { left: -10px; } /* Peek out */
+    80% { left: -10px; }
+    100% { left: -80px; }
+}
+
+@keyframes peekLeft { /* From Right Wall */
+    0% { right: -80px; }
+    20% { right: -10px; } /* Peek out */
+    80% { right: -10px; }
+    100% { right: -80px; }
 }
