@@ -1,6 +1,5 @@
 /* SHELL LAYOUT */
 html, body { 
-
   background-color: var(--bg); 
   background-position: center center;
   background-size: cover;
@@ -24,21 +23,90 @@ body::before {
     background: rgba(0,0,0,0.5); z-index: -1; pointer-events: none;
 }
 
-/* TOP BAR - GRID LAYOUT FOR CENTERED WIDGET */
+/* --- TOP BAR (Responsive Layout) --- */
 .top-bar { 
     height: 75px; 
-    display: grid; 
-    grid-template-columns: 1fr auto 1fr; /* Left, Center, Right */
+    width: 100%;
+    
+    /* 👇 Use Flexbox to manage space */
+    display: flex; 
     align-items: center; 
-    padding: 0 25px; 
+    justify-content: space-between; /* Pushes Left/Right to edges */
+    
+    padding: 0 15px; /* Reduced padding slightly */
     background: rgba(10,10,10,0.6); 
     backdrop-filter: blur(6px); 
     border-bottom: var(--border); 
     z-index: 1000; 
+    box-sizing: border-box;
+    overflow: hidden; /* Prevents scrollbars if it gets too tight */
 }
-.top-left { justify-self: start; display: flex; align-items: center; }
-.top-center { justify-self: center; }
-.top-right { justify-self: end; display: flex; align-items: center; gap: 12px; }
+
+/* LEFT & RIGHT SIDES (Fixed Size - Won't Shrink) */
+.top-left, .top-right { 
+    flex: 0 0 auto; /* Don't grow, don't shrink */
+    display: flex; 
+    align-items: center; 
+    width: auto;
+}
+
+/* CENTER GROUP (Flexible - Will Shrink) */
+.top-center { 
+    flex: 1; /* Take up all remaining space */
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    
+    /* 👇 IMPORTANT: Stops it from overflowing */
+    min-width: 0; 
+    padding: 0 20px;
+    gap: 15px;
+}
+
+/* MUSIC WIDGET (The "Squishy" Part) */
+.np-widget { 
+    /* 👇 Allows it to shrink when window gets small */
+    flex: 1; 
+    width: 100%; 
+    max-width: 500px; /* Max size */
+    min-width: 150px; /* Don't shrink smaller than this */
+    
+    height: 55px; 
+    background: rgba(0,0,0,0.4); 
+    border: var(--border); 
+    border-radius: 12px; 
+    display: flex; 
+    align-items: center; 
+    overflow: hidden; 
+    padding-right: 15px; 
+}
+
+/* SCORE BOXES (Fixed Size - Won't Squash) */
+.top-score-box {
+    flex: 0 0 auto; /* Keep rigid */
+    /* ... keep your existing styles below ... */
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 5px 12px;
+    height: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 140px;
+}
+
+.ts-row { display: flex; align-items: center; gap: 35px; }
+.ts-name { font-weight: 780; font-size: 1.5rem; text-transform: uppercase; text-shadow: 0 0 5px currentColor; }
+.ts-score { font-size: 2.5rem; font-weight: 900; color: #fff; line-height: 1; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+.ts-ctrls { display: flex; flex-direction: column; gap: 5px; }
+.mini-plus { 
+    width: 25px; height: 25px; background: rgba(255,255,255,0.1); 
+    cursor: pointer; display: flex; align-items: center; justify-content: center; 
+    font-size: 1rem; border-radius: 4px; color: #aaa; transition: 0.2s;
+}
+.mini-plus:hover { background: var(--accent); color: #000; }
+
 
 /* Combined Status Badge */
 .status-badge { 
@@ -54,11 +122,9 @@ body::before {
 
 /* NOW PLAYING WIDGET (UPDATED FOR SCROLLING) */
 .np-widget { 
-    /* CHANGE THIS LINE 👇 */
-    /* Old: width: 650px; */
-    width: 100%;          /* Take available space */
-    max-width: 650px;     /* But stop growing at 650px */
-    min-width: 300px;     /* Don't get smaller than this */
+    /* Slightly smaller to fit scores */
+    width: 500px; 
+    min-width: 300px; 
     
     height: 60px; 
     background: rgba(0,0,0,0.4); 
@@ -118,14 +184,13 @@ body::before {
 .theme-color-btn, .theme-party-btn, .theme-gear-btn { width: 36px; height: 36px; border-radius: 50%; background: #222; border: 1px solid #444; color: #888; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; font-size: 1rem; }
 .theme-color-btn:hover, .theme-party-btn:hover, .theme-gear-btn:hover { color: #fff; border-color: var(--accent); background: rgba(255,255,255,0.1); }
 
-/* MAIN STAGE - UPDATED COLUMNS TO 300PX */
+/* MAIN STAGE */
 .stage { 
     flex: 1; 
     display: grid; 
     
-    /* CHANGE THIS LINE 👇 */
-    /* Old: grid-template-columns: 300px 1fr 300px; */
-    grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) minmax(220px, 300px);
+    /* 👇 WIDENED to 220px - 260px (Comfortable size) */
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr) minmax(220px, 260px);
     
     gap: 25px; 
     padding: 25px 30px 30px 30px; 
@@ -143,8 +208,9 @@ body::before {
     display: flex; 
     flex-direction: column; 
     gap: 10px; 
-    overflow-y: auto; 
+    
     box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+
 
     /* ANIMATION MAGIC 👇 */
     max-height: 1500px; /* A value larger than your content will ever be */
@@ -204,43 +270,23 @@ body::before {
     */
 }
 
-/* HEADER */
-.p-header { 
-    display: flex; 
-    flex-direction: row;
-    align-items: center; 
-    justify-content: space-between;
-    border-bottom: 1px solid rgba(255,255,255,0.1); 
-    padding-bottom: 15px; 
-    margin-bottom: 5px; 
-}
-
-.p-name { font-size: 1.5rem; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; }
-
-.p-score { 
-    font-size: 4rem; 
-    font-weight: 900; 
-    line-height: 1; 
-    transition: color 0.2s; 
-    text-shadow: 
-        0 0 1px rgba(255, 255, 255),   /* Layer 1: Tight, bright glow */
-        0 0 1px rgba(255, 255, 255),  /* Layer 2: Softer, wider glow */
-        0 0 8px rgba(255, 255, 255);  /* Layer 3: Faint, distant atmosphere */
-}
-
-.p-ctrls { display: flex; gap: 5px; }
-.tiny-btn { width: 28px; height: 28px; background: #1a1a1a; border: 1px solid #444; color: #888; cursor: pointer; border-radius: 6px; font-weight: 900; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-.tiny-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+/* NOTE: Removed .p-header styles as they are no longer in the columns */
 
 /* --- SIDE BUTTONS --- */
 .ctrl-row {
     display: flex;
     gap: 8px;
     margin-bottom: 5px;
+    justify-content: center;
 }
 
 .col-btn.collapse-btn {
-    width: 36px;
+
+    /* 👇 MAKE IT BIGGER */
+    width: 125px;        /* Wider (was 36px) */
+    height: 40px;        /* Taller */
+    font-size: 1.2rem;   /* Bigger Icon */
+
     flex-shrink: 0;
     padding: 0;
     margin: 0;
@@ -253,17 +299,19 @@ body::before {
 }
 .col-btn.collapse-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
 
+/* EXPORT BUTTON - HIDDEN */
 .col-btn.export { 
-    flex: 1; 
-    width: auto;
-    margin: 0;
-    padding: 6px; 
-    font-size: 0.8rem; 
+    display: none !important; /* 👇 This hides it completely */
+    font-size: 1.2rem;   /* Bigger Icon */
+
+    /* ... keep the rest of the code just in case ... */
+    flex: 1; margin: 0; padding: 6px; 
     background: rgba(255,255,255,0.05); border: 1px solid #444; 
     color: #888; font-weight: 800; cursor: pointer; border-radius: 8px; 
-    transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: 0.2s; align-items: center; justify-content: center; gap: 8px;
     text-transform: uppercase; letter-spacing: 1px;
 }
+
 .col-btn.export:hover { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
 
 /* --- SLOT LIST --- */
@@ -383,17 +431,17 @@ body::before {
 
 /* --- WEBKIT (Chrome, Safari, Edge) SCROLLBAR STYLING --- */
 
-/* 1. The Scrollbar Track (The container) */
+/* 1. The Track (Invisible) */
 .tab-bar::-webkit-scrollbar { 
-    height: 0.2px; /* HORIZONTAL: Make this 2px for razor thin */
-    width: 0px;  /* VERTICAL: Remove completely */
+    height: 2px; /* 👇 HORIZONTAL: Controls thickness (2px is very thin) */
+    width: 2px;  /* VERTICAL: Controls thickness */
     background: transparent;
 }
 
-/* 2. The Slider part */
+/* 2. The Slider (Visible Part) */
 .tab-bar::-webkit-scrollbar-thumb { 
-    background: #444; 
-    border-radius: 10px; 
+    background: var(--accent); /* Make it pop so it's visible despite being small */
+    border-radius: 1px; 
 }
 
 /* 3. Hover Effect */
@@ -413,8 +461,9 @@ body::before {
     transition: 0.3s; 
     text-transform: uppercase; 
     letter-spacing: 1px; 
-    font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+    font-size: 1.1rem;
     flex-shrink: 0; 
+    min-width: max-content; /* 2. Always be as wide as the text needs */
 }
 
 /* --- THE CENTERING MAGIC --- */
@@ -768,30 +817,33 @@ body::before {
 /* 2. The Text Style */
 .slot-overlay-name {
     position: absolute;
-    bottom: 4px;
+    bottom: 2px;
     left: 0;
     width: 100%;
     text-align: center;
     
-    font-size: 0.75rem;
-    font-weight: 900;
+    font-size: 0.8rem;
+    font-weight: 700;
     text-transform: uppercase;
-    color: #fff; /* White Text */
+    /* 1. FACE COLOR: White looks best with a black outline */
+    color: #fff; 
+
+    white-space: normal;
+    line-height: 1;
     
-    /* THE GLOW EFFECT */
+    /* 2. LAYERING THE EFFECTS */
     text-shadow: 
-        0 0 5px var(--col-glow), 
-        0 0 10px var(--col-glow),
-        -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* Black Outline */
+        /* LAYER A: Heavy Black Outline (Sharp, no blur) */
+        2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000,
+        1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
         
-    pointer-events: none;
+        /* LAYER B: The Glow (Blurred, using your variable) */
+        0 0 15px var(--accent),
+        0 0 25px var(--accent);
+        
+    
     z-index: 10;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
-    padding: 0 4px;
+    padding: 0 5px;
 }
-
-/* 3. Assign Glow Colors per Column */
-#slots-alb { --col-glow: var(--p1-color, #ff4444); }
-#slots-biu { --col-glow: var(--p2-color, #4488ff); }
