@@ -343,72 +343,92 @@
       });
   }
 
-  // DRAG & DROP
-  function handleDragStart(e) { dragSrcEl = this; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/html', this.innerHTML); this.classList.add('dragging'); }
-  function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); return false; }
-  function handleDragEnter(e) { this.classList.add('over'); }
-  function handleDragLeave(e) { this.classList.remove('over'); }
-  function handleDrop(e) {
-    if (e.stopPropagation) e.stopPropagation();
-    if (dragSrcEl !== this) {
-       let srcIdx = parseInt(dragSrcEl.dataset.index);
-       let targetIdx = parseInt(this.dataset.index);
-       let list = (currentList === 1) ? playlists.list1 : playlists.list2;
-       let temp = list[srcIdx];
-       list[srcIdx] = list[targetIdx];
-       list[targetIdx] = temp;
-       db.ref('music/playlists').set(playlists);
-    }
-    return false;
-  }
-  function handleDragEnd(e) { this.classList.remove('dragging'); document.querySelectorAll('.q-item').forEach(item => item.classList.remove('over')); }
-
-  function playSpecific(item) {
-      db.ref('music/status').update({ currentId: item.id, currentTitle: item.title, state: 'PLAYING', timestamp: 0 });
+  // --- DRAG & DROP (ROBUST SHIFT) ---
+  function handleDragStart(e) { 
+      dragSrcEl = this; 
+      e.dataTransfer.effectAllowed = 'move'; 
+      e.dataTransfer.setData('text/html', this.innerHTML); 
+      this.classList.add('dragging'); 
   }
 
-  function removeVideo(e, index) {
-      e.stopPropagation();
-      let list = (currentList === 1) ? playlists.list1 : playlists.list2;
-      list.splice(index, 1);
-      db.ref('music/playlists').set(playlists);
-  }
+  function handleDragOver(e) { 
+      if (e.preventDefault) e.preventDefault(); // Necessary to allow dropping
+      
+      // If hovering over itself, do nothing
+      if (this === dragSrcEl) return false;
 
-  function togglePlayState() {
-      if(!musicStatus.currentId) {
-          const list = (currentList === 1) ? playlists.list1 : playlists.list2;
-          if(list.length > 0) { playSpecific(list[0]); return; }
-      }
-      let next = (musicStatus.state === 'PLAYING') ? 'PAUSED' : 'PLAYING';
-      let time = player ? player.getCurrentTime() : 0;
-      db.ref('music/status').update({ state: next, timestamp: time });
-  }
-
-  function toggleShuffle() { db.ref('music/status').update({ shuffle: !musicStatus.shuffle }); }
-  function toggleRepeat() { let next = (musicStatus.repeat === 0) ? 1 : 0; db.ref('music/status').update({ repeat: next }); }
-
-  function doNext() {
-      const list = (currentList === 1) ? playlists.list1 : playlists.list2;
-      if(list.length === 0) return;
-      if (musicStatus.repeat === 1) { player.seekTo(0); player.playVideo(); return; }
-
-      let nextItem;
-      if (musicStatus.shuffle) {
-          let possible = list.filter(x => x.id !== currentId);
-          if(possible.length > 0) nextItem = possible[Math.floor(Math.random() * possible.length)];
-          else nextItem = list[0];
+      const container = document.getElementById('queue-container');
+      
+      // Get the bounding rectangle of the item we are hovering over
+      const bounding = this.getBoundingClientRect();
+      
+      // Calculate where the mouse is relative to the item's vertical center
+      // (y position of mouse - y position of item top)
+      const offset = e.clientY - bounding.top;
+      
+      // If mouse is in the upper half (offset < height/2), insert BEFORE
+      // If mouse is in the lower half, insert AFTER
+      if (offset < (bounding.height / 2)) {
+          container.insertBefore(dragSrcEl, this);
       } else {
-          let idx = list.findIndex(x => x.id === currentId);
-          if(idx < list.length - 1) nextItem = list[idx+1];
-          else nextItem = list[0];
+          container.insertBefore(dragSrcEl, this.nextSibling);
       }
-      if(nextItem) playSpecific(nextItem);
+
+      return false; 
   }
-  
-  function doPrev() {
-      const list = (currentList === 1) ? playlists.list1 : playlists.list2;
-      let idx = list.findIndex(x => x.id === currentId);
-      if(idx > 0) playSpecific(list[idx-1]);
+
+  function handleDragEnter(e) { 
+      // Not needed for this method, but kept to prevent errors if listeners exist
+  }
+
+  function handleDragLeave(e) { 
+      // Not needed
+  }
+
+  function handleDrop(e) {
+      if (e.stopPropagation) e.stopPropagation();
+      
+      // The element is already in the correct spot visually.
+      // We just need to save that new order to the database.
+      savePlaylistOrder();
+      return false;
+  }
+
+  function handleDragEnd(e) { 
+      this.classList.remove('dragging'); 
+      // Cleanup visual states
+      document.querySelectorAll('.q-item').forEach(item => {
+          item.classList.remove('over');
+          item.style.opacity = '1';
+      }); 
+  }
+
+  function savePlaylistOrder() {
+      const container = document.getElementById('queue-container');
+      const newOrderEls = container.querySelectorAll('.q-item');
+      
+      // 1. Get the source list (Clone it to avoid reference issues)
+      let oldList = (currentList === 1) ? [...playlists.list1] : [...playlists.list2];
+      let newList = [];
+
+      // 2. Map visual DOM order back to data objects
+      newOrderEls.forEach(el => {
+          let originalIdx = parseInt(el.dataset.index);
+          // Push the object from the old list using its original index
+          if (oldList[originalIdx]) {
+              newList.push(oldList[originalIdx]);
+          }
+      });
+
+      // 3. Update Global Variables & Save to DB
+      if (currentList === 1) playlists.list1 = newList;
+      else playlists.list2 = newList;
+
+      db.ref('music/playlists').set(playlists);
+      
+      // Optional: Re-render to reset data-indices, ensuring future drags are clean
+      // (This prevents index drift if you drag multiple times without refreshing)
+      renderQueue(); 
   }
 
   // --- ADD VIDEO ---
