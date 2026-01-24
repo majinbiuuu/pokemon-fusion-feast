@@ -26,6 +26,10 @@
   html { 
       box-sizing: border-box; 
       font-size: 20px; 
+      /* 👇 FORCE HEIGHT TO AUTO (Stops stretching) */
+      height: auto !important; 
+      min-height: 0 !important;
+      overflow: hidden; 
     }
   *, *:before, *:after { box-sizing: inherit; }
 
@@ -36,9 +40,18 @@
     padding: 20px; 
     background: transparent;
     user-select: none;
-    height: 100vh; 
-    overflow-y: auto; 
+    
+    /* 👇 THIS IS THE FIX */
+    height: auto !important;   /* Only be as tall as content */
+    min-height: 0 !important;  /* REMOVED '100vh' which was causing the gap */
     width: 100%;
+    
+    overflow: hidden; /* Removes the scrollbar from this file */
+  }
+
+  /* Optional: Remove the margin from the bottom box to make it tighter */
+  .glass-box:last-of-type {
+      margin-bottom: 0 !important;
   }
 
   /* PEER HOVER STYLES */
@@ -720,15 +733,29 @@
         }
     }
 
+    // --- HELPER: NORMALIZE DATA TO ARRAY ---
+    function getList(key) {
+        const lib = window.appData || {};
+        let raw = lib[key];
+        if (!raw) return [];
+        // Convert Object to Array if needed
+        return Array.isArray(raw) ? raw : Object.values(raw);
+    }
+
     // --- ACTIONS ---
     window.roll = function(key, listKey, noteKey) {
-        const lib = window.appData || {};
-        if(!lib[listKey]) return;
-        const list = lib[listKey];
+        const list = getList(listKey); // Use helper
+        if(list.length === 0) return;
+
         const pick = list[Math.floor(Math.random() * list.length)];
+        
+        // Handle if items are plain strings or objects
+        let valText = (typeof pick === 'object' && pick.text) ? pick.text : pick;
+        let valNote = (typeof pick === 'object' && pick.note) ? pick.note : "";
+
         let updates = {};
-        updates['dashboard/'+key] = pick.text;
-        if(noteKey) updates['dashboard/'+noteKey] = pick.note || "";
+        updates['dashboard/'+key] = valText;
+        if(noteKey) updates['dashboard/'+noteKey] = valNote;
         db.ref().update(updates);
     };
 
@@ -769,11 +796,14 @@
 
     function generateSet(type, count, excludeItems = []) {
         let pool = [];
-        const lib = window.appData || {};
         if(type === 'Type') pool = [...TYPES];
         else if(type === 'Colour') pool = [...COLORS];
         else if(type === 'RNG (1-9)') pool = [1,2,3,4,5,6,7,8,9];
-        else if(type === 'Legendary Trio') pool = (lib.trios || []).map(t => t.text);
+        else if(type === 'Legendary Trio') {
+            // FIX: Handle Object structure for Trios
+            const trios = getList('trios');
+            pool = trios.map(t => t.text);
+        }
         else return ["-"];
 
         pool = pool.filter(item => !excludeItems.includes(item));
@@ -799,16 +829,11 @@
         const type = window.lastQType;
         if(!type || type === "ShitWheel") return;
 
-        // Handle Legendary Trio special case
         if (type === 'Legendary Trio') {
-            let libraryData = (window.appData && window.appData.trios) ? window.appData.trios : [];
-            let trioList = Array.isArray(libraryData) ? libraryData : Object.values(libraryData);
-            trioList = trioList.filter(item => item && item.note);
-            
+            const trioList = getList('trios').filter(item => item && item.note);
             if (trioList.length === 0) return;
 
             const pick = trioList[Math.floor(Math.random() * trioList.length)];
-            
             let updates = {};
             updates['gen/' + side] = pick.note; 
             updates['gen/title' + side.toUpperCase()] = pick.text;
@@ -816,10 +841,7 @@
             return;
         }
 
-        // Standard Reroll (Type, Color, RNG)
         let count = window.isX3 ? 3 : 1;
-        
-        // Get other side data to avoid duplicates
         let otherSide = (side === 'a' ? 'b' : 'a');
         let otherVal = window.lastGenState ? window.lastGenState[otherSide] : "";
         let exclude = [];
@@ -952,15 +974,34 @@
     }
 
     function populateDropdowns() {
-        const lib = window.appData || {};
+        // We don't need 'lib' variable here because getList handles it
+        
         for(let i=0; i<5; i++) {
             let mSel = document.getElementById('sel-m-'+i);
             let sSel = document.getElementById('sel-s-'+i);
+            
+            // Only populate if empty to avoid duplicates
             if(mSel && sSel && mSel.innerHTML === "") { 
                 mSel.innerHTML = "<option value=''>Game Mode</option>";
                 sSel.innerHTML = "<option value=''>Side Quest</option>";
-                (lib.gameModes || []).forEach(m => { let op = document.createElement('option'); op.value = m.text; op.innerText = m.text; mSel.appendChild(op); });
-                (lib.sides || []).forEach(s => { let op = document.createElement('option'); op.value = s.text; op.innerText = s.text; sSel.appendChild(op); });
+                
+                // 👇 THIS IS THE FIX: Use getList() instead of accessing appData directly
+                const modes = getList('gameModes');
+                const sides = getList('sides');
+                
+                modes.forEach(m => { 
+                    let op = document.createElement('option'); 
+                    op.value = m.text; 
+                    op.innerText = m.text; 
+                    mSel.appendChild(op); 
+                });
+                
+                sides.forEach(s => { 
+                    let op = document.createElement('option'); 
+                    op.value = s.text; 
+                    op.innerText = s.text; 
+                    sSel.appendChild(op); 
+                });
             }
         }
     }
@@ -968,7 +1009,9 @@
     window.updateGameDetail = function(idx, type) {
         let val = document.getElementById(`sel-${type==='mode'?'m':'s'}-${idx}`).value;
         db.ref(`record/details/${idx}/${type}`).set(val);
-        const match = (window.appData[type==='mode'?'gameModes':'sides'] || []).find(x => x.text === val);
+        
+        const list = getList(type==='mode'?'gameModes':'sides');
+        const match = list.find(x => x.text === val);
         db.ref('dashboard').update({ [type]: val, [`${type}Note`]: match?.note || "" });
     };
 
