@@ -41,7 +41,7 @@
       display: flex; flex-direction: column; padding: 15px; flex-shrink: 0;
   }
   .lib-sidebar h3 {
-      margin-top: 15px; color: #888; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;
+      margin-top: 15px; color: #888; font-size: 16px; text-transform: uppercase; letter-spacing: 1px;
       padding-bottom: 5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 5px; font-weight: 800;
   }
   .lib-sidebar h3:first-child { margin-top: 0; }
@@ -89,7 +89,7 @@
       border-bottom: 1px solid #444; position: relative;
   }
   .lc-title {
-      font-size: 1.4rem; font-weight: 900; color: var(--card-header-txt); text-align: center; 
+      font-size: 3rem; font-weight: 900; color: var(--card-header-txt); text-align: center; 
       text-transform: uppercase; margin: 0; width: 100%; white-space: normal; /* Allow wrap in view mode */
       line-height: 1.2;
   }
@@ -319,8 +319,9 @@
           const card = document.createElement('div');
           card.className = 'lib-card';
           card.setAttribute('draggable', 'true');
-          card.dataset.index = index;
-          card.dataset.key = item.key;
+          
+          // STORE ORIGINAL INDEX TO TRACK DATA
+          card.dataset.index = index; 
 
           // Drag Events
           card.addEventListener('dragstart', dragStart);
@@ -328,6 +329,7 @@
           card.addEventListener('drop', drop);
           card.addEventListener('dragenter', dragEnter);
           card.addEventListener('dragleave', dragLeave);
+          card.addEventListener('dragend', dragEnd); // <-- NEW LISTENER
 
           const header = document.createElement('div');
           header.className = 'lc-header';
@@ -357,7 +359,7 @@
       });
   }
 
-  // --- DRAG AND DROP LOGIC ---
+  // --- DRAG AND DROP LOGIC (SHIFT STYLE) ---
   let dragSrcEl = null;
 
   function dragStart(e) {
@@ -368,33 +370,65 @@
   }
 
   function dragOver(e) {
-      if (e.preventDefault) e.preventDefault();
+      if (e.preventDefault) e.preventDefault(); // Necessary to allow dropping
       e.dataTransfer.dropEffect = 'move';
       return false;
   }
 
-  function dragEnter(e) { this.style.borderColor = 'var(--accent)'; }
-  function dragLeave(e) { this.style.borderColor = 'rgba(255,255,255,0.1)'; }
+  function dragEnter(e) {
+      // Ignore if entering self or children
+      if (this === dragSrcEl) return;
+      
+      const container = document.getElementById('lib-item-list');
+      // Convert NodeList to Array to find indices
+      const cards = [...container.querySelectorAll('.lib-card')];
+      const srcIndex = cards.indexOf(dragSrcEl);
+      const targetIndex = cards.indexOf(this);
+
+      // VISUAL SHIFT: Move the dragged element in the DOM
+      if (srcIndex < targetIndex) {
+          // Dragging forward -> Insert AFTER target
+          container.insertBefore(dragSrcEl, this.nextSibling);
+      } else {
+          // Dragging backward -> Insert BEFORE target
+          container.insertBefore(dragSrcEl, this);
+      }
+      
+      this.style.borderColor = 'var(--accent)';
+  }
+
+  function dragLeave(e) {
+      this.style.borderColor = 'rgba(255,255,255,0.1)';
+  }
 
   function drop(e) {
       if (e.stopPropagation) e.stopPropagation();
-      if (dragSrcEl !== this) {
-          let srcIdx = parseInt(dragSrcEl.dataset.index);
-          let targetIdx = parseInt(this.dataset.index);
-
-          // Swap in array
-          let movedItem = currentItems[srcIdx];
-          currentItems.splice(srcIdx, 1);
-          currentItems.splice(targetIdx, 0, movedItem);
-
-          // Re-upload entire array to Firebase to maintain order
-          saveReorderedList();
-      }
+      this.style.borderColor = 'rgba(255,255,255,0.1)';
+      
+      // REBUILD DATA FROM NEW VISUAL ORDER
+      saveReorderedList();
       return false;
   }
 
+  function dragEnd(e) {
+      this.classList.remove('dragging');
+      // Ensure border reset on all cards
+      document.querySelectorAll('.lib-card').forEach(c => c.style.borderColor = 'rgba(255,255,255,0.1)');
+  }
+
   function saveReorderedList() {
-      let newArr = currentItems.map(i => i.val);
+      const container = document.getElementById('lib-item-list');
+      const newOrderCards = container.querySelectorAll('.lib-card');
+      
+      // Map the visual order back to the data objects
+      let newArr = [];
+      newOrderCards.forEach(card => {
+          // Use the original index stored in dataset to find the data object
+          let originalIdx = parseInt(card.dataset.index);
+          newArr.push(currentItems[originalIdx].val);
+      });
+
+      // Upload new order to Firebase
       db.ref(currentLibPath).set(newArr);
   }
 
