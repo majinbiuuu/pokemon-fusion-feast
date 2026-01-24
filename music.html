@@ -11,6 +11,7 @@
   /* --- GLOBAL VARIABLES --- */
   :root {
     --theme-c: #00ff9d; 
+    /* UPDATED: More Transparent (0.9 -> 0.7) */
     --glass-bg: rgba(10, 10, 10, 0.7);
     --border-c: rgba(255,255,255,0.1);
   }
@@ -183,49 +184,42 @@
   var musicStatus = { state: "PAUSED", currentId: "", currentTitle: "Ready", timestamp: 0, shuffle: false, repeat: 0 };
   let dragSrcEl = null;
   let hasScannedTitles = false;
-  let isInitialLoad = true; // Prevent autoplay on load
 
-  // --- THEME & CONTROL SYNC (From Parent) ---
+  // --- THEME SYNC ---
+  setInterval(() => {
+    try {
+        if(window.parent) {
+            let parentStyles = window.parent.getComputedStyle(window.parent.document.documentElement);
+            let parentTheme = parentStyles.getPropertyValue('--theme-color') || parentStyles.getPropertyValue('--accent');
+            if(parentTheme) document.documentElement.style.setProperty('--theme-c', parentTheme.trim());
+        }
+    } catch(e) {}
+  }, 500);
+
+  // --- PARENT MESSAGES & SYNC ---
   window.addEventListener('message', (event) => {
-      // 1. Theme
-      if (event.data && event.data.type === 'THEME_UPDATE') {
-          document.documentElement.style.setProperty('--theme-c', event.data.color);
-      }
-      
-      // 2. Volume from Top Bar
-      if(event.data.type === 'setVolume') {
-          setLocalVolume(event.data.value, true); 
-          const slider = document.getElementById('vol-slider');
-          if(slider) slider.value = event.data.value;
-      }
-
-      // 3. Media Controls from Top Bar
-      if (event.data && event.data.type === 'mediaControl') {
-          handleMediaControl(event.data.action);
-      }
+    // 1. Volume Sync
+    if(event.data.type === 'setVolume') {
+        setLocalVolume(event.data.value, true); 
+        const slider = document.getElementById('vol-slider');
+        if(slider) slider.value = event.data.value;
+    }
+    // 2. Media Controls (Top Bar -> Music)
+    if (event.data && event.data.type === 'mediaControl') {
+        handleMediaControl(event.data.action);
+    }
+    // 3. Theme Sync
+    if (event.data && event.data.type === 'THEME_UPDATE') {
+        document.documentElement.style.setProperty('--theme-c', event.data.color);
+    }
   });
-  if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
-
-  // --- PARENT MESSAGING (Updates Up) ---
-  function setLocalVolume(val, fromSync = false) {
-      localVol = val;
-      if(val > 0) lastVol = val;
-      localStorage.setItem('music_vol', val);
-      
-      if(player && player.setVolume) player.setVolume(val);
-      updateVolIcon(val);
-
-      if (!fromSync && window.parent) {
-          window.parent.postMessage({ type: 'UPDATE_TOP_VOL', value: val }, '*');
-      }
-  };
 
   function handleMediaControl(action) {
       if(!player) return;
       if(action === 'play') togglePlayState();
       else if(action === 'next') doNext();
       else if(action === 'prev') doPrev();
-  }
+  };
 
   function onPlayerReady(event) {
      player.setVolume(localVol);
@@ -234,7 +228,7 @@
      if(musicStatus.currentId) player.cueVideoById(musicStatus.currentId);
   }
 
-  // --- DB LISTENERS ---
+  // --- LISTENERS ---
   db.ref('music/playlists').on('value', snap => {
       const data = snap.val() || {};
       playlists.list1 = data.list1 || [];
@@ -255,42 +249,25 @@
       document.getElementById('btn-shuffle').classList.toggle('active', musicStatus.shuffle);
       document.getElementById('btn-repeat').classList.toggle('active', musicStatus.repeat === 1);
 
-      // Track Change
       if(musicStatus.currentId && musicStatus.currentId !== currentId) {
           currentId = musicStatus.currentId;
           updateNowPlaying(musicStatus.currentTitle, musicStatus.currentId);
-          // Load but don't play yet if first load
-          if(player && player.loadVideoById) {
-              if (isInitialLoad) player.cueVideoById(currentId);
-              else player.loadVideoById(currentId, Math.max(0, musicStatus.timestamp));
-          }
+          if(player && player.loadVideoById) player.loadVideoById(currentId, Math.max(0, musicStatus.timestamp));
           renderQueue(); 
       }
       
-      // State Change (Play/Pause)
       let isPlaying = (musicStatus.state === 'PLAYING');
       document.getElementById('main-player-ui').classList.toggle('playing', isPlaying);
-      
-      // Update Local Button
       document.getElementById('btn-play-pause').innerHTML = isPlaying ? '<span class="material-icons">pause</span>' : '<span class="material-icons">play_arrow</span>';
       
-      // Notify Parent Top Bar
-      if(window.parent) window.parent.postMessage({ type: 'PLAYER_STATE', state: isPlaying ? 'playing' : 'paused' }, '*');
-
       if(player && player.getPlayerState) {
           let pState = player.getPlayerState();
-          
-          if(isInitialLoad) {
-              // On first load, never auto-play. Just sync data.
-              isInitialLoad = false;
+          if(isPlaying) {
+              if(pState !== 1 && pState !== 3) player.playVideo();
+              let localTime = player.getCurrentTime();
+              if(Math.abs(localTime - musicStatus.timestamp) > 2) player.seekTo(musicStatus.timestamp, true);
           } else {
-              if(isPlaying) {
-                  if(pState !== 1 && pState !== 3) player.playVideo();
-                  let localTime = player.getCurrentTime();
-                  if(Math.abs(localTime - musicStatus.timestamp) > 2) player.seekTo(musicStatus.timestamp, true);
-              } else {
-                  if(pState === 1) player.pauseVideo();
-              }
+              if(pState === 1) player.pauseVideo();
           }
       }
   });
@@ -343,7 +320,7 @@
       });
   }
 
-  // --- DRAG & DROP (ROBUST SHIFT) ---
+  // --- DRAG & DROP (REARRANGE) ---
   function handleDragStart(e) { 
       dragSrcEl = this; 
       e.dataTransfer.effectAllowed = 'move'; 
@@ -352,83 +329,115 @@
   }
 
   function handleDragOver(e) { 
-      if (e.preventDefault) e.preventDefault(); // Necessary to allow dropping
-      
-      // If hovering over itself, do nothing
+      if (e.preventDefault) e.preventDefault();
       if (this === dragSrcEl) return false;
 
       const container = document.getElementById('queue-container');
-      
-      // Get the bounding rectangle of the item we are hovering over
       const bounding = this.getBoundingClientRect();
-      
-      // Calculate where the mouse is relative to the item's vertical center
-      // (y position of mouse - y position of item top)
       const offset = e.clientY - bounding.top;
       
-      // If mouse is in the upper half (offset < height/2), insert BEFORE
-      // If mouse is in the lower half, insert AFTER
+      // Visual Logic: Insert Before or After based on mouse position
       if (offset < (bounding.height / 2)) {
           container.insertBefore(dragSrcEl, this);
       } else {
           container.insertBefore(dragSrcEl, this.nextSibling);
       }
-
       return false; 
-  }
-
-  function handleDragEnter(e) { 
-      // Not needed for this method, but kept to prevent errors if listeners exist
-  }
-
-  function handleDragLeave(e) { 
-      // Not needed
   }
 
   function handleDrop(e) {
       if (e.stopPropagation) e.stopPropagation();
-      
-      // The element is already in the correct spot visually.
-      // We just need to save that new order to the database.
-      savePlaylistOrder();
+      savePlaylistOrder(); // Save the new visual order to DB
       return false;
   }
 
   function handleDragEnd(e) { 
       this.classList.remove('dragging'); 
-      // Cleanup visual states
-      document.querySelectorAll('.q-item').forEach(item => {
-          item.classList.remove('over');
-          item.style.opacity = '1';
-      }); 
+      // Reset styles
+      document.querySelectorAll('.q-item').forEach(item => item.style.opacity = '1'); 
   }
 
   function savePlaylistOrder() {
       const container = document.getElementById('queue-container');
       const newOrderEls = container.querySelectorAll('.q-item');
-      
-      // 1. Get the source list (Clone it to avoid reference issues)
       let oldList = (currentList === 1) ? [...playlists.list1] : [...playlists.list2];
       let newList = [];
 
-      // 2. Map visual DOM order back to data objects
+      // Reconstruct list based on DOM order
       newOrderEls.forEach(el => {
           let originalIdx = parseInt(el.dataset.index);
-          // Push the object from the old list using its original index
-          if (oldList[originalIdx]) {
-              newList.push(oldList[originalIdx]);
-          }
+          if (oldList[originalIdx]) newList.push(oldList[originalIdx]);
       });
 
-      // 3. Update Global Variables & Save to DB
       if (currentList === 1) playlists.list1 = newList;
       else playlists.list2 = newList;
 
       db.ref('music/playlists').set(playlists);
-      
-      // Optional: Re-render to reset data-indices, ensuring future drags are clean
-      // (This prevents index drift if you drag multiple times without refreshing)
       renderQueue(); 
+  }
+
+  // Unused but kept to prevent errors if referenced
+  function handleDragEnter(e) {}
+  function handleDragLeave(e) {}
+
+  function playSpecific(item) {
+      db.ref('music/status').update({ currentId: item.id, currentTitle: item.title, state: 'PLAYING', timestamp: 0 });
+  }
+
+  function removeVideo(e, index) {
+      e.stopPropagation();
+      let list = (currentList === 1) ? playlists.list1 : playlists.list2;
+      list.splice(index, 1);
+      db.ref('music/playlists').set(playlists);
+  }
+
+  function togglePlayState() {
+      if(!musicStatus.currentId) {
+          const list = (currentList === 1) ? playlists.list1 : playlists.list2;
+          if(list.length > 0) { playSpecific(list[0]); return; }
+      }
+      let next = (musicStatus.state === 'PLAYING') ? 'PAUSED' : 'PLAYING';
+      let time = player ? player.getCurrentTime() : 0;
+      db.ref('music/status').update({ state: next, timestamp: time });
+  }
+
+  function toggleShuffle() { db.ref('music/status').update({ shuffle: !musicStatus.shuffle }); }
+  function toggleRepeat() { let next = (musicStatus.repeat === 0) ? 1 : 0; db.ref('music/status').update({ repeat: next }); }
+
+  function doNext() {
+      const list = (currentList === 1) ? playlists.list1 : playlists.list2;
+      if(list.length === 0) return;
+      
+      // REPEAT ONE LOGIC
+      if (musicStatus.repeat === 1) {
+          player.seekTo(0);
+          player.playVideo();
+          return;
+      }
+
+      let nextItem;
+      if (musicStatus.shuffle) {
+          // SHUFFLE (Avoid same song)
+          let possible = list.filter(x => x.id !== currentId);
+          if(possible.length > 0) {
+             nextItem = possible[Math.floor(Math.random() * possible.length)];
+          } else {
+             nextItem = list[0];
+          }
+      }
+      else {
+          let idx = list.findIndex(x => x.id === currentId);
+          if(idx < list.length - 1) nextItem = list[idx+1];
+          else nextItem = list[0];
+      }
+      
+      if(nextItem) playSpecific(nextItem);
+  }
+  
+  function doPrev() {
+      const list = (currentList === 1) ? playlists.list1 : playlists.list2;
+      let idx = list.findIndex(x => x.id === currentId);
+      if(idx > 0) playSpecific(list[idx-1]);
   }
 
   // --- ADD VIDEO ---
@@ -445,6 +454,7 @@
       if(id.length === 11) {
           let title = "Video " + id;
           let duration = "-:-";
+          
           let apiSuccess = false;
           try {
              const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${id}&key=${firebaseConfig.apiKey}`);
@@ -462,6 +472,7 @@
           }
 
           let item = { id: id, title: title, thumb: "https://img.youtube.com/vi/"+id+"/mqdefault.jpg", duration: duration };
+          
           if(currentList === 1) playlists.list1.push(item); else playlists.list2.push(item);
           db.ref('music/playlists').set(playlists);
           document.getElementById('add-link-input').value = "";
@@ -510,12 +521,17 @@
       if(val) window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(val)}`, '_blank');
   }
 
-  function setLocalVolume(val) {
+  function setLocalVolume(val, fromSync = false) {
       localVol = val;
       if(val > 0) lastVol = val;
       localStorage.setItem('music_vol', val);
       if(player && player.setVolume) player.setVolume(val);
       updateVolIcon(val);
+      
+      // Notify Parent (unless change came from parent)
+      if (!fromSync && window.parent) {
+          window.parent.postMessage({ type: 'UPDATE_TOP_VOL', value: val }, '*');
+      }
   }
 
   function toggleMute() {
@@ -548,15 +564,6 @@
       let txt = document.getElementById('np-title-main');
       if(txt.offsetWidth > 250) { wrap.innerHTML += `<span>${title}</span>`; wrap.classList.add('scroll-active'); } 
       else { wrap.classList.remove('scroll-active'); }
-
-      // SYNC TO TOP BAR
-      if(window.parent) {
-          window.parent.postMessage({
-              type: 'TRACK_UPDATE',
-              title: title,
-              img: "https://img.youtube.com/vi/"+id+"/mqdefault.jpg"
-          }, '*');
-      }
   }
 
   setInterval(() => {
@@ -573,8 +580,7 @@
   function fmt(s) { let m=Math.floor(s/60); let sec=Math.floor(s%60); return m+":"+(sec<10?"0":"")+sec; }
 
   function onLocalPlayerStateChange(e) { 
-      // 1 = Playing, 2 = Paused
-      if (e.data === 1 || e.data === 2) { 
+      if (e.data === 1) { 
           if(player && player.getVideoData) {
               var vData = player.getVideoData();
               if(vData && vData.title) {
@@ -600,6 +606,8 @@
       if(found) db.ref('music/playlists').set(playlists);
   }
 
+  // --- API CALLBACK DEFINITION MUST BE GLOBAL/ACCESSIBLE ---
+  // We place it at the end to ensure all previous functions are defined.
   function onYouTubeIframeAPIReady() {
     console.log("API Ready - Functions Loaded");
     player = new YT.Player('yt-player-mount', {
