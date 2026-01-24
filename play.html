@@ -26,11 +26,10 @@
   html { 
       box-sizing: border-box; 
       font-size: 20px; 
-      /* 👇 FORCE HEIGHT TO AUTO (Stops stretching) */
-      height: auto !important; 
-      min-height: 0 !important;
-      overflow: hidden; 
-    }
+      /* 👇 CHANGE THIS: 'auto' or 'scroll' allows scrolling */
+      overflow-y: auto !important; 
+      height: 100%; /* Keeps the root container full height */
+  }
   *, *:before, *:after { box-sizing: inherit; }
 
   body { 
@@ -41,12 +40,12 @@
     background: transparent;
     user-select: none;
     
-    /* 👇 THIS IS THE FIX */
-    height: auto !important;   /* Only be as tall as content */
-    min-height: 0 !important;  /* REMOVED '100vh' which was causing the gap */
+    /* 👇 ALLOW HEIGHT TO GROW */
+    height: auto !important; 
+    min-height: 100vh; /* Ensures it fills at least the screen */
     width: 100%;
     
-    overflow: hidden; /* Removes the scrollbar from this file */
+    /* Remove overflow-y: hidden from body if it was there */
   }
 
   /* Optional: Remove the margin from the bottom box to make it tighter */
