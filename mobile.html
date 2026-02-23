@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <title>Fusion Feast Mobile</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;800;900&display=swap" rel="stylesheet">
@@ -265,35 +265,82 @@
             transform: scale(0.9); box-shadow: 0 0 15px var(--accent);
         }
 
-        /* --- CHAT STYLES (BUBBLES) --- */
-        #view-chat {
-    padding-bottom: 0 !important; /* Reset, we handle padding inside */
-    height: 100dvh; /* Use dynamic viewport height */
-    position: relative;
+        /* --- CHAT STYLES (FIXED) --- */
+#view-chat { 
+    display: flex; 
+    flex-direction: column; 
+    height: 100dvh; /* Forces full screen height */
+    position: fixed; /* Locks to screen */
+    top: 0; left: 0; width: 100%;
+    padding: 0 !important; /* Removes old padding that caused clipping */
+    z-index: 150;
+    overflow: hidden; /* Prevents double scrollbars */
 }
 
-        .chat-area {
-    flex: 1;
-    overflow-y: auto;
-    padding: 15px;
-    padding-bottom: 100px; /* Huge padding so last message clears the input bar */
-    display: flex;
-    flex-direction: column;
-}
-    /* Make messages appear at the bottom if the chat is short */
-.chat-area::before {
-    content: '';
-    flex: 1; /* Pushes messages down */
-}
-
-    /* Keyboard Mode: Added by JS when input is focused */
-body.keyboard-active .btm-nav {
-    display: none; /* Hide nav bar to save space */
+.chat-area { 
+    flex: 1; 
+    overflow-y: auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 6px; /* REDUCED SPACING (was 12px) */
+    padding: 15px; 
+    padding-top: 80px; /* Clear Header */
+    /* Huge bottom padding ensures the last message clears the input bar */
+    padding-bottom: 150px; 
+    scroll-behavior: smooth;
 }
 
+/* Message Bubbles */
+.message-row { display: flex; flex-direction: column; max-width: 75%; }
+.message-row.received { align-self: flex-start; }
+.message-row.sent { align-self: flex-end; align-items: flex-end; }
+
+.bubble {
+    padding: 8px 12px; /* Tighter padding inside bubbles */
+    font-size: 0.95rem; 
+    line-height: 1.4;
+    position: relative; 
+    word-wrap: break-word; 
+    backdrop-filter: blur(5px);
+}
+
+.message-row.received .bubble {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1); color: #fff;
+    border-radius: 18px 18px 18px 4px;
+}
+.message-row.sent .bubble {
+    background: rgba(var(--accent-rgb, 0, 190, 255), 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2); color: #fff;
+    border-radius: 18px 18px 4px 18px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+.sender-name { font-size: 0.7rem; color: #888; margin-bottom: 2px; margin-left: 5px; font-weight: 700; }
+
+/* Input Bar - FIXED POSITIONING */
+.chat-input-bar { 
+    position: absolute; /* Changed to absolute relative to #view-chat */
+    left: 0; width: 100%; 
+    z-index: 9999;
+    background-color: #000; /* Solid background to hide what's behind */
+    border-top: 1px solid #333; 
+    padding: 10px 15px; 
+    box-sizing: border-box;
+    display: flex; gap: 8px; align-items: center;
+    
+    /* Sit exactly on top of the Nav Bar normally */
+    bottom: calc(var(--nav-height) + var(--safe-area-bottom));
+    transition: bottom 0.2s ease-out;
+}
+
+/* KEYBOARD OPEN STATE (Applied by JS) */
 body.keyboard-active .chat-input-bar {
-    bottom: 0; /* Stick input to very bottom */
+    bottom: 0 !important; /* Stick to very bottom when keyboard is up */
     padding-bottom: 10px;
+}
+
+body.keyboard-active .btm-nav {
+    display: none !important; /* Hide nav bar when keyboard is up */
 }
 
         /* Message Row */
@@ -1117,7 +1164,8 @@ if (chatInput) {
     // 1. When user taps input -> Hide Nav, Move Input Down
     chatInput.addEventListener('focus', () => {
         document.body.classList.add('keyboard-active');
-        scrollToBottom();
+        // Small delay to allow keyboard to slide up before scrolling
+        setTimeout(scrollToBottom, 300);
     });
 
     // 2. When user closes keyboard -> Show Nav, Move Input Up
@@ -1128,11 +1176,31 @@ if (chatInput) {
 
 function scrollToBottom() {
     if(chatOutput) {
-        setTimeout(() => {
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-        }, 50); // Small delay to allow rendering
+        chatOutput.scrollTop = chatOutput.scrollHeight;
     }
 }
+
+    // 2. BLUR: User closes keyboard
+    chatInput.addEventListener('blur', () => {
+        document.body.classList.remove('keyboard-active');
+        // Wait for transition, then scroll to bottom again to realign
+        setTimeout(scrollToBottom, 100);
+    });
+
+function scrollToBottom() {
+    if(chatOutput) {
+        chatOutput.scrollTop = chatOutput.scrollHeight;
+    }
+}
+
+// Also trigger scroll when new messages arrive
+db.ref('chat').limitToLast(50).on('child_added', snap => {
+    // ... (Your existing create element code) ...
+    // chatOut.appendChild(div);
+    
+    // FORCE SCROLL
+    scrollToBottom();
+});
 
     // --- 11. THEME & PARTY BUTTONS ---
     const THEME_COLORS = ['#00beff', '#ff4444', '#00ff88', '#aa00ff', '#ffaa00', '#ff00cc'];
