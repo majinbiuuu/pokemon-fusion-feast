@@ -58,13 +58,21 @@
   .chal-highlight { color: var(--accent); }
 
   /* HEADER ACTIONS */
-  .header-actions { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+  .header-actions { display: flex; justify-content: flex-end; margin-bottom: 20px; gap:10px; align-items:center; }
   .btn-add {
-    background: #111; border: 1px solid #444; color: var(--theme-green);
+    background: #111; border: 1px solid #444; color:  #ccc;
     padding: 8px 16px; border-radius: 6px; font-weight: 700; cursor: pointer;
     text-transform: uppercase; transition: 0.2s; display: flex; align-items: center; gap: 8px;
   }
-  .btn-add:hover { background: var(--theme-green); color: #000; box-shadow: 0 0 15px var(--theme-green); }
+  .btn-add:hover { background: rgba(255,255,255,0.04); color: #fff; border-color: var(--theme-green);}
+
+  /* NEW small secondary buttons */
+  .btn-secondary {
+    background: #0b0b0b; border: 1px solid #333; color: #ccc;
+    padding: 8px 12px; border-radius: 6px; font-weight: 700; cursor: pointer;
+    text-transform: uppercase; transition: 0.15s; display:flex; gap:8px; align-items:center;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.04); color: #fff; border-color: var(--theme-green); }
 
   /* HISTORY LIST */
   #hist-list { display: flex; flex-direction: column; gap: 15px; padding-bottom: 50px; }
@@ -235,6 +243,48 @@
   .m-cancel { background: #222; color: #ccc; border: 1px solid #333; }
   .m-save { background: var(--theme-green); color: #000; }
   .empty-state { text-align: center; color: #555; font-weight: 800; margin-top: 50px; font-size: 1.2rem; }
+
+  /* SEPARATOR BLOCKS (Redeem / Season) */
+  .sep-block {
+    display:flex; align-items:center; justify-content:space-between;
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04);
+    padding: 10px 18px; border-radius:8px;
+  }
+  .sep-left { display:flex; align-items:center; gap:12px; }
+  .sep-bar {
+    width:8px; height:36px; border-radius:6px; flex-shrink:0; box-shadow:0 0 8px rgba(0,0,0,0.6);
+  }
+  .sep-content{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.sep-title{
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+
+.sep-note{
+  font-size:0.9rem;
+  color:#ddd;
+  opacity:0.9;
+}
+
+/* bullet separator */
+.sep-note::before{
+  content:"•";
+  margin-right:8px;
+  color:rgba(255,255,255,0.4);
+}
+  .sep-right { display:flex; gap:8px; align-items:center; }
+  .sep-meta { color:#888; font-size:0.8rem; margin-right:6px; }
+
+  .sep-edit, .sep-del { background:transparent; border:none; color:#666; cursor:pointer; padding:6px; border-radius:6px; }
+  .sep-edit:hover { color:#fff; background: rgba(255,255,255,0.04); }
+  .sep-del:hover { color:#ff4444; background: rgba(255,68,68,0.06); }
+
 </style>
 </head>
 <body>
@@ -259,6 +309,14 @@
   </div>
 
   <div class="header-actions">
+    <button class="btn-secondary" id="btn-redeem" onclick="openRedeemModal()">
+      <i class="fas fa-ticket-alt"></i> Redeem
+    </button>
+
+    <button class="btn-secondary" id="btn-add-season" onclick="openSeasonModal()">
+      <i class="fas fa-layer-group"></i> Add Season
+    </button>
+
     <button class="btn-add" id="btn-manual-add" onclick="openModal()">
       <i class="fas fa-plus"></i> Manual Add
     </button>
@@ -312,6 +370,49 @@
     </div>
   </div>
 
+  <!-- Redeem Modal -->
+  <div class="modal-overlay" id="redeem-modal">
+    <div class="modal-box">
+      <div class="modal-title">Redeem Entry</div>
+      <input type="hidden" id="redeem-edit-id">
+      <div class="form-group">
+        <label class="form-lbl">Who is redeeming?</label>
+        <select class="form-in" id="redeem-who">
+          <option value="p1">P1</option>
+          <option value="p2">P2</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-lbl">Notes</label>
+        <textarea id="redeem-notes" class="form-in" rows="3" placeholder="Optional notes..."></textarea>
+      </div>
+      <div class="modal-btns">
+        <button class="m-btn m-cancel" onclick="closeRedeemModal()">Cancel</button>
+        <button class="m-btn m-save" onclick="saveRedeem()">Save Redeem</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Season Modal -->
+  <div class="modal-overlay" id="season-modal">
+    <div class="modal-box">
+      <div class="modal-title">Add Season Break</div>
+      <input type="hidden" id="season-edit-id">
+      <div class="form-group">
+        <label class="form-lbl">Season Label (auto filled)</label>
+        <input class="form-in" id="season-label" placeholder="Season 1">
+      </div>
+      <div class="form-group">
+        <label class="form-lbl">Notes (optional)</label>
+        <textarea id="season-notes" class="form-in" rows="2" placeholder="Optional notes..."></textarea>
+      </div>
+      <div class="modal-btns">
+        <button class="m-btn m-cancel" onclick="closeSeasonModal()">Cancel</button>
+        <button class="m-btn m-save" onclick="saveSeason()">Save Season</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   const firebaseConfig = { apiKey: "AIzaSyDz82Dp56EISYqk3hza3upJ2pAjsStgMKo", authDomain: "pokemon-masters-d153a.firebaseapp.com", databaseURL: "https://pokemon-masters-d153a-default-rtdb.firebaseio.com", projectId: "pokemon-masters-d153a", storageBucket: "pokemon-masters-d153a.firebasestorage.app", messagingSenderId: "67655442054", appId: "1:67655442054:web:705baa26ffda58b5d3fb07", measurementId: "G-LGW9RJZDP3" };
   if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -355,7 +456,7 @@
       generateModalRows();
   });
 
-  db.ref('history').limitToLast(50).on('value', snap => {
+  db.ref('history').limitToLast(250).on('value', snap => {
       cachedRawData = snap.val();
       updateStats(cachedRawData);
       renderAllMatches(cachedRawData);
@@ -386,13 +487,20 @@
       container.innerHTML = "";
       if(!raw) { container.innerHTML = '<div class="empty-state">No matches found.</div>'; return; }
       const entries = Object.entries(raw).sort((a,b) => (b[1].timestamp||0) - (a[1].timestamp||0));
-      entries.forEach(([key, data]) => renderMatchBlock(key, data, container));
+      entries.forEach(([key, data]) => {
+          if(data && data.separator) {
+              renderSeparator(key, data, container);
+          } else {
+              renderMatchBlock(key, data, container);
+          }
+      });
   }
 
   function updateStats(data) {
       if(!data) return;
       let p1Wins=0, p2Wins=0, total=0, p1Chal=0, p2Chal=0, chalTotal=0;
       Object.values(data).forEach(match => {
+          if(match && match.separator) return; // skip separators for stats
           let w = (match.winner || "").toUpperCase().trim();
           let isChal = (match.settings && match.settings.mode === 'Challenge');
           if(w === window.p1Name.toUpperCase() || w === 'ALB') {
@@ -414,6 +522,51 @@
       document.getElementById('s-biu-wr').innerText = p2WR + "%";
       document.getElementById('s-biu-cw').innerText = p2Chal;
       document.getElementById('s-biu-cwr').innerText = p2CWR + "%";
+  }
+
+  function renderSeparator(key, data, container) {
+      const ts = data.timestamp || Date.now();
+      const dateStr = new Date(ts).toLocaleString();
+      let note = data.notes || '';
+let title = '';
+
+if(data.subtype === 'redeem'){
+    const name = data.user === 'p1' ? window.p1Name : window.p2Name;
+    title = `${name} Redeemed`;
+}
+else if(data.subtype === 'season'){
+    title = data.title || `Season ${data.seasonNumber || ''}`;
+}
+      let colorStyle = '';
+      if(data.subtype === 'redeem') {
+          // use user theme color variable
+          if(data.user === 'p1') colorStyle = 'background:var(--p1-color)'; else colorStyle = 'background:var(--p2-color)';
+      } else if(data.subtype === 'season') {
+          colorStyle = 'background:var(--theme-green)';
+      } else {
+          colorStyle = 'background:var(--theme-green)';
+      }
+
+      const html = document.createElement('div');
+      html.className = 'sep-block';
+      html.id = 'sep-' + key;
+      html.innerHTML = `
+        <div class="sep-left">
+          <div class="sep-bar" style="${colorStyle}"></div>
+          <div class="sep-content">
+            <div class="sep-title">${title}</div>
+            <div class="sep-note">${note}</div>
+          </div>
+        </div>
+        <div class="sep-right">
+          <div class="sep-meta">${dateStr}</div>
+          <div>
+            <button class="sep-edit" onclick="editSeparator('${key}')"><i class="fas fa-pen"></i></button>
+            <button class="sep-del" onclick="deleteSeparator('${key}')"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      `;
+      container.appendChild(html);
   }
 
   function renderMatchBlock(key, data, container) {
@@ -445,7 +598,7 @@
           winColor = 'var(--p2-color)'; 
           winIcon = `<i class="fas fa-trophy" style="font-size:0.8rem; margin-right:2px; opacity:0.8"></i>`;
       }
-      displayWinner = displayWinner.toUpperCase();
+      displayWinner = (displayWinner || "-").toUpperCase();
 
       // Records
       let recordHtml = `<div class="rec-container">`;
@@ -634,6 +787,113 @@
   }
   
   function deleteEntry(key) { if(confirm("Delete this match?")) db.ref('history/' + key).remove(); }
+
+
+  /* --------------------
+     Redeem & Season logic
+     -------------------- */
+
+  function openRedeemModal(editKey) {
+      document.getElementById('redeem-modal').style.display = 'flex';
+      document.getElementById('redeem-edit-id').value = editKey || '';
+      document.getElementById('redeem-notes').value = '';
+      document.getElementById('redeem-who').value = 'p1';
+      if(editKey) {
+          db.ref('history/' + editKey).once('value').then(snap => {
+              const d = snap.val() || {};
+              if(d.subtype === 'redeem') {
+                  document.getElementById('redeem-who').value = d.user || 'p1';
+                  document.getElementById('redeem-notes').value = d.notes || '';
+              }
+          });
+      }
+  }
+
+  function closeRedeemModal() { document.getElementById('redeem-modal').style.display = 'none'; document.getElementById('redeem-edit-id').value = ''; }
+
+  function saveRedeem() {
+      const editId = document.getElementById('redeem-edit-id').value;
+      const user = document.getElementById('redeem-who').value || 'p1';
+      const notes = document.getElementById('redeem-notes').value || '';
+      const payload = {
+          separator: true,
+          subtype: 'redeem',
+          user: user,
+          notes: notes,
+          title: user === 'p1' ? `Redeem - ${window.p1Name}` : `Redeem - ${window.p2Name}`,
+          timestamp: editId ? undefined : Date.now()
+      };
+      if(editId) {
+          db.ref('history/' + editId).update(payload);
+      } else {
+          db.ref('history').push(payload);
+      }
+      closeRedeemModal();
+  }
+
+  function openSeasonModal(editKey) {
+      // compute next season number if not editing
+      let seasonNum = 1;
+      if(cachedRawData) {
+          const entries = Object.values(cachedRawData);
+          const seasons = entries.filter(e => e && e.separator && e.subtype === 'season').length;
+          seasonNum = seasons + 1;
+      }
+      document.getElementById('season-modal').style.display = 'flex';
+      document.getElementById('season-edit-id').value = editKey || '';
+      document.getElementById('season-label').value = `Season ${seasonNum}`;
+      document.getElementById('season-notes').value = '';
+      if(editKey) {
+          db.ref('history/' + editKey).once('value').then(snap => {
+              const d = snap.val() || {};
+              if(d.subtype === 'season') {
+                  document.getElementById('season-label').value = d.title || `Season ${d.seasonNumber || seasonNum}`;
+                  document.getElementById('season-notes').value = d.notes || '';
+              }
+          });
+      }
+  }
+
+  function closeSeasonModal() { document.getElementById('season-modal').style.display = 'none'; document.getElementById('season-edit-id').value = ''; }
+
+  function saveSeason() {
+      const editId = document.getElementById('season-edit-id').value;
+      const label = document.getElementById('season-label').value || 'Season';
+      const notes = document.getElementById('season-notes').value || '';
+      // derive season number from label if possible
+      let seasonNumber = null;
+      const m = label.match(/(\d+)/);
+      if(m) seasonNumber = parseInt(m[1], 10);
+
+      const payload = {
+          separator: true,
+          subtype: 'season',
+          title: label,
+          notes: notes,
+          seasonNumber: seasonNumber,
+          timestamp: editId ? undefined : Date.now()
+      };
+      if(editId) {
+          db.ref('history/' + editId).update(payload);
+      } else {
+          db.ref('history').push(payload);
+      }
+      closeSeasonModal();
+  }
+
+  function editSeparator(key) {
+      db.ref('history/' + key).once('value').then(snap => {
+          const d = snap.val() || {};
+          if(!d || !d.separator) return;
+          if(d.subtype === 'redeem') openRedeemModal(key);
+          else if(d.subtype === 'season') openSeasonModal(key);
+      });
+  }
+
+  function deleteSeparator(key) {
+      if(confirm("Delete this entry?")) db.ref('history/' + key).remove();
+  }
+
 </script>
 </body>
 </html>

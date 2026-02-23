@@ -143,15 +143,34 @@
   .btn-shit:hover { background: #5d4037; color: #fff; border-color: #8d6e63; }
 
   .x3-switch-container {
-    display: flex; align-items: center; gap: 8px; margin-left: 10px; padding: 5px 10px;
-    background: #111; border-radius: 6px; border: 1px solid #333; cursor: pointer; transition: 0.2s;
-  }
-  .x3-switch-container.active {
-    border-color: var(--theme-green);
-    box-shadow: 0 0 10px var(--theme-green);
-  }
-  .x3-lbl { font-weight: 800; font-size: 0.9rem; color: #888; }
-  .x3-switch-container.active .x3-lbl { color: var(--theme-green); }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  margin-left: 12px;
+
+  padding: 5px 10px;       /* ⬆ bigger padding */
+  min-width: 40px;          /* ⬆ wider */
+  height: 42px;             /* ⬆ taller */
+
+  background: #111;
+  border-radius: 8px;       /* slightly rounder */
+  border: 2px solid #333;   /* thicker border */
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.x3-switch-container.active {
+  border-color: var(--theme-green);
+  box-shadow: 0 0 14px var(--theme-green);
+}
+
+.x3-lbl {
+  font-weight: 900;
+  font-size: 1.1rem;        /* ⬆ bigger text */
+  color: #888;
+}
   
   /* --- UPDATED QUICK GEN BAR (25% / 75% Layout) --- */
   .qg-unified-bar {
@@ -404,21 +423,24 @@
   </div>
 
   <div class="glass-box">
-    <div class="qg-controls">
-      <div class="qg-row">
-        <button class="qg-btn anim-click" id="btn-qg-type" onclick="safeCall('runQGen', 'Type')">Type</button>
-        <button class="qg-btn anim-click" id="btn-qg-leg" onclick="safeCall('rollLegendaryTrio')">Legendary Trio</button>
-        <button class="qg-btn anim-click" id="btn-qg-col" onclick="safeCall('runQGen', 'Colour')">Colour</button>
-        <button class="qg-btn anim-click" id="btn-qg-rng" onclick="safeCall('runQGen', 'RNG (1-9)')">RNG (1-9)</button>
-        <button class="qg-btn btn-shit anim-click" id="btn-qg-shit" onclick="safeCall('runShitWheel')">SHIT WHEEL 💩</button>
-      </div>
-      
-      <button class="qg-btn anim-click" id="btn-toggle-token" onclick="safeCall('toggleTokenSection')" style="flex:0; width:auto; margin-left:10px;">Token</button>
 
-      <div class="x3-switch-container anim-click" id="btn-qg-x3" onclick="safeCall('toggleX3')">
-        <span class="x3-lbl">x3</span>
-      </div>
-    </div>
+    <div class="qg-controls">
+  <div class="qg-row">
+    <button class="qg-btn anim-click" id="btn-qg-type" onclick="safeCall('runQGen', 'Type')">Type</button>
+    <button class="qg-btn anim-click" id="btn-qg-leg" onclick="safeCall('rollLegendaryTrio')">Legend Trio</button>
+    <button class="qg-btn anim-click" id="btn-qg-col" onclick="safeCall('runQGen', 'Colour')">Colour</button>
+    <button class="qg-btn anim-click" id="btn-qg-rng" onclick="safeCall('runQGen', 'RNG (1-9)')">RNG (1-9)</button>
+    <button class="qg-btn btn-shit anim-click" id="btn-qg-shit" onclick="safeCall('runShitWheel')">💩 WHEEL</button>
+  </div>
+
+  <div class="x3-switch-container anim-click" id="btn-qg-x2" onclick="safeCall('toggleX2')">
+    <span class="x3-lbl">x2</span>
+  </div>
+
+  <div class="x3-switch-container anim-click" id="btn-qg-x3" onclick="safeCall('toggleX3')">
+    <span class="x3-lbl">x3</span>
+  </div>
+</div>
 
     <div class="qg-unified-bar">
         <div class="qg-name-label" style="color:var(--p1-color); text-align:left;" id="lbl-qg-a" onclick="safeCall('rerollSide', 'a')" title="Click to Reroll P1">P1</div>
@@ -637,36 +659,41 @@
 
     // --- MAIN GENERATOR LISTENER ---
     db.ref('gen').on('value', snap => {
-        const g = snap.val() || {};
-        window.lastGenState = g; 
-        
-        // --- UPDATED LABEL LOGIC ---
-        let lblA = document.getElementById('lbl-qg-a');
-        let lblB = document.getElementById('lbl-qg-b');
-        
-        if(g.t === 'ShitWheel') {
-            lblA.innerText = "NAME";
-            lblB.innerText = "NOTE";
-        } 
-        else if (g.t === 'Legendary Trio') {
-            lblA.innerText = g.titleA || "TRIO";
-            lblB.innerText = g.titleB || "TRIO";
-        }
-        else {
-            lblA.innerText = window.p1Name;
-            lblB.innerText = window.p2Name;
-        }
-        // ---------------------------
+    const g = snap.val() || {};
+    window.lastGenState = g; 
+    
+    // --- UPDATED LABEL LOGIC ---
+    let lblA = document.getElementById('lbl-qg-a');
+    let lblB = document.getElementById('lbl-qg-b');
+    
+    if(g.t === 'ShitWheel') {
+        lblA.innerText = "NAME";
+        lblB.innerText = "NOTE";
+    } 
+    else if (g.t === 'Legendary Trio') {
+        lblA.innerText = g.titleA || "TRIO";
+        lblB.innerText = g.titleB || "TRIO";
+    }
+    else {
+        lblA.innerText = window.p1Name;
+        lblB.innerText = window.p2Name;
+    }
+    // ---------------------------
 
-        window.lastQType = g.t || "";
-        window.isX3 = g.x3 || false;
-        
-        const x3Btn = document.getElementById('btn-qg-x3');
-        if(window.isX3) x3Btn.classList.add('active'); else x3Btn.classList.remove('active');
+    window.lastQType = g.t || "";
 
-        renderQGBlock('a', g.a || "-", g.t);
-        renderQGBlock('b', g.b || "-", g.t);
-    });
+    // ✅ x2/x3 state
+    window.isX2 = g.x2 || false;
+    window.isX3 = g.x3 || false;
+
+    const x2Btn = document.getElementById('btn-qg-x2');
+    const x3Btn = document.getElementById('btn-qg-x3');
+    if (x2Btn) x2Btn.classList.toggle('active', window.isX2);
+    if (x3Btn) x3Btn.classList.toggle('active', window.isX3);
+
+    renderQGBlock('a', g.a || "-", g.t);
+    renderQGBlock('b', g.b || "-", g.t);
+});
 
     function renderQGBlock(side, text, type) {
         const container = document.getElementById('qg-cont-' + side);
@@ -771,13 +798,24 @@
             'dashboard/side': "-", 'dashboard/sideNote': "",
             'dashboard/points': "-", 'dashboard/pointsNote': "",
             'dashboard/sp': "-", 'dashboard/spNote': "",
-            'gen/a': "-", 'gen/b': "-", 'gen/t': "", 'gen/x3': false,
+            'gen/a': "-", 'gen/b': "-", 'gen/t': "", 'gen/x2': false, 'gen/x3': false,
             'gen/titleA': null, 'gen/titleB': null,
             'record': null
         });
     };
 
-    window.toggleX3 = function() { db.ref('gen/x3').set(!window.isX3); };
+    window.isX2 = false;
+window.isX3 = false;
+
+window.toggleX2 = function() {
+    const next = !window.isX2;
+    db.ref('gen').update({ x2: next, x3: false });
+};
+
+window.toggleX3 = function() {
+    const next = !window.isX3;
+    db.ref('gen').update({ x3: next, x2: false });
+};
 
     window.toggleTokenSection = function() {
         let el = document.querySelector('.token-center');
@@ -817,40 +855,48 @@
     }
 
     window.runQGen = function(type) {
-        let count = window.isX3 ? 3 : 1;
-        let valA = generateSet(type, count, []);
-        let valB = generateSet(type, count, valA.split(' / ').map(s => isNaN(s) ? s : parseInt(s)));
-        db.ref('gen').update({ a:valA, b:valB, t:type, titleA: null, titleB: null });
-    };
+    let count = window.isX3 ? 3 : (window.isX2 ? 2 : 1);
+
+    let valA = generateSet(type, count, []);
+    let valB = generateSet(
+        type,
+        count,
+        valA.split(' / ').map(s => isNaN(s) ? s : parseInt(s))
+    );
+
+    db.ref('gen').update({ a: valA, b: valB, t: type, titleA: null, titleB: null });
+};
 
     // --- NEW REROLL FUNCTION ---
     window.rerollSide = function(side) {
-        const type = window.lastQType;
-        if(!type || type === "ShitWheel") return;
+    const type = window.lastQType;
+    if(!type || type === "ShitWheel") return;
 
-        if (type === 'Legendary Trio') {
-            const trioList = getList('trios').filter(item => item && item.note);
-            if (trioList.length === 0) return;
+    if (type === 'Legendary Trio') {
+        const trioList = getList('trios').filter(item => item && item.note);
+        if (trioList.length === 0) return;
 
-            const pick = trioList[Math.floor(Math.random() * trioList.length)];
-            let updates = {};
-            updates['gen/' + side] = pick.note; 
-            updates['gen/title' + side.toUpperCase()] = pick.text;
-            db.ref().update(updates);
-            return;
-        }
+        const pick = trioList[Math.floor(Math.random() * trioList.length)];
+        let updates = {};
+        updates['gen/' + side] = pick.note; 
+        updates['gen/title' + side.toUpperCase()] = pick.text;
+        db.ref().update(updates);
+        return;
+    }
 
-        let count = window.isX3 ? 3 : 1;
-        let otherSide = (side === 'a' ? 'b' : 'a');
-        let otherVal = window.lastGenState ? window.lastGenState[otherSide] : "";
-        let exclude = [];
-        if (otherVal && otherVal !== '-') {
-            exclude = otherVal.toString().split(' / ').map(s => isNaN(s) ? s : parseInt(s));
-        }
+    let count = window.isX3 ? 3 : (window.isX2 ? 2 : 1);
 
-        let newVal = generateSet(type, count, exclude);
-        db.ref('gen/' + side).set(newVal);
-    };
+    let otherSide = (side === 'a' ? 'b' : 'a');
+    let otherVal = window.lastGenState ? window.lastGenState[otherSide] : "";
+    let exclude = [];
+
+    if (otherVal && otherVal !== '-') {
+        exclude = otherVal.toString().split(' / ').map(s => isNaN(s) ? s : parseInt(s));
+    }
+
+    let newVal = generateSet(type, count, exclude);
+    db.ref('gen/' + side).set(newVal);
+};
 
     window.rollLegendaryTrio = function() {
         let libraryData = (window.appData && window.appData.trios) ? window.appData.trios : [];
@@ -973,37 +1019,46 @@
     }
 
     function populateDropdowns() {
-        // We don't need 'lib' variable here because getList handles it
-        
-        for(let i=0; i<5; i++) {
-            let mSel = document.getElementById('sel-m-'+i);
-            let sSel = document.getElementById('sel-s-'+i);
-            
-            // Only populate if empty to avoid duplicates
-            if(mSel && sSel && mSel.innerHTML === "") { 
-                mSel.innerHTML = "<option value=''>Game Mode</option>";
-                sSel.innerHTML = "<option value=''>Side Quest</option>";
-                
-                // 👇 THIS IS THE FIX: Use getList() instead of accessing appData directly
-                const modes = getList('gameModes');
-                const sides = getList('sides');
-                
-                modes.forEach(m => { 
-                    let op = document.createElement('option'); 
-                    op.value = m.text; 
-                    op.innerText = m.text; 
-                    mSel.appendChild(op); 
-                });
-                
-                sides.forEach(s => { 
-                    let op = document.createElement('option'); 
-                    op.value = s.text; 
-                    op.innerText = s.text; 
-                    sSel.appendChild(op); 
-                });
-            }
+
+    for(let i=0; i<5; i++) {
+
+        let mSel = document.getElementById('sel-m-'+i);
+        let sSel = document.getElementById('sel-s-'+i);
+
+        // Only populate if empty (prevents duplicates)
+        if(mSel && sSel && mSel.innerHTML === "") {
+
+            mSel.innerHTML = "<option value=''>Game Mode</option>";
+            sSel.innerHTML = "<option value=''>Side Quest</option>";
+
+            // Get lists
+            let modes = getList('gameModes');
+            let sides = getList('sides');
+
+            // ✅ SORT ALPHABETICALLY (by text)
+            modes.sort((a, b) => (a.text || a).localeCompare(b.text || b));
+            sides.sort((a, b) => (a.text || a).localeCompare(b.text || b));
+
+            // Populate Game Modes
+            modes.forEach(m => {
+                let text = m.text || m;
+                let op = document.createElement('option');
+                op.value = text;
+                op.innerText = text;
+                mSel.appendChild(op);
+            });
+
+            // Populate Side Quests
+            sides.forEach(s => {
+                let text = s.text || s;
+                let op = document.createElement('option');
+                op.value = text;
+                op.innerText = text;
+                sSel.appendChild(op);
+            });
         }
     }
+}
 
     window.updateGameDetail = function(idx, type) {
         let val = document.getElementById(`sel-${type==='mode'?'m':'s'}-${idx}`).value;
@@ -1049,30 +1104,56 @@
     };
 
     window.saveMatch = function() {
-        let winner = document.getElementById('win-res').innerText;
-        if(winner === '-' || winner === '') return alert("No winner yet.");
-        let settings = window.recState?.settings || { mode: 'Regular', format: 'BO3' };
-        
-        let payload = { timestamp: Date.now(), winner, settings, record: [], links: [] };
-        let count = settings.format === 'BO3' ? 3 : 5;
-        for(let i=0; i<count; i++) {
-            let dbVal = window.recState?.dots?.[i] || '';
-            let resName = (dbVal === 'A') ? window.p1Name : (dbVal === 'B' ? window.p2Name : '-');
-            let lVal = document.getElementById('lnk-'+i).value || '';
-            let gameInfo = { result: resName };
-            if(settings.mode === 'Challenge') {
-                gameInfo.mode = document.getElementById('sel-m-'+i).value;
-                gameInfo.side = document.getElementById('sel-s-'+i).value;
-                gameInfo.sp = "4";
-                gameInfo.points = window.dashState.points; 
-            } else payload.dashSnapshot = window.dashState;
-            payload.record.push(gameInfo);
-            if(lVal) payload.links.push(`G${i+1}: ${lVal}`);
-        }
-        db.ref('history').push(payload);
-        alert("Match Saved!");
-        db.ref('record').update({ dots:null, links:null, details:null });
+    let winner = document.getElementById('win-res').innerText;
+    if(winner === '-' || winner === '') return alert("No winner yet.");
+
+    let settings = window.recState?.settings || { mode: 'Regular', format: 'BO3' };
+
+    // ✅ Build payload once
+    let payload = {
+        timestamp: Date.now(),
+        winner,
+        settings,
+        record: [],
+        links: []
     };
+
+    // ✅ IMPORTANT: Save wager/points at TOP LEVEL for Challenge mode
+    if (settings.mode === 'Challenge') {
+        const pts = window.dashState?.points;
+        payload.points = (pts === undefined || pts === null) ? "" : pts;  // keeps 0 valid
+        payload.sp = "4";
+    } else {
+        payload.dashSnapshot = window.dashState;
+    }
+
+    let count = settings.format === 'BO3' ? 3 : 5;
+
+    for(let i=0; i<count; i++) {
+        let dbVal = window.recState?.dots?.[i] || '';
+        let resName = (dbVal === 'A') ? window.p1Name : (dbVal === 'B' ? window.p2Name : '-');
+        let lVal = document.getElementById('lnk-'+i).value || '';
+
+        let gameInfo = { result: resName };
+
+        if(settings.mode === 'Challenge') {
+            gameInfo.mode = document.getElementById('sel-m-'+i).value;
+            gameInfo.side = document.getElementById('sel-s-'+i).value;
+            gameInfo.sp = "4";
+            gameInfo.points = payload.points; // ✅ copy top-level wager into each game (optional)
+        }
+
+        payload.record.push(gameInfo);
+
+        if(lVal) payload.links.push(`G${i+1}: ${lVal}`);
+    }
+
+    db.ref('history').push(payload);
+    alert("Match Saved!");
+    db.ref('record').update({ dots:null, links:null, details:null });
+};
+
+
   </script>
 </body>
 </html>

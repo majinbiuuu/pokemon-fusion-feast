@@ -145,6 +145,45 @@
   .spin { width: 60px; height: 60px; border: 6px solid #333; border-top-color: var(--theme-green); border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .empty-msg { color: #ff4444; font-weight: 900; font-size: 18px; margin-top: 40px; text-transform: uppercase; letter-spacing: 1px; animation: pulse 2s infinite; width: 100%; text-align: center; cursor: pointer; }
+
+  /* LOCAL MODE BUTTON */
+  .local-toggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 9999;
+
+    background: #111;
+    border: 1px solid #444;
+    color: #aaa;
+
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 8px;
+
+    font-weight: 900;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  .local-toggle:hover {
+    border-color: #fff;
+    color: #fff;
+    background: #222;
+    transform: translateY(-1px);
+  }
+
+  .local-toggle.active {
+    border-color: var(--theme-green);
+    background: var(--theme-green);
+    color: #000;
+    box-shadow: 0 0 12px var(--theme-green);
+  }
+
 </style>
 </head>
 <body>
@@ -155,6 +194,8 @@
   </div>
 
   <div class="control-panel">
+    <button class="local-toggle" id="btn-local" onclick="toggleLocalMode()">SHARED</button>
+
     <div class="cp-row">
       <div class="dd-wrapper"><div class="dd-btn" id="dd-btn-gen" onclick="toggleDD('gen')">GENERATIONS <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-gen"></div></div>
       <div class="dd-wrapper"><div class="dd-btn" id="dd-btn-type" onclick="toggleDD('type')">TYPES <span class="arrow-down">&#9660;</span></div><div class="dd-menu" id="dd-type"></div></div>
@@ -211,6 +252,100 @@
   var HISTORY = []; var HIST_PTR = -1;
   var AMT_OPTS = [1,2,3,6,10,25,50]; var AMT_IDX = 3;
 
+  // ---------------------------
+  // LOCAL MODE (PRIVATE VIEW)
+  // ---------------------------
+  var LOCAL_MODE = false;
+  var LOCAL_SNAPSHOT = null;
+
+  function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function toggleLocalMode() {
+    setLocalMode(!LOCAL_MODE);
+  }
+
+  function setLocalMode(on) {
+    LOCAL_MODE = !!on;
+
+    var btn = document.getElementById('btn-local');
+    if (btn) {
+      btn.classList.toggle('active', LOCAL_MODE);
+      btn.innerText = LOCAL_MODE ? "LOCAL" : "SHARED";
+      btn.title = LOCAL_MODE
+        ? "Local mode: only you see changes"
+        : "Shared mode: synced with everyone";
+    }
+
+    if (LOCAL_MODE) {
+      // Save current shared state so we can restore cleanly
+      LOCAL_SNAPSHOT = {
+        FILTERS: deepClone(FILTERS),
+        SETTINGS: deepClone(SETTINGS),
+        AMT_IDX: AMT_IDX,
+        HISTORY: deepClone(HISTORY),
+        HIST_PTR: HIST_PTR,
+        USED_IDS: deepClone(USED_IDS),
+        GLOBAL_SEEN: deepClone(GLOBAL_SEEN)
+      };
+      // In local mode, we ignore remote updates and avoid writing to Firebase.
+    } else {
+      // Restore your local in-memory vars back to the snapshot (optional but helps avoid weirdness)
+      if (LOCAL_SNAPSHOT) {
+        FILTERS = deepClone(LOCAL_SNAPSHOT.FILTERS);
+        SETTINGS = deepClone(LOCAL_SNAPSHOT.SETTINGS);
+        AMT_IDX = LOCAL_SNAPSHOT.AMT_IDX;
+        HISTORY = deepClone(LOCAL_SNAPSHOT.HISTORY);
+        HIST_PTR = LOCAL_SNAPSHOT.HIST_PTR;
+        USED_IDS = deepClone(LOCAL_SNAPSHOT.USED_IDS);
+        GLOBAL_SEEN = deepClone(LOCAL_SNAPSHOT.GLOBAL_SEEN);
+      }
+
+      // Refresh from shared DB so you're back to synced truth
+      refreshFromShared();
+    }
+  }
+
+  function refreshFromShared() {
+    db.ref('gen/filters').once('value', snap => {
+      var val = snap.val() || { gen:[], type:[], color:[] };
+      FILTERS = val;
+      if(!FILTERS.gen) FILTERS.gen = [];
+      if(!FILTERS.type) FILTERS.type = [];
+      if(!FILTERS.color) FILTERS.color = [];
+      renderTags();
+      updateDropdownVisuals();
+    });
+
+    db.ref('gen/settings').once('value', snap => {
+      var val = snap.val();
+      if(val) {
+        SETTINGS = val;
+        updateSettingVisuals();
+      }
+    });
+
+    db.ref('gen/amount').once('value', snap => {
+      var val = snap.val();
+      if(val !== null && val !== undefined) {
+        AMT_IDX = val;
+        document.getElementById('amt-display').innerText = AMT_OPTS[AMT_IDX];
+      }
+    });
+
+    db.ref('gen/used').once('value', snap => {
+      var map = snap.val() || {};
+      USED_IDS = Object.keys(map);
+      updateUsedVisuals();
+    });
+
+    db.ref('gen/team').once('value', snap => {
+      var team = snap.val() || [];
+      renderGrid(team);
+    });
+  }
+
   initDropdowns();
   document.addEventListener('click', function(e){ if(!e.target.closest('.dd-wrapper')) closeAllDD(); });
 
@@ -226,6 +361,7 @@
       ALL_KEYS = Object.keys(data).filter(k => data[k].num > 0);
       document.getElementById('gen-overlay').style.display = 'none';
       startSync();
+      setLocalMode(false);
   }).catch(e => { document.getElementById('gen-msg').innerText = "DATA ERROR"; });
 
   window.addEventListener('message', (event) => {
@@ -289,6 +425,7 @@
   function startSync() {
       // 1. SYNC GENERATED TEAM WITH INTELLIGENT NAVIGATION CHECK
       db.ref('gen/team').on('value', snap => {
+          if (LOCAL_MODE) return;
           if(document.getElementById('search-input').value.trim() !== '') return;
           var team = snap.val() || [];
           
@@ -320,6 +457,7 @@
 
       // 2. SYNC USED POKEMON
       db.ref('gen/used').on('value', snap => {
+          if (LOCAL_MODE) return;
           var map = snap.val() || {};
           USED_IDS = Object.keys(map);
           updateUsedVisuals();
@@ -327,6 +465,7 @@
 
       // 3. SYNC FILTERS (NEW)
       db.ref('gen/filters').on('value', snap => {
+          if (LOCAL_MODE) return;
           var val = snap.val();
           if(!val) val = { gen:[], type:[], color:[] };
           FILTERS = val;
@@ -341,6 +480,7 @@
 
       // 4. SYNC SETTINGS (NEW)
       db.ref('gen/settings').on('value', snap => {
+          if (LOCAL_MODE) return;
           var val = snap.val();
           if(val) {
               SETTINGS = val;
@@ -350,6 +490,7 @@
 
       // 5. SYNC AMOUNT (NEW)
       db.ref('gen/amount').on('value', snap => {
+          if (LOCAL_MODE) return;
           var val = snap.val();
           if(val !== null && val !== undefined) {
               AMT_IDX = val;
@@ -448,7 +589,11 @@
     }
     
     // Only update DB. The listener handles the history push and rendering for everyone.
-    db.ref('gen/team').set(picked);
+    if (LOCAL_MODE) {
+      showFinal(picked, true);
+    } else {
+      db.ref('gen/team').set(picked);
+    }
   }
 
   // --- SEARCH LOGIC ---
@@ -579,7 +724,10 @@
   function markUsedLocal(id) {
       if(!USED_IDS.includes(id)) {
           USED_IDS.push(id);
-          db.ref('gen/used/' + id).set(true);
+
+          if (!LOCAL_MODE) {
+            db.ref('gen/used/' + id).set(true);
+          }
           
           var p = RAW_DB[id];
           if(p) {
@@ -594,7 +742,10 @@
       var idx = USED_IDS.indexOf(id);
       if(idx > -1) {
           USED_IDS.splice(idx, 1);
-          db.ref('gen/used/' + id).remove();
+
+          if (!LOCAL_MODE) {
+            db.ref('gen/used/' + id).remove();
+          }
       }
       updateUsedVisuals();
   }
@@ -635,8 +786,13 @@
     if(idx===-1){ FILTERS[cat].push(val); }
     else { FILTERS[cat].splice(idx,1); }
     
-    // Sync to DB immediately
-    db.ref('gen/filters').set(FILTERS);
+    if (LOCAL_MODE) {
+      renderTags();
+      updateDropdownVisuals();
+    } else {
+      // Sync to DB immediately
+      db.ref('gen/filters').set(FILTERS);
+    }
   }
 
   // SYNC ACTION 2: REMOVE FILTER TAG
@@ -644,8 +800,13 @@
     var idx = FILTERS[cat].indexOf(val);
     if(idx>-1) FILTERS[cat].splice(idx,1);
     
-    // Sync to DB immediately
-    db.ref('gen/filters').set(FILTERS);
+    if (LOCAL_MODE) {
+      renderTags();
+      updateDropdownVisuals();
+    } else {
+      // Sync to DB immediately
+      db.ref('gen/filters').set(FILTERS);
+    }
   }
 
   // VISUAL SYNC HELPERS
@@ -690,15 +851,21 @@
       AMT_IDX+=n; 
       if(AMT_IDX<0)AMT_IDX=AMT_OPTS.length-1; 
       if(AMT_IDX>=AMT_OPTS.length)AMT_IDX=0; 
-      // Sync to DB
-      db.ref('gen/amount').set(AMT_IDX);
+      document.getElementById('amt-display').innerText = AMT_OPTS[AMT_IDX];
+      if (!LOCAL_MODE) {
+        // Sync to DB
+        db.ref('gen/amount').set(AMT_IDX);
+      }
   }
 
   // SYNC ACTION 4: SETTINGS
   function toggleSetting(k){ 
       SETTINGS[k]=!SETTINGS[k]; 
-      // Sync to DB
-      db.ref('gen/settings').set(SETTINGS);
+      updateSettingVisuals();
+      if (!LOCAL_MODE) {
+        // Sync to DB
+        db.ref('gen/settings').set(SETTINGS);
+      }
   }
 
   function updateSettingVisuals() {
@@ -718,28 +885,45 @@
           HIST_PTR = n; 
           renderGrid(HISTORY[n]);
           // Sync this view to everyone
-          db.ref('gen/team').set(HISTORY[n]); 
+          if (!LOCAL_MODE) {
+            db.ref('gen/team').set(HISTORY[n]); 
+          }
       } 
   }
   
   // CLEAR ACTIONS (Reset Memory ONLY, no column clear)
   function doClear(){ 
       FILTERS = { gen:[], type:[], color:[] };
-      // Sync Filters Clear
-      db.ref('gen/filters').set(FILTERS);
-      
-      document.getElementById('gen-grid').innerHTML = '';
-      db.ref('gen/team').set(null); 
-      document.getElementById('search-input').value = ""; 
-      // REMOVED: window.parent.postMessage({ type: 'requestClearCols' }, '*');
+
+      if (LOCAL_MODE) {
+        renderTags();
+        updateDropdownVisuals();
+        document.getElementById('gen-grid').innerHTML = '';
+        document.getElementById('search-input').value = "";
+      } else {
+        // Sync Filters Clear
+        db.ref('gen/filters').set(FILTERS);
+        
+        document.getElementById('gen-grid').innerHTML = '';
+        db.ref('gen/team').set(null); 
+        document.getElementById('search-input').value = ""; 
+        // REMOVED: window.parent.postMessage({ type: 'requestClearCols' }, '*');
+      }
   }
   
   function doReset(){ 
       GLOBAL_SEEN = []; 
       document.getElementById('gen-grid').innerHTML = ''; 
-      db.ref('gen/team').set(null); 
-      db.ref('gen/used').set(null); 
-      // REMOVED: window.parent.postMessage({ type: 'requestClearCols' }, '*');
+      document.getElementById('search-input').value = "";
+
+      if (LOCAL_MODE) {
+        USED_IDS = [];
+        updateUsedVisuals();
+      } else {
+        db.ref('gen/team').set(null); 
+        db.ref('gen/used').set(null); 
+        // REMOVED: window.parent.postMessage({ type: 'requestClearCols' }, '*');
+      }
   }
 </script>
 </body>
