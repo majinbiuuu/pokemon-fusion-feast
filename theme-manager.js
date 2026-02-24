@@ -72,10 +72,30 @@ window.db.ref('theme').on('value', snap => {
 });
 
 // --- 2. SETTINGS & WALLPAPER LOGIC ---
+
+window.switchSettingsTab = function(tabName) {
+  // panels
+  const panels = {
+    theme: document.getElementById('st-panel-theme'),
+    players: document.getElementById('st-panel-players'),
+    mascots: document.getElementById('st-panel-mascots')
+  };
+
+  Object.values(panels).forEach(p => { if(p) p.classList.remove('active'); });
+  if (panels[tabName]) panels[tabName].classList.add('active');
+
+  // tabs
+  document.querySelectorAll('.st-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tabName);
+  });
+};
+
 window.toggleSettings = function() {
     let el = document.getElementById('settings-modal');
     el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
     if(el.style.display === 'flex' && window.updateIdentityUI) window.updateIdentityUI();
+    window.switchSettingsTab('theme');
+    
 };
 
 window.toggleFullScreen = function() {
