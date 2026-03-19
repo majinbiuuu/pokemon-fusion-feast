@@ -124,6 +124,7 @@
   /* --- QUICK GEN CONTROLS --- */
   .qg-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .qg-row { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
+
   
   .qg-btn {
     flex: 1;
@@ -432,6 +433,10 @@
     <button class="qg-btn anim-click" id="btn-qg-rng" onclick="safeCall('runQGen', 'RNG (1-9)')">RNG (1-9)</button>
     <button class="qg-btn btn-shit anim-click" id="btn-qg-shit" onclick="safeCall('runShitWheel')">💩 WHEEL</button>
   </div>
+
+  <div class="x3-switch-container anim-click" id="btn-qg-coin" onclick="safeCall('flipCoin')">
+    <span class="x3-lbl">🪙</span>
+</div>
 
   <div class="x3-switch-container anim-click" id="btn-qg-x2" onclick="safeCall('toggleX2')">
     <span class="x3-lbl">x2</span>
@@ -853,6 +858,43 @@ window.toggleX3 = function() {
         }
         return result.join(" / ");
     }
+
+    window.flipCoin = function() {
+    let count = window.isX3 ? 3 : 1;
+
+    function roll() {
+        return Math.random() < 0.5 ? "Heads" : "Tails";
+    }
+
+    let resultA, resultB;
+
+    if (count === 1) {
+        // one shared result for both sides
+        const single = roll();
+        resultA = single;
+        resultB = single;
+    } else {
+        // x3 mode: each side gets its own 3 random flips
+        function rollSet() {
+            let arr = [];
+            for (let i = 0; i < count; i++) {
+                arr.push(roll());
+            }
+            return arr.join(" / ");
+        }
+
+        resultA = rollSet();
+        resultB = rollSet();
+    }
+
+    db.ref('gen').update({
+        a: resultA,
+        b: resultB,
+        t: "Coin Flip",
+        titleA: null,
+        titleB: null
+    });
+};
 
     window.runQGen = function(type) {
     let count = window.isX3 ? 3 : (window.isX2 ? 2 : 1);
