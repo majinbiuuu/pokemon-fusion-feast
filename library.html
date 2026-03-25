@@ -145,6 +145,90 @@
   .lib-btn.del { background: #3e0000; border-color: #600; color: #f88; }
   .lib-btn.del:hover { background: #600; color: #fff; }
 
+  .lib-scroll-area.fixed-mode {
+    display: block;
+    grid-template-columns: none;
+    padding-right: 0;
+}
+
+.fixed-shell { display: flex; flex-direction: column; gap: 14px; }
+
+.fixed-help {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: #999;
+    line-height: 1.45;
+    font-size: 0.95rem;
+}
+
+.fixed-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 120px;
+    gap: 12px;
+    align-items: center;
+    background: var(--card-bg);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 10px;
+    padding: 14px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    backdrop-filter: blur(10px);
+}
+
+.fixed-label {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+}
+
+.fixed-select {
+    width: 100%;
+    background: #000;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 1rem;
+    outline: none;
+}
+
+.fixed-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(255,255,255,0.08);
+}
+
+.fixed-lock-btn {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #555;
+    background: #222;
+    color: #bbb;
+    font-weight: 800;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: 0.2s;
+    letter-spacing: 0.5px;
+}
+
+.fixed-lock-btn:hover {
+    background: #333;
+    color: #fff;
+    border-color: #777;
+}
+
+.fixed-lock-btn.locked {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    box-shadow: 0 0 14px rgba(255,255,255,0.08);
+}
+
+
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>
@@ -156,7 +240,7 @@
       <div class="lib-editor">
           <div class="lib-header">
               <h2 id="lib-current-title">Category</h2>
-              <button class="lib-btn save" onclick="openEditModal(null)">
+              <button class="lib-btn save" id="btn-lib-add" onclick="openEditModal(null)">
                   <i class="fas fa-plus"></i> Add New
               </button>
           </div>
@@ -224,7 +308,8 @@
           "Points List": { path: "library/points" },
           "SP List": { path: "library/sp" },
           "Shit Wheel": { path: "library/ShitWheelList" },
-          "Tokens": { path: "library/TokenList" }
+          "Tokens": { path: "library/TokenList" },
+          "Fixed": { path: "library/fixed", type: "fixed" },
       }
   };
 
@@ -238,6 +323,20 @@
   let currentType = "std";
   let currentItems = []; // Array to hold ordered items
   let editingKey = null; // Key of item currently being edited
+
+  let fullLibraryData = {};
+
+const FIXED_FIELDS = [
+    { key: "mode", label: "Game Mode", listKey: "gameModes" },
+    { key: "side", label: "Side Quest", listKey: "sides" },
+    { key: "points", label: "Points", listKey: "points" },
+    { key: "sp", label: "SP", listKey: "sp" }
+];
+
+db.ref("library").on("value", snap => {
+    fullLibraryData = snap.val() || {};
+    if (currentType === "fixed") renderFixedPanel(fullLibraryData.fixed || {});
+});
 
   function initLibrarySidebar() {
       const listContainer = document.getElementById('lib-cat-list');
@@ -276,21 +375,142 @@
       }
 
       currentLibPath = dbPath;
-      currentType = type;
-      
-      const container = document.getElementById('lib-item-list');
-      container.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">Loading...</div>';
+currentType = type;
+updateLibraryHeaderState();
 
-      db.ref(currentLibPath).on('value', snap => {
-          let val = snap.val();
-          if(type === 'trio' && !val) {
-             db.ref(currentLibPath).set(DEFAULT_TRIOS);
-             return;
-          }
-          parseData(val);
-          renderItems();
-      });
+const container = document.getElementById('lib-item-list');
+container.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">Loading...</div>';
+
+db.ref(currentLibPath).on('value', snap => {
+    let val = snap.val();
+
+    if (type === 'trio' && !val) {
+        db.ref(currentLibPath).set(DEFAULT_TRIOS);
+        return;
+    }
+
+    if (type === 'fixed') {
+        renderFixedPanel(val || {});
+        return;
+    }
+
+    parseData(val);
+    renderItems();
+});
   }
+
+  function updateLibraryHeaderState() {
+    const addBtn = document.getElementById('btn-lib-add');
+    const container = document.getElementById('lib-item-list');
+    if (addBtn) addBtn.style.display = (currentType === 'fixed') ? 'none' : 'inline-flex';
+    if (container) container.classList.toggle('fixed-mode', currentType === 'fixed');
+}
+
+function normalizeLibEntry(item) {
+    return {
+        text: (typeof item === 'object' && item && item.text) ? item.text : (item || ''),
+        note: (typeof item === 'object' && item && item.note) ? item.note : ''
+    };
+}
+
+function getLibraryList(key) {
+    const lib = fullLibraryData || {};
+    const raw = lib[key];
+    if (!raw) return [];
+    return Array.isArray(raw) ? raw : Object.values(raw);
+}
+
+function sortAlpha(list) {
+    return list.slice().sort((a, b) => {
+        const aText = normalizeLibEntry(a).text;
+        const bText = normalizeLibEntry(b).text;
+        return aText.localeCompare(bText);
+    });
+}
+
+function normalizeFixedState(data) {
+    const src = data || {};
+    const out = {};
+    FIXED_FIELDS.forEach(field => {
+        const row = src[field.key] || {};
+        out[field.key] = {
+            value: typeof row.value === 'string' ? row.value : '',
+            locked: !!row.locked
+        };
+    });
+    return out;
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function renderFixedPanel(data) {
+    updateLibraryHeaderState();
+
+    const container = document.getElementById('lib-item-list');
+    if (!container) return;
+
+    const state = normalizeFixedState(data);
+    let html = '<div class="fixed-shell">';
+    html += '<div class="fixed-help">Choose the value you want for each row. When a row is locked, the Play tab will still do the rolling animation, but it will always land on that locked value.</div>';
+
+    FIXED_FIELDS.forEach(field => {
+        const selected = state[field.key].value || '';
+        const locked = !!state[field.key].locked;
+        const options = sortAlpha(getLibraryList(field.listKey));
+
+        const optionHtml = options.map(item => {
+            const entry = normalizeLibEntry(item);
+            const isSelected = entry.text === selected ? ' selected' : '';
+            return `<option value="${escapeHtml(entry.text)}"${isSelected}>${escapeHtml(entry.text)}</option>`;
+        }).join('');
+
+        html += `
+            <div class="fixed-row">
+                <div class="fixed-label">${escapeHtml(field.label)}</div>
+                <select class="fixed-select" id="fixed-${field.key}" onchange="updateFixedValue('${field.key}', this.value)">
+                    <option value="">Random</option>
+                    ${optionHtml}
+                </select>
+                <button class="fixed-lock-btn ${locked ? 'locked' : ''}" onclick="toggleFixedLock('${field.key}')">
+                    ${locked ? 'Locked' : 'Lock'}
+                </button>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+window.updateFixedValue = function(key, value) {
+    db.ref(`library/fixed/${key}/value`).set(value || '');
+};
+
+window.toggleFixedLock = function(key) {
+    const select = document.getElementById(`fixed-${key}`);
+    const nextValue = select ? (select.value || '') : '';
+
+    db.ref(`library/fixed/${key}`).once('value').then(snap => {
+        const current = snap.val() || { value: '', locked: false };
+
+        if (!current.locked && !nextValue) {
+            alert('Choose a value first.');
+            return;
+        }
+
+        db.ref(`library/fixed/${key}`).update({
+            value: nextValue,
+            locked: !current.locked
+        });
+    });
+};
 
   function parseData(data) {
       currentItems = [];
@@ -304,8 +524,9 @@
   }
 
   function renderItems() {
-      const container = document.getElementById('lib-item-list');
-      container.innerHTML = '';
+    const container = document.getElementById('lib-item-list');
+    container.classList.remove('fixed-mode');
+    container.innerHTML = '';
 
       if (currentItems.length === 0) {
           container.innerHTML = '<div style="padding:20px; text-align:center; color:#555;">List is empty. Add a new item.</div>';
