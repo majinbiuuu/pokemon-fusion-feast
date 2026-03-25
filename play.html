@@ -121,6 +121,53 @@
   .c-val { font-size: 1.6rem; font-weight: 900; color: #fff; line-height: 1.1; }
   .c-note { font-size: 0.85rem; color: var(--theme-green); font-style: italic; margin-top: 5px; }
 
+    /* --- CASINO ROLL ANIMATION --- */
+  .p-card {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .p-card.rolling {
+    border-color: var(--theme-green);
+    box-shadow:
+      0 0 10px rgba(255,255,255,0.08),
+      0 0 18px rgba(0,0,0,0.45),
+      0 0 24px var(--theme-green);
+  }
+
+  .p-card.rolling .c-val,
+  .p-card.rolling .c-note {
+    animation: cardRollBlur 0.09s linear infinite;
+  }
+
+  .p-card.selected {
+    border-color: var(--theme-green);
+    animation: winnerPulse 1.2s ease;
+    box-shadow:
+      0 0 12px rgba(255,255,255,0.10),
+      0 0 20px var(--theme-green),
+      0 0 34px rgba(255,255,255,0.14);
+  }
+
+  .p-card.selected .c-val,
+  .p-card.selected .c-note {
+    text-shadow: 0 0 10px var(--theme-green);
+  }
+
+  @keyframes cardRollBlur {
+    0%   { transform: translateY(-6px); filter: blur(0.4px); opacity: 0.88; }
+    50%  { transform: translateY(6px);  filter: blur(1.4px); opacity: 1; }
+    100% { transform: translateY(-6px); filter: blur(0.4px); opacity: 0.88; }
+  }
+
+  @keyframes winnerPulse {
+    0%   { transform: scale(1); }
+    20%  { transform: scale(1.02); }
+    40%  { transform: scale(1); }
+    60%  { transform: scale(1.015); }
+    100% { transform: scale(1); }
+  }
+
   /* --- QUICK GEN CONTROLS --- */
   .qg-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .qg-row { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
@@ -649,9 +696,16 @@
         window.dashState = snap.val() || {}; 
         const s = window.dashState;
         ['mode','side','points','sp'].forEach(k => {
-            if(document.getElementById('val-'+k)) document.getElementById('val-'+k).innerText = s[k] || '-';
-            if(document.getElementById('note-'+k)) document.getElementById('note-'+k).innerText = s[k+'Note'] || '';
-        });
+    const cardEl = document.getElementById('card-' + k);
+    const isRolling = cardEl && cardEl.classList.contains('rolling');
+
+    if (!isRolling && document.getElementById('val-'+k)) {
+        document.getElementById('val-'+k).innerText = s[k] || '-';
+    }
+    if (!isRolling && document.getElementById('note-'+k)) {
+        document.getElementById('note-'+k).innerText = s[k+'Note'] || '';
+    }
+});
         if(s.points) {
             let ptsInput = document.getElementById('chal-points-input');
             if(ptsInput && document.activeElement !== ptsInput) ptsInput.value = s.points;
@@ -766,50 +820,302 @@
 
     // --- HELPER: NORMALIZE DATA TO ARRAY ---
     function getList(key) {
-        const lib = window.appData || {};
-        let raw = lib[key];
-        if (!raw) return [];
-        // Convert Object to Array if needed
-        return Array.isArray(raw) ? raw : Object.values(raw);
+    const lib = window.appData || {};
+
+    const aliases = {
+        gameModes: ['gameModes', 'Game Modes'],
+        sides: ['sides', 'Side Options'],
+        points: ['points', 'Points List'],
+        sp: ['sp', 'SP List'],
+
+        'Game Modes': ['Game Modes', 'gameModes'],
+        'Side Options': ['Side Options', 'sides'],
+        'Points List': ['Points List', 'points'],
+        'SP List': ['SP List', 'sp']
+    };
+
+    const keysToTry = aliases[key] || [key];
+
+    for (const k of keysToTry) {
+        const raw = lib[k];
+        if (raw) {
+            return Array.isArray(raw) ? raw : Object.values(raw);
+        }
     }
 
-    // --- ACTIONS ---
+    return [];
+}
+
+    function normalizeEntry(item) {
+    return {
+        text: (typeof item === 'object' && item && item.text) ? item.text : (item || ''),
+        note: (typeof item === 'object' && item && item.note) ? item.note : ''
+    };
+}
+
+function normalizeFixedState(data) {
+    const src = data || {};
+    return {
+        mode: {
+            value: typeof src.mode?.value === 'string' ? src.mode.value : '',
+            locked: !!src.mode?.locked
+        },
+        side: {
+            value: typeof src.side?.value === 'string' ? src.side.value : '',
+            locked: !!src.side?.locked
+        },
+        points: {
+            value: typeof src.points?.value === 'string' ? src.points.value : '',
+            locked: !!src.points?.locked
+        },
+        sp: {
+            value: typeof src.sp?.value === 'string' ? src.sp.value : '',
+            locked: !!src.sp?.locked
+        }
+    };
+}
+
+function getFixedRollResult(key, listKey) {
+    const fixed = normalizeFixedState((window.appData || {}).fixed);
+    const rule = fixed[key];
+
+    if (!rule || !rule.locked || !rule.value) return null;
+
+    const match = getList(listKey)
+        .map(normalizeEntry)
+        .find(item => item.text === rule.value);
+
+    return match || { text: rule.value, note: '' };
+}
+
+function getRandomRollResult(listKey) {
+    const list = getList(listKey)
+        .map(normalizeEntry)
+        .filter(item => item.text);
+
+    if (!list.length) return null;
+    return list[Math.floor(Math.random() * list.length)];
+}
+
+function getFinalRollResult(key, listKey) {
+    return getFixedRollResult(key, listKey) || getRandomRollResult(listKey) || { text: '', note: '' };
+}
+
+
+function setCardDisplay(key, text, note) {
+    const valEl = document.getElementById('val-' + key);
+    const noteEl = document.getElementById('note-' + key);
+
+    if (valEl) valEl.innerText = text || '-';
+    if (noteEl) noteEl.innerText = note || '';
+}
+
+function flashSelectedCard(card) {
+    if (!card) return;
+    card.classList.remove('selected');
+    void card.offsetWidth;
+    card.classList.add('selected');
+    setTimeout(() => card.classList.remove('selected'), 1400);
+}
+
+function animateRollCard(key, listKey, finalPick, duration = 2200, delay = 0) {
+    const list = getList(listKey).map(normalizeEntry);
+    const reel = list.length ? list : [normalizeEntry(finalPick)];
+    const card = document.getElementById('card-' + key);
+
+    return new Promise(resolve => {
+        setTimeout(() => {
+            if (card) {
+                card.classList.remove('selected');
+                card.classList.add('rolling');
+            }
+
+            const start = performance.now();
+            let nextSwapAt = 0;
+            let index = Math.floor(Math.random() * reel.length);
+            const target = normalizeEntry(finalPick);
+
+            function tick(now) {
+                const elapsed = now - start;
+                const progress = Math.min(elapsed / duration, 1);
+
+                /* fast start, smooth slow-down near the end */
+                const interval = 45 + Math.pow(progress, 3) * 320;
+
+                if (elapsed >= nextSwapAt) {
+                    const temp = reel[index % reel.length];
+                    setCardDisplay(key, temp.text, temp.note);
+                    index++;
+                    nextSwapAt += interval;
+                }
+
+                if (elapsed < duration) {
+                    requestAnimationFrame(tick);
+                } else {
+                    setCardDisplay(key, target.text, target.note);
+
+                    if (card) {
+                        card.classList.remove('rolling');
+                        flashSelectedCard(card);
+                    }
+
+                    resolve(target);
+                }
+            }
+
+            requestAnimationFrame(tick);
+        }, delay);
+    });
+}
+
+window.rollClientId = window.rollClientId || ('client-' + Math.random().toString(36).slice(2) + Date.now());
+window.lastRollCommandId = null;
+window.rollListenerReady = false;
+window.activeRollingCards = window.activeRollingCards || new Set();
+
+function isCardRolling(key) {
+    return window.activeRollingCards.has(key);
+}
+
+function setCardRollingState(key, rolling) {
+    if (rolling) window.activeRollingCards.add(key);
+    else window.activeRollingCards.delete(key);
+}
+
+function buildRollCommand(defs) {
+    const cards = defs.map(def => {
+        const result = getFinalRollResult(def.key, def.listKey);
+        if (!result || !result.text) return null;
+
+        return {
+            key: def.key,
+            listKey: def.listKey,
+            noteKey: def.noteKey,
+            duration: def.duration,
+            delay: def.delay || 0,
+            result: normalizeEntry(result)
+        };
+    }).filter(Boolean);
+
+    if (!cards.length) return null;
+
+    return {
+        id: 'roll-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+        sourceId: window.rollClientId,
+        createdAt: Date.now(),
+        startAt: Date.now() + 120,
+        cards
+    };
+}
+
+function playRollCommand(command) {
+    if (!command || !Array.isArray(command.cards) || !command.cards.length) {
+        return Promise.resolve();
+    }
+
+    const cardsToPlay = command.cards.filter(cardCfg => !isCardRolling(cardCfg.key));
+    if (!cardsToPlay.length) return Promise.resolve();
+
+    const sharedDelay = Math.max(0, (command.startAt || Date.now()) - Date.now());
+
+    return Promise.all(
+        cardsToPlay.map(cardCfg => {
+            setCardRollingState(cardCfg.key, true);
+
+            const cardEl = document.getElementById('card-' + cardCfg.key);
+            if (cardEl) {
+                cardEl.classList.remove('selected');
+                cardEl.classList.remove('rolling');
+            }
+
+            return animateRollCard(
+                cardCfg.key,
+                cardCfg.listKey,
+                cardCfg.result,
+                cardCfg.duration,
+                sharedDelay + (cardCfg.delay || 0)
+            ).then(finalCard => {
+                setCardRollingState(cardCfg.key, false);
+
+                if (command.sourceId === window.rollClientId) {
+                    const updates = {};
+                    updates['dashboard/' + cardCfg.key] = finalCard.text || '-';
+
+                    if (cardCfg.noteKey) {
+                        updates['dashboard/' + cardCfg.noteKey] = finalCard.note || '';
+                    }
+
+                    return db.ref().update(updates);
+                }
+            }).catch(err => {
+                setCardRollingState(cardCfg.key, false);
+                throw err;
+            });
+        })
+    );
+}
+
+function requestRoll(defs) {
+    if (!Array.isArray(defs) || !defs.length) return;
+
+    const availableDefs = defs.filter(def => !isCardRolling(def.key));
+    if (!availableDefs.length) return;
+
+    const command = buildRollCommand(availableDefs);
+    if (!command) return;
+
+    window.lastRollCommandId = command.id;
+    playRollCommand(command);
+    db.ref('dashboardRoll').set(command);
+}
+
+db.ref('dashboardRoll').on('value', snap => {
+    const command = snap.val();
+
+    /* ignore the old roll already sitting in Firebase when the page first loads */
+    if (!window.rollListenerReady) {
+        window.rollListenerReady = true;
+        if (command && command.id) window.lastRollCommandId = command.id;
+        return;
+    }
+
+    if (!command || !command.id || command.id === window.lastRollCommandId) return;
+
+    window.lastRollCommandId = command.id;
+    playRollCommand(command);
+});
+
+
+
     window.roll = function(key, listKey, noteKey) {
-        const list = getList(listKey); // Use helper
-        if(list.length === 0) return;
+    requestRoll([
+        { key, listKey, noteKey, duration: 1800, delay: 0 }
+    ]);
+};
 
-        const pick = list[Math.floor(Math.random() * list.length)];
-        
-        // Handle if items are plain strings or objects
-        let valText = (typeof pick === 'object' && pick.text) ? pick.text : pick;
-        let valNote = (typeof pick === 'object' && pick.note) ? pick.note : "";
-
-        let updates = {};
-        updates['dashboard/'+key] = valText;
-        if(noteKey) updates['dashboard/'+noteKey] = valNote;
-        db.ref().update(updates);
-    };
-
-    window.rollAll = function() {
-        window.roll('mode', 'gameModes', 'modeNote');
-        window.roll('side', 'sides', 'sideNote');
-        window.roll('points', 'points', 'pointsNote');
-        window.roll('sp', 'sp', 'spNote');
-    };
+window.rollAll = function() {
+    requestRoll([
+        { key: 'mode',   listKey: 'gameModes', noteKey: 'modeNote',   duration: 2200, delay: 0 },
+        { key: 'side',   listKey: 'sides',     noteKey: 'sideNote',   duration: 2450, delay: 0 },
+        { key: 'points', listKey: 'points',    noteKey: 'pointsNote', duration: 2700, delay: 0 },
+        { key: 'sp',     listKey: 'sp',        noteKey: 'spNote',     duration: 2950, delay: 0 }
+    ]);
+};
 
     window.clearBoard = function() {
-        db.ref().update({
-            'dashboard/mode': "-", 'dashboard/modeNote': "",
-            'dashboard/side': "-", 'dashboard/sideNote': "",
-            'dashboard/points': "-", 'dashboard/pointsNote': "",
-            'dashboard/sp': "-", 'dashboard/spNote': "",
-            'gen/a': "-", 'gen/b': "-", 'gen/t': "", 'gen/x2': false, 'gen/x3': false,
-            'gen/titleA': null, 'gen/titleB': null,
-            'record': null
-        });
-    };
+    db.ref().update({
+        'dashboard/mode': "-", 'dashboard/modeNote': "",
+        'dashboard/side': "-", 'dashboard/sideNote': "",
+        'dashboard/points': "-", 'dashboard/pointsNote': "",
+        'dashboard/sp': "-", 'dashboard/spNote': "",
+        'dashboardRoll': null,
+        'gen/a': "-", 'gen/b': "-", 'gen/t': "", 'gen/x2': false, 'gen/x3': false,
+        'gen/titleA': null, 'gen/titleB': null,
+        'record': null
+    });
+};
 
-    window.isX2 = false;
+    
 window.isX3 = false;
 
 window.toggleX2 = function() {
