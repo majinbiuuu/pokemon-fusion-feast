@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Columns Mirror</title>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<style>
+  :root {
+    --accent: #00ff9d;
+    --bg: #090909;
+    --text: #f2f2f2;
+    --p1-color: #ff4444;
+    --p2-color: #4488ff;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    font-family: 'Segoe UI', sans-serif;
+    color: var(--text);
+    background-color: var(--bg);
+    background-position: center center;
+    background-size: cover;
+    background-repeat: no-repeat;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.58);
+    pointer-events: none;
+  }
+
+  .mirror-shell {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .mirror-top {
+    display: flex;
+    justify-content: center;
+  }
+
+  .mirror-music {
+    width: min(100%, 920px);
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(8,8,8,0.82);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+    backdrop-filter: blur(10px);
+  }
+
+  .mirror-thumb {
+    width: 88px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #111;
+    border: 1px solid #2b2b2b;
+  }
+
+  .mirror-track-info {
+    min-width: 0;
+  }
+
+  .mirror-track-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #707070;
+    margin-bottom: 2px;
+  }
+
+  .mirror-track-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--accent);
+    font-size: 20px;
+    font-weight: 800;
+    text-shadow: 0 0 8px rgba(255,255,255,0.08);
+  }
+
+  .mirror-music-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mirror-btn {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #353535;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.04);
+    color: #d9d9d9;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.18s;
+  }
+
+  .mirror-btn:hover {
+    color: #fff;
+    border-color: var(--accent);
+    background: rgba(255,255,255,0.08);
+  }
+
+  .mirror-btn .material-icons {
+    font-size: 20px;
+  }
+
+  .mirror-vol-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 4px;
+    padding-left: 8px;
+    border-left: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .mirror-vol-slider {
+    width: 84px;
+  }
+
+  .mirror-stage {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  .mirror-col {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: rgba(8,8,8,0.78);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.52);
+    backdrop-filter: blur(12px);
+  }
+
+  .mirror-score-card {
+    min-height: 62px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+  }
+
+  .mirror-name {
+    font-size: 28px;
+    font-weight: 900;
+    text-transform: uppercase;
+    text-shadow: 0 0 8px currentColor;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mirror-score {
+    font-size: 48px;
+    font-weight: 900;
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255,255,255,0.22);
+  }
+
+  .mirror-slots {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mirror-slot {
+  position: relative;
+  min-height: 0;
+  height: 100%;
+  border-radius: 12px;
+  border: 1px dashed #353535;
+  background: rgba(0,0,0,0.34);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+  .mirror-slot.filled {
+    border-style: solid;
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(0,0,0,0.20), 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent);
+    background: rgba(12,12,12,0.82);
+  }
+
+  .mirror-slot img {
+    width: auto;
+    height: 88%;
+    max-width: 88%;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.75));
+    pointer-events: none;
+  }
+
+  .mirror-slot-name {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 6px;
+    text-align: center;
+    padding: 0 8px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    text-shadow:
+      0 0 4px var(--accent),
+      0 0 8px var(--accent),
+      -1px -1px 0 #000,
+      1px -1px 0 #000,
+      -1px 1px 0 #000,
+      1px 1px 0 #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mirror-empty-note {
+  display: none;
+}
+
+  @media (max-width: 760px) {
+    .mirror-shell { padding: 10px; }
+    .mirror-stage { grid-template-columns: 1fr; }
+    .mirror-music {
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 10px;
+    }
+    .mirror-music-controls {
+      grid-column: 1 / -1;
+      justify-content: center;
+      padding-top: 2px;
+    }
+    .mirror-thumb {
+      width: 72px;
+      height: 44px;
+    }
+    .mirror-name { font-size: 22px; }
+    .mirror-score { font-size: 40px; }
+  }
+</style>
+</head>
+<body>
+<div class="mirror-shell">
+  <div class="mirror-top">
+    <div class="mirror-music">
+      <img id="mirror-track-img" class="mirror-thumb" src="" alt="">
+      <div class="mirror-track-info">
+        <div class="mirror-track-label">Now Playing</div>
+        <div id="mirror-track-title" class="mirror-track-title">System Ready</div>
+      </div>
+      <div class="mirror-music-controls">
+        <button class="mirror-btn" type="button" onclick="popupMediaAction('prev')" title="Previous"><span class="material-icons">skip_previous</span></button>
+        <button class="mirror-btn" type="button" id="mirror-play-btn" onclick="popupMediaAction('play')" title="Play / Pause"><span class="material-icons">play_arrow</span></button>
+        <button class="mirror-btn" type="button" onclick="popupMediaAction('next')" title="Next"><span class="material-icons">skip_next</span></button>
+        <div class="mirror-vol-wrap">
+          <button class="mirror-btn" type="button" onclick="popupToggleMute()" title="Mute"><span id="mirror-vol-icon" class="material-icons">volume_up</span></button>
+          <input id="mirror-vol-slider" class="mirror-vol-slider" type="range" min="0" max="100" value="100" oninput="popupSetVolume(this.value)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mirror-stage">
+    <div class="mirror-col">
+      <div class="mirror-score-card">
+        <div id="mirror-p1-name" class="mirror-name" style="color:var(--p1-color)">P1</div>
+        <div id="mirror-p1-score" class="mirror-score">0</div>
+      </div>
+      <div id="mirror-slots-alb" class="mirror-slots"></div>
+    </div>
+
+    <div class="mirror-col">
+      <div class="mirror-score-card">
+        <div id="mirror-p2-name" class="mirror-name" style="color:var(--p2-color)">P2</div>
+        <div id="mirror-p2-score" class="mirror-score">0</div>
+      </div>
+      <div id="mirror-slots-biu" class="mirror-slots"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDz82Dp56EISYqk3hza3upJ2pAjsStgMKo",
+  authDomain: "pokemon-masters-d153a.firebaseapp.com",
+  databaseURL: "https://pokemon-masters-d153a-default-rtdb.firebaseio.com",
+  projectId: "pokemon-masters-d153a",
+  storageBucket: "pokemon-masters-d153a.firebasestorage.app",
+  messagingSenderId: "67655442054",
+  appId: "1:67655442054:web:705baa26ffda58b5d3fb07",
+  measurementId: "G-LGW9RJZDP3"
+};
+
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+function buildMirrorSlots(id) {
+  const container = document.getElementById(id);
+  if (!container) return;
+  container.innerHTML = '';
+  for (let i = 0; i < 6; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'mirror-slot';
+    slot.dataset.idx = String(i);
+    slot.innerHTML = '';
+    container.appendChild(slot);
+  }
+}
+
+function normalizeSpriteKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[ .]/g, '-')
+    .replace(/'/g, '');
+}
+
+function getMirrorSpriteSources(item) {
+  const rawName = item?.name || item?.id || '';
+  const rawId = item?.id || rawName;
+
+  const normalizedName = normalizeSpriteKey(rawName);
+  const normalizedId = normalizeSpriteKey(rawId);
+
+  const primary = item?.img || '';
+  const homeFromName = normalizedName
+    ? `https://img.pokemondb.net/sprites/home/normal/${normalizedName}.png`
+    : '';
+  const homeFromId = normalizedId
+    ? `https://img.pokemondb.net/sprites/home/normal/${normalizedId}.png`
+    : '';
+  const showdownFromId = normalizedId
+    ? `https://play.pokemonshowdown.com/sprites/gen5/${normalizedId}.png`
+    : '';
+  const showdownFromName = normalizedName
+    ? `https://play.pokemonshowdown.com/sprites/gen5/${normalizedName}.png`
+    : '';
+
+  return [primary, homeFromName, homeFromId, showdownFromId, showdownFromName]
+    .filter(Boolean)
+    .filter((src, idx, arr) => arr.indexOf(src) === idx);
+}
+
+function buildMirrorImageHTML(item, safeName) {
+  const sources = getMirrorSpriteSources(item);
+  const firstSrc = sources[0] || '';
+  const fallbackAttr = sources.slice(1).join('|').replace(/"/g, '&quot;');
+
+  return `<img src="${firstSrc}" alt="${safeName}" data-fallbacks="${fallbackAttr}">`;
+}
+
+function renderMirrorColumn(side, data) {
+  const container = document.getElementById(`mirror-slots-${side}`);
+  if (!container) return;
+
+  const normalized = Array.isArray(data) ? data : [null, null, null, null, null, null];
+  const slots = container.querySelectorAll('.mirror-slot');
+
+  slots.forEach((slot, index) => {
+    const item = normalized[index];
+    const hasAnySpriteData = item && (item.img || item.name || item.id);
+
+    if (hasAnySpriteData) {
+      const safeName = item.name || item.id || 'Pokemon';
+      slot.classList.add('filled');
+      slot.innerHTML = `
+        ${buildMirrorImageHTML(item, safeName)}
+        <div class="mirror-slot-name">${safeName}</div>
+      `;
+    } else {
+      slot.classList.remove('filled');
+      slot.innerHTML = '';
+    }
+  });
+
+  attachMirrorImageFallbacks(container);
+}
+
+function attachMirrorImageFallbacks(scope) {
+  scope.querySelectorAll('.mirror-slot img').forEach(img => {
+    if (img.dataset.fallbackBound === '1') return;
+    img.dataset.fallbackBound = '1';
+
+    img.addEventListener('error', function handleError() {
+      const fallbacks = (img.dataset.fallbacks || '')
+        .split('|')
+        .filter(Boolean);
+
+      if (!fallbacks.length) {
+        img.remove();
+        return;
+      }
+
+      const nextSrc = fallbacks.shift();
+      img.dataset.fallbacks = fallbacks.join('|');
+      img.src = nextSrc;
+    });
+  });
+}
+
+function setAccent(color) {
+  if (!color) return;
+  document.documentElement.style.setProperty('--accent', color);
+}
+
+function updateVolumeIcon(val) {
+  const icon = document.getElementById('mirror-vol-icon');
+  const n = Number(val || 0);
+  if (!icon) return;
+  if (n <= 0) icon.innerText = 'volume_off';
+  else if (n < 50) icon.innerText = 'volume_down';
+  else icon.innerText = 'volume_up';
+}
+
+function getOpenerVolume() {
+  try {
+    if (window.opener && !window.opener.closed) {
+      const slider = window.opener.document.getElementById('top-vol-slider');
+      if (slider) return slider.value;
+    }
+  } catch (err) {}
+  return localStorage.getItem('columnsPopupVol') || 100;
+}
+
+function popupMediaAction(action) {
+  try {
+    if (window.opener && !window.opener.closed && typeof window.opener.mediaAction === 'function') {
+      window.opener.mediaAction(action);
+      return;
+    }
+  } catch (err) {}
+
+  if (action === 'play') {
+    db.ref('music/status/state').once('value', snap => {
+      const current = snap.val() || 'PAUSED';
+      db.ref('music/status/state').set(current === 'PLAYING' ? 'PAUSED' : 'PLAYING');
+    });
+  } else {
+    db.ref('music/cmd').set({ action, time: Date.now() });
+  }
+}
+
+function popupSetVolume(val) {
+  updateVolumeIcon(val);
+  localStorage.setItem('columnsPopupVol', String(val));
+
+  try {
+    if (window.opener && !window.opener.closed && typeof window.opener.sendVolume === 'function') {
+      window.opener.sendVolume(val);
+    }
+  } catch (err) {}
+}
+
+function popupToggleMute() {
+  const slider = document.getElementById('mirror-vol-slider');
+  if (!slider) return;
+
+  if (Number(slider.value) > 0) {
+    slider.dataset.lastVol = slider.value;
+    slider.value = 0;
+    popupSetVolume(0);
+  } else {
+    const restore = slider.dataset.lastVol || localStorage.getItem('columnsPopupVol') || 100;
+    slider.value = restore;
+    popupSetVolume(restore);
+  }
+}
+
+buildMirrorSlots('mirror-slots-alb');
+buildMirrorSlots('mirror-slots-biu');
+
+const startVol = getOpenerVolume();
+document.getElementById('mirror-vol-slider').value = startVol;
+updateVolumeIcon(startVol);
+
+try {
+  if (window.opener && !window.opener.closed) {
+    document.title = 'Columns Mirror';
+  }
+} catch (err) {}
+
+db.ref('theme').on('value', snap => {
+  const t = snap.val() || {};
+  setAccent(t.color || '#00ff9d');
+});
+
+db.ref('config').on('value', snap => {
+  const c = snap.val() || {};
+
+  if (c.p1Name) document.getElementById('mirror-p1-name').innerText = c.p1Name;
+  if (c.p2Name) document.getElementById('mirror-p2-name').innerText = c.p2Name;
+
+  if (c.p1Color) document.documentElement.style.setProperty('--p1-color', c.p1Color);
+  if (c.p2Color) document.documentElement.style.setProperty('--p2-color', c.p2Color);
+
+  if (c.bgUrl) {
+    document.body.style.backgroundImage = `url('${c.bgUrl}')`;
+  } else {
+    document.body.style.backgroundImage = 'none';
+  }
+
+  if (c.bgColor) {
+    document.body.style.backgroundColor = c.bgColor;
+  }
+});
+
+db.ref('dashboard').on('value', snap => {
+  const s = snap.val() || {};
+  document.getElementById('mirror-p1-score').innerText = s.scoreAlb || 0;
+  document.getElementById('mirror-p2-score').innerText = s.scoreBiu || 0;
+  renderMirrorColumn('alb', s.slotsAlb);
+  renderMirrorColumn('biu', s.slotsBiu);
+});
+
+db.ref('music/status').on('value', snap => {
+  const m = snap.val() || {};
+
+  const titleEl = document.getElementById('mirror-track-title');
+  const imgEl = document.getElementById('mirror-track-img');
+  const playBtn = document.getElementById('mirror-play-btn');
+
+  if (titleEl) titleEl.innerText = m.currentTitle || 'System Ready';
+  if (imgEl) {
+    imgEl.src = m.currentId ? `https://img.youtube.com/vi/${m.currentId}/mqdefault.jpg` : '';
+    imgEl.style.display = m.currentId ? 'block' : 'none';
+  }
+  if (playBtn) {
+    playBtn.innerHTML = (m.state === 'PLAYING')
+      ? '<span class="material-icons">pause</span>'
+      : '<span class="material-icons">play_arrow</span>';
+  }
+});
+</script>
+</body>
+</html>

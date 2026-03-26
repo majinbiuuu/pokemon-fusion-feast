@@ -171,21 +171,23 @@
 
 
   <!-- TOP BAR -->
-  <div class="top-bar">
+  <!-- TOP BAR -->
+<div class="top-bar">
 
-    <div class="top-left">
-      <div class="status-badge">
-        <div id="status-dot" class="status-dot active"></div>
-        <span>Live</span>
-        <div id="presence-count" class="online-count"><i class="fas fa-users" style="font-size: 11px;"></i> 0</div>
+  <div class="top-left">
+    <div class="status-badge">
+      <div id="status-dot" class="status-dot active"></div>
+      <span>Live</span>
+      <div id="presence-count" class="online-count"><i class="fas fa-users" style="font-size: 11px;"></i> 0</div>
 
-        <div class="chat-trigger" onclick="toggleChat()" title="Open Chat">
-          <i class="fas fa-comment-alt"></i>
-        </div>
+      <div class="chat-trigger" onclick="toggleChat()" title="Open Chat">
+        <i class="fas fa-comment-alt"></i>
       </div>
     </div>
+  </div>
 
-    <div class="top-center">
+  <div class="top-center">
+    <div class="top-center-inner">
 
       <div class="top-score-box p1-win">
         <div class="ts-row">
@@ -213,7 +215,9 @@
         </div>
 
         <div class="top-vol">
-          <button class="media-tiny-btn" onclick="toggleTopMute()" style="width:24px;"><span class="material-icons" id="top-vol-icon" style="font-size:18px;">volume_up</span></button>
+          <button class="media-tiny-btn" onclick="toggleTopMute()" style="width:24px;">
+            <span class="material-icons" id="top-vol-icon" style="font-size:18px;">volume_up</span>
+          </button>
           <input type="range" class="top-vol-slider" id="top-vol-slider" min="0" max="100" value="100" oninput="sendVolume(this.value)">
         </div>
       </div>
@@ -230,24 +234,32 @@
       </div>
 
     </div>
+  </div>
 
-    <div class="top-right">
-      <div class="theme-btn-group">
-        <div class="theme-gear-btn" onclick="toggleSettings()" title="Settings"><i class="fas fa-cog"></i></div>
+  <div class="top-right">
+    <div class="theme-btn-group">
+      <div class="theme-gear-btn" onclick="toggleSettings()" title="Settings">
+        <i class="fas fa-cog"></i>
       </div>
     </div>
   </div>
+
+</div>
 
 
   <!-- MAIN STAGE -->
   <div class="stage">
 
     <div class="col-p" id="col-alb">
-      <div class="ctrl-row">
-        <button class="col-btn collapse-btn" onclick="toggleCollapse()" title="Collapse/Expand">
-          <i class="fas fa-compress-alt"></i>
-        </button>
-      </div>
+      <button class="col-popout-corner left" onclick="openSideColumnsPopout()" title="Open side columns popout">
+    <i class="fas fa-external-link-alt"></i>
+  </button>
+
+  <div class="ctrl-row">
+    <button class="col-btn collapse-btn" onclick="toggleCollapse()" title="Collapse/Expand">
+      <i class="fas fa-compress-alt"></i>
+    </button>
+  </div>
 
       <div class="mini-row" id="mini-alb"></div>
       <div class="slot-list" id="slots-alb"></div>
@@ -299,11 +311,15 @@
     </div>
 
     <div class="col-p" id="col-biu">
-      <div class="ctrl-row">
-        <button class="col-btn collapse-btn" onclick="toggleCollapse()" title="Collapse/Expand">
-          <i class="fas fa-compress-alt"></i>
-        </button>
-      </div>
+  <button class="col-popout-corner right" onclick="openSideColumnsPopout()" title="Open side columns popout">
+    <i class="fas fa-external-link-alt"></i>
+  </button>
+
+  <div class="ctrl-row">
+    <button class="col-btn collapse-btn" onclick="toggleCollapse()" title="Collapse/Expand">
+      <i class="fas fa-compress-alt"></i>
+    </button>
+  </div>
 
       <div class="mini-row" id="mini-biu"></div>
       <div class="slot-list" id="slots-biu"></div>
@@ -314,18 +330,19 @@
 
 
   <!-- CHAT WINDOW -->
-  <div id="chat-window" class="chat-window">
+<div id="chat-window" class="chat-window">
     <div id="chat-header" class="chat-header">
-        <div class="chat-header-left">
-            <div class="chat-title-wrap">
-                <span class="chat-title">Live Chat</span>
-                <span class="chat-subtitle">Synced lobby messages</span>
-            </div>
+        <div class="chat-room-tabs">
+            <button type="button" class="chat-room-tab active" data-room="general" onclick="switchChatRoom('general')">General</button>
+            <button type="button" class="chat-room-tab" data-room="improvements" onclick="switchChatRoom('improvements')">Improvements</button>
+            <button type="button" class="chat-room-tab" data-room="other" onclick="switchChatRoom('other')">Other</button>
         </div>
 
         <div class="chat-header-actions">
-    <span class="chat-close" onclick="toggleChat()">&times;</span>
-</div>
+            <button type="button" class="chat-icon-btn" onclick="zoomChatFont(-1)" title="Smaller">-</button>
+            <button type="button" class="chat-icon-btn" onclick="zoomChatFont(1)" title="Larger">+</button>
+            <span class="chat-close" onclick="toggleChat()">&times;</span>
+        </div>
     </div>
 
     <div class="chat-content">

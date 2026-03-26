@@ -1,12 +1,25 @@
 /* chat-manager.js */
-/* Upgraded Chat Logic: bubbles, timestamps, cleanup, draggable window */
+/* Compact chat: room tabs + message-only zoom + draggable window */
+
+const CHAT_ROOMS = {
+    general: { path: 'chat' },
+    improvements: { path: 'chatRooms/improvements' },
+    other: { path: 'chatRooms/other' }
+};
 
 window.isChatOpen = false;
 window.chatCleanupRan = false;
+window.chatRoomRef = null;
+window.currentChatRoom = CHAT_ROOMS[localStorage.getItem('chatRoom')] ? localStorage.getItem('chatRoom') : 'general';
+
+let savedFont = parseInt(localStorage.getItem('chatMessageFontPx') || '15', 10);
+window.chatMessageFontPx = Number.isNaN(savedFont) ? 15 : savedFont;
 
 document.addEventListener('DOMContentLoaded', () => {
     initChatSystem();
     initDraggableChat();
+    applyChatMessageFont(window.chatMessageFontPx);
+    syncChatTabs();
 });
 
 function initChatSystem() {
@@ -19,28 +32,82 @@ function initChatSystem() {
 
     if (window.db) {
         runChatCleanup();
-
-        window.db.ref('chat').limitToLast(100).on('value', snap => {
-            const data = snap.val() || {};
-            renderAllMessages(data);
-        });
+        subscribeToChatRoom(window.currentChatRoom);
     }
 
     if (input) {
-        input.addEventListener('keypress', (e) => {
+        input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') sendMessage();
         });
     }
 }
 
+function getChatPath(room) {
+    return (CHAT_ROOMS[room] || CHAT_ROOMS.general).path;
+}
+
+function getChatRoomLabel(room) {
+    const safeRoom = CHAT_ROOMS[room] ? room : 'general';
+    return safeRoom.charAt(0).toUpperCase() + safeRoom.slice(1);
+}
+
+window.switchChatRoom = function(room) {
+    subscribeToChatRoom(room);
+};
+
+function subscribeToChatRoom(room) {
+    const safeRoom = CHAT_ROOMS[room] ? room : 'general';
+    window.currentChatRoom = safeRoom;
+    localStorage.setItem('chatRoom', safeRoom);
+
+    if (window.chatRoomRef) {
+        window.chatRoomRef.off();
+        window.chatRoomRef = null;
+    }
+
+    syncChatTabs();
+
+    if (!window.db) return;
+
+    window.chatRoomRef = window.db.ref(getChatPath(safeRoom));
+    window.chatRoomRef.limitToLast(100).on('value', snap => {
+        const data = snap.val() || {};
+        renderAllMessages(data);
+    });
+}
+
+function syncChatTabs() {
+    document.querySelectorAll('.chat-room-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.room === window.currentChatRoom);
+    });
+}
+
+function applyChatMessageFont(px) {
+    const win = document.getElementById('chat-window');
+    const clamped = Math.max(12, Math.min(22, px));
+
+    window.chatMessageFontPx = clamped;
+    localStorage.setItem('chatMessageFontPx', String(clamped));
+
+    if (win) {
+        win.style.setProperty('--chat-message-size', `${clamped}px`);
+    }
+}
+
+window.zoomChatFont = function(step) {
+    const delta = step > 0 ? 1 : -1;
+    applyChatMessageFont(window.chatMessageFontPx + delta);
+};
+
 function renderEmptyState() {
     const out = document.getElementById('chat-output');
     if (!out) return;
-    out.innerHTML = `<div class="chat-empty">No messages yet.</div>`;
+    out.innerHTML = `<div class="chat-empty">No messages in ${getChatRoomLabel(window.currentChatRoom)} yet.</div>`;
 }
 
 function formatChatTime(timestamp) {
     if (!timestamp) return '';
+
     const d = new Date(timestamp);
     return d.toLocaleString([], {
         month: 'short',
@@ -135,6 +202,8 @@ window.toggleChat = function() {
             win.style.left = '90px';
         }
 
+        syncChatTabs();
+
         setTimeout(() => {
             const out = document.getElementById('chat-output');
             if (out) out.scrollTop = out.scrollHeight;
@@ -156,28 +225,30 @@ window.sendMessage = function() {
     const payload = {
         name: user.name,
         color: user.color,
-        text: text,
+        text,
         timestamp: Date.now()
     };
 
     if (window.db) {
-        window.db.ref('chat').push(payload);
+        window.db.ref(getChatPath(window.currentChatRoom)).push(payload);
     }
 
     input.value = "";
 };
 
-
-
 /* --- 30 DAY CLEANUP --- */
 function runChatCleanup() {
-    if (window.chatCleanupRan) return;
+    if (window.chatCleanupRan || !window.db) return;
     window.chatCleanupRan = true;
 
+    ['chat', 'chatRooms/improvements', 'chatRooms/other'].forEach(cleanupChatPath);
+}
+
+function cleanupChatPath(path) {
     const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
     const cutoff = Date.now() - THIRTY_DAYS;
 
-    window.db.ref('chat').once('value').then(snap => {
+    window.db.ref(path).once('value').then(snap => {
         const data = snap.val() || {};
         const updates = {};
 
@@ -189,7 +260,7 @@ function runChatCleanup() {
         });
 
         if (Object.keys(updates).length > 0) {
-            window.db.ref('chat').update(updates);
+            window.db.ref(path).update(updates);
         }
     }).catch(err => {
         console.log('Chat cleanup error:', err);
@@ -208,6 +279,10 @@ function initDraggableChat() {
     let offsetY = 0;
 
     header.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.chat-room-tab, .chat-header-actions, .chat-close')) {
+            return;
+        }
+
         isDragging = true;
         offsetX = e.clientX - win.offsetLeft;
         offsetY = e.clientY - win.offsetTop;

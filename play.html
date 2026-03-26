@@ -104,24 +104,36 @@
   .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 
   .p-card {
-    background: var(--card-dark);
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    padding: 15px;
-    text-align: center;
-    cursor: pointer;
-    transition: 0.2s;
-    min-height: 100px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
+  background: var(--card-dark);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.2s;
+  min-height: 128px; /* taller */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
   
   .c-lbl { font-size: 0.75rem; color: var(--text-dim); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;}
-  .c-val { font-size: 1.6rem; font-weight: 900; color: #fff; line-height: 1.1; }
+  .c-val {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.1;
+}
   .c-note { font-size: 0.85rem; color: var(--theme-green); font-style: italic; margin-top: 5px; }
 
     /* --- CASINO ROLL ANIMATION --- */
+  
+      /* --- CASINO ROLL / LIGHT SHOW --- */
+  .card-grid {
+    position: relative;
+    isolation: isolate;
+  }
+
   .p-card {
     overflow: hidden;
     position: relative;
@@ -140,18 +152,169 @@
     animation: cardRollBlur 0.09s linear infinite;
   }
 
+  .p-card.light-pass,
   .p-card.selected {
     border-color: var(--theme-green);
-    animation: winnerPulse 1.2s ease;
     box-shadow:
-      0 0 12px rgba(255,255,255,0.10),
-      0 0 20px var(--theme-green),
-      0 0 34px rgba(255,255,255,0.14);
+      0 0 0 1px rgba(255,255,255,0.05) inset,
+      0 0 18px var(--theme-green),
+      0 0 36px var(--theme-green),
+      0 12px 30px rgba(0,0,0,0.32);
   }
 
+  .p-card.light-pass .c-val,
+  .p-card.light-pass .c-note,
   .p-card.selected .c-val,
   .p-card.selected .c-note {
-    text-shadow: 0 0 10px var(--theme-green);
+    text-shadow:
+      0 0 8px var(--theme-green),
+      0 0 18px rgba(255,255,255,0.10);
+  }
+
+  .p-card.light-pass::before,
+  .p-card.selected::before {
+    content: '';
+    position: absolute;
+    inset: -35%;
+    background: linear-gradient(
+      110deg,
+      transparent 34%,
+      rgba(255,255,255,0.00) 40%,
+      rgba(255,255,255,0.65) 48%,
+      rgba(255,255,255,0.12) 54%,
+      transparent 64%
+    );
+    transform: translateX(-120%) rotate(10deg);
+    opacity: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  .p-card.light-pass::before {
+    animation: cardLightSweep 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .p-card.selected {
+    animation: selectedGlow 680ms ease-out;
+  }
+
+  .p-card.selected::before {
+    animation: cardLightSweep 620ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .card-grid.lightshow-active::after {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: 14px;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 20% 25%, rgba(255,255,255,0.10), transparent 22%),
+      radial-gradient(circle at 80% 72%, rgba(255,255,255,0.08), transparent 22%);
+    opacity: 0;
+    animation: gridAura 900ms ease-out forwards;
+  }
+
+  .celebration-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 3000;
+  }
+
+  .celebration-layer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.05), transparent 22%),
+      radial-gradient(circle at 80% 26%, rgba(255,255,255,0.04), transparent 24%),
+      radial-gradient(circle at 30% 78%, rgba(255,255,255,0.04), transparent 22%),
+      radial-gradient(circle at 74% 82%, rgba(255,255,255,0.05), transparent 26%);
+  }
+
+  .celebration-layer::after {
+    content: '';
+    position: absolute;
+    inset: -18%;
+    opacity: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        62deg,
+        transparent 0%,
+        transparent 44%,
+        color-mix(in srgb, var(--winner-color, var(--theme-green)) 10%, transparent) 47%,
+        rgba(255,255,255,0.18) 50%,
+        color-mix(in srgb, var(--winner-color, var(--theme-green)) 10%, transparent) 53%,
+        transparent 56%,
+        transparent 100%
+      ),
+      linear-gradient(
+        -62deg,
+        transparent 0%,
+        transparent 44%,
+        color-mix(in srgb, var(--winner-color, var(--theme-green)) 10%, transparent) 47%,
+        rgba(255,255,255,0.18) 50%,
+        color-mix(in srgb, var(--winner-color, var(--theme-green)) 10%, transparent) 53%,
+        transparent 56%,
+        transparent 100%
+      );
+    mix-blend-mode: screen;
+    filter: blur(2px) saturate(1.08);
+    transform-origin: center center;
+}
+
+  .celebration-layer.active::before {
+    animation: celebrationSparkle 1500ms ease-out forwards;
+  }
+
+  .confetti-piece {
+    position: absolute;
+    opacity: 0;
+    will-change: transform, opacity;
+    animation: confettiCascade var(--fall, 2200ms) cubic-bezier(0.12, 0.72, 0.22, 1) forwards;
+    box-shadow: 0 0 6px rgba(255,255,255,0.18);
+  }
+
+  .confetti-piece.rect {
+    width: 10px;
+    height: 18px;
+    border-radius: 3px;
+  }
+
+  .confetti-piece.slim {
+    width: 5px;
+    height: 18px;
+    border-radius: 999px;
+  }
+
+  .confetti-piece.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  @keyframes celebrationSparkle {
+    0%   { opacity: 0; }
+    18%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  @keyframes confettiCascade {
+    0% {
+      transform: translate3d(0, -8vh, 0) rotate(0deg) scale(0.75);
+      opacity: 0;
+    }
+    8% {
+      opacity: 1;
+    }
+    100% {
+      transform: translate3d(var(--dx), 112vh, 0) rotate(var(--rot)) scale(1);
+      opacity: 0;
+    }
   }
 
   @keyframes cardRollBlur {
@@ -160,13 +323,56 @@
     100% { transform: translateY(-6px); filter: blur(0.4px); opacity: 0.88; }
   }
 
-  @keyframes winnerPulse {
-    0%   { transform: scale(1); }
-    20%  { transform: scale(1.02); }
-    40%  { transform: scale(1); }
-    60%  { transform: scale(1.015); }
-    100% { transform: scale(1); }
+  @keyframes cardLightSweep {
+    0%   { transform: translateX(-120%) rotate(10deg); opacity: 0; }
+    18%  { opacity: 1; }
+    100% { transform: translateX(120%) rotate(10deg); opacity: 0; }
   }
+
+  @keyframes selectedGlow {
+    0% {
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.03) inset,
+        0 0 10px rgba(255,255,255,0.08),
+        0 0 16px var(--theme-green),
+        0 10px 24px rgba(0,0,0,0.26);
+    }
+    50% {
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.06) inset,
+        0 0 24px var(--theme-green),
+        0 0 48px var(--theme-green),
+        0 14px 32px rgba(0,0,0,0.34);
+    }
+    100% {
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.05) inset,
+        0 0 16px var(--theme-green),
+        0 0 32px var(--theme-green),
+        0 12px 30px rgba(0,0,0,0.32);
+    }
+  }
+
+  @keyframes gridAura {
+    0%   { opacity: 0; filter: blur(10px); }
+    30%  { opacity: 1; }
+    100% { opacity: 0; filter: blur(18px); }
+  }
+
+  @keyframes confettiBurst {
+    0% {
+      transform: translate3d(0, 0, 0) rotate(0deg) scale(0.8);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    100% {
+      transform: translate3d(var(--dx), var(--dy), 0) rotate(var(--rot));
+      opacity: 0;
+    }
+  }
+  
 
   /* --- QUICK GEN CONTROLS --- */
   .qg-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -220,68 +426,371 @@
   color: #888;
 }
   
-  /* --- UPDATED QUICK GEN BAR (25% / 75% Layout) --- */
+  /* --- QUICK GEN OUTPUT BAR (AUTO HEIGHT + QUICK ROLL STATES) --- */
   .qg-unified-bar {
-      display: flex; align-items: center; justify-content: space-between;
-      width: 100%; height: 70px;
-      background: var(--card-dark);
-      border: 1px solid #333; border-radius: 8px;
-      padding: 0 15px; position: relative;
-      margin-top: 15px;
-  }
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr) 120px;
+    align-items: stretch;
+    width: 100%;
+    min-height: 96px;
+    background: var(--card-dark);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px 14px;
+    position: relative;
+    margin-top: 15px;
+}
 
-  /* Fixed width labels with clickable pointer */
   .qg-name-label {
-      font-size: 1rem; font-weight: 900; letter-spacing: 1px;
-      width: 100px; /* Fixed width */
-      white-space: normal; overflow: visible; text-overflow: clip;
-      cursor: pointer; /* Indicates clickable */
-      transition: 0.2s;
-  }
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+    .qg-name-label.left-side {
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.qg-name-label.right-side {
+    justify-content: flex-end;
+    text-align: right;
+    padding-right: 2px;
+}
+
+
   .qg-name-label:hover {
       filter: brightness(1.3);
       text-shadow: 0 0 8px currentColor;
   }
 
-  /* The container for the actual results */
-  .qg-content-area {
-      flex: 1; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center;
-      height: 100%;
-      margin: 0 10px;
-  }
+ .qg-content-area {
+    min-width: 0;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    margin: 0 8px;
+}
 
-  /* Force 50% width for each side */
-  #qg-cont-a, #qg-cont-b {
+  #qg-cont-a,
+  #qg-cont-b {
       flex: 1;
-      width: 50%; /* Force equal width */
-      display: flex; 
-      justify-content: center; 
+      width: 50%;
+      display: flex;
+      justify-content: center;
       align-items: center;
+      align-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 8px 10px;
       text-align: center;
+      white-space: normal;
+      word-break: break-word;
   }
 
   .qg-mid-divider {
-      width: 2px; height: 70%;
-      background: #444; margin: 0; 
+      width: 2px;
+      height: auto;
+      min-height: 100%;
+      background: #444;
+      margin: 0;
       flex-shrink: 0;
       box-shadow: 0 0 5px rgba(0,0,0,0.5);
   }
 
+  .qg-item,
+
+  .qg-item.item-rolling {
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: brightness(1.08);
+    text-shadow: 0 0 2px currentColor;
+}
+
+.qg-item.item-finished {
+    animation: quickQGItemSnap 0.18s ease;
+}
+
+@keyframes quickQGItemSnap {
+    0%   { transform: scale(0.96); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+  .qg-plain {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    padding: 3px 7px;
+    border-radius: 4px;
+    line-height: 1.25;
+}
+
   .qg-item {
-      font-size: 1.1rem; font-weight: 700; color: #fff;
-      cursor: pointer; padding: 2px 6px;
-      border-radius: 4px; transition: 0.2s;
-      user-select: none;
-  }
+    cursor: pointer;
+    transition: 0.2s;
+    user-select: none;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
   .qg-item:hover {
       background: rgba(255,255,255,0.15);
       color: var(--theme-green);
       transform: translateY(-1px);
   }
-  .qg-mini-sep { color: #555; font-size: 0.9rem; margin: 0 2px; font-weight: 300; }
+
+  .qg-mini-sep {
+      color: #555;
+      font-size: 0.9rem;
+      margin: 0 5px;
+      font-weight: 300;
+  }
+
+  .qg-roll-active {
+      border-color: var(--theme-green);
+      box-shadow: 0 0 12px rgba(255,255,255,0.06), 0 0 22px var(--theme-green);
+  }
+
+  .qg-roll-active .qg-item,
+  .qg-roll-active .qg-plain {
+      animation: quickQGRoll 0.2s linear infinite;
+  }
+
+  .qg-roll-finished .qg-item,
+  .qg-roll-finished .qg-plain {
+      animation: quickQGRoll 0.12s ease-in-out infinite;
+  }
+
+  @keyframes quickQGRoll {
+    0%   { transform: translateY(-3px); filter: blur(0.1px); opacity: 0.95; }
+    50%  { transform: translateY(3px);  filter: blur(0.3px); opacity: 1; }
+    100% { transform: translateY(-3px); filter: blur(0.1px); opacity: 0.95; }
+}
+
+  @keyframes quickQGSnap {
+      0%   { transform: scale(0.98); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+  }
+
+   body::before,
+  body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 1200;
+      transition: opacity 0.2s ease;
+  }
+
+
+  /* sharper neon beams / ambient streaks */
+  body::before {
+      background:
+        linear-gradient(64deg,
+          transparent 0%,
+          transparent 38%,
+          color-mix(in srgb, var(--winner-color, var(--theme-green)) 22%, transparent) 46%,
+          color-mix(in srgb, #ffffff 16%, transparent) 49%,
+          color-mix(in srgb, var(--winner-color, var(--theme-green)) 18%, transparent) 52%,
+          transparent 60%,
+          transparent 100%),
+        linear-gradient(-64deg,
+          transparent 0%,
+          transparent 38%,
+          color-mix(in srgb, var(--winner-color, var(--theme-green)) 18%, transparent) 46%,
+          color-mix(in srgb, #ffffff 12%, transparent) 49%,
+          color-mix(in srgb, var(--winner-color, var(--theme-green)) 16%, transparent) 52%,
+          transparent 60%,
+          transparent 100%),
+        radial-gradient(circle at 16% 88%, color-mix(in srgb, var(--winner-color, var(--theme-green)) 28%, transparent), transparent 22%),
+        radial-gradient(circle at 84% 88%, color-mix(in srgb, var(--winner-color, var(--theme-green)) 28%, transparent), transparent 22%);
+      filter: saturate(1.18);
+      transform: scale(1);
+  }
+
+  /* moving corner spotlights and neon sweeps */
+  body::after {
+    background:
+      conic-gradient(
+        from 214deg at 0% 100%,
+        transparent 0deg 18deg,
+        color-mix(in srgb, var(--winner-color, var(--theme-green)) 20%, transparent) 20deg,
+        rgba(255,255,255,0.10) 24deg,
+        color-mix(in srgb, var(--winner-color, var(--theme-green)) 18%, transparent) 28deg,
+        transparent 34deg 360deg
+      ),
+      conic-gradient(
+        from -34deg at 100% 100%,
+        transparent 0deg 18deg,
+        color-mix(in srgb, var(--winner-color, var(--theme-green)) 20%, transparent) 20deg,
+        rgba(255,255,255,0.10) 24deg,
+        color-mix(in srgb, var(--winner-color, var(--theme-green)) 18%, transparent) 28deg,
+        transparent 34deg 360deg
+      ),
+      radial-gradient(circle at 0% 100%,
+        color-mix(in srgb, var(--winner-color, var(--theme-green)) 22%, transparent),
+        transparent 22%
+      ),
+      radial-gradient(circle at 100% 100%,
+        color-mix(in srgb, var(--winner-color, var(--theme-green)) 22%, transparent),
+        transparent 22%
+      );
+    filter: saturate(1.2);
+    transform-origin: center bottom;
+}
+
+   body.winner-celebrating::before {
+      opacity: 0.88;
+      animation: neonSweepLayer 1800ms ease-in-out infinite alternate;
+  }
+
+  body.winner-celebrating .celebration-layer::after {
+    opacity: 0.95;
+    animation: crossSweep 2200ms ease-in-out infinite alternate;
+}
+
+  body.winner-celebrating::after {
+    opacity: 0.98;
+    animation: cornerSpotlightsSweep 2600ms ease-in-out infinite alternate;
+}
+
+  body.winner-celebrating .glass-box,
+  body.winner-celebrating .g-dot,
+  body.winner-celebrating .save-btn,
+  body.winner-celebrating .qg-unified-bar,
+  body.winner-celebrating .machine-display,
+  body.winner-celebrating .token-center,
+  body.winner-celebrating .p-card,
+  body.winner-celebrating .rec-toggle,
+  body.winner-celebrating .token-ctrls,
+  body.winner-celebrating .winner-popup {
+      border-color: color-mix(in srgb, var(--winner-color, var(--theme-green)) 72%, #ffffff 8%);
+      box-shadow:
+          0 0 0 1px rgba(255,255,255,0.04) inset,
+          0 0 6px color-mix(in srgb, var(--winner-color, var(--theme-green)) 45%, transparent),
+          0 0 14px color-mix(in srgb, var(--winner-color, var(--theme-green)) 22%, transparent);
+  }
+
+  @keyframes neonSweepLayer {
+      0% {
+          transform: translateY(0) scale(1) rotate(-1deg);
+          filter: saturate(1.06) brightness(0.98);
+      }
+      50% {
+          transform: translateY(-1.2%) scale(1.02) rotate(0deg);
+          filter: saturate(1.16) brightness(1.04);
+      }
+      100% {
+          transform: translateY(-2.2%) scale(1.035) rotate(1deg);
+          filter: saturate(1.22) brightness(1.08);
+      }
+  }
+
+  @keyframes cornerSpotlightsSweep {
+    0% {
+        transform: perspective(1400px) rotateX(0deg) rotateZ(-6deg) scale(1);
+        filter: brightness(0.95) saturate(1.05);
+    }
+    20% {
+        transform: perspective(1400px) rotateX(1deg) rotateZ(-2deg) scale(1.02);
+        filter: brightness(1.02) saturate(1.08);
+    }
+    40% {
+        transform: perspective(1400px) rotateX(-1deg) rotateZ(3deg) scale(1.03);
+        filter: brightness(1.10) saturate(1.14);
+    }
+    60% {
+        transform: perspective(1400px) rotateX(1deg) rotateZ(-1deg) scale(1.04);
+        filter: brightness(1.16) saturate(1.18);
+    }
+    80% {
+        transform: perspective(1400px) rotateX(-1deg) rotateZ(5deg) scale(1.03);
+        filter: brightness(1.10) saturate(1.12);
+    }
+    100% {
+        transform: perspective(1400px) rotateX(0deg) rotateZ(-4deg) scale(1.02);
+        filter: brightness(1.04) saturate(1.08);
+    }
+}
+
+
+  @keyframes crossSweep {
+    0% {
+        transform: rotate(-7deg) scale(1.02) translateX(-2%);
+        filter: blur(2px) brightness(0.9) saturate(1.02);
+    }
+    25% {
+        transform: rotate(-2deg) scale(1.04) translateX(1%);
+        filter: blur(2px) brightness(1) saturate(1.08);
+    }
+    50% {
+        transform: rotate(4deg) scale(1.06) translateX(0%);
+        filter: blur(2px) brightness(1.1) saturate(1.12);
+    }
+    75% {
+        transform: rotate(1deg) scale(1.04) translateX(-1%);
+        filter: blur(2px) brightness(1.02) saturate(1.08);
+    }
+    100% {
+        transform: rotate(-5deg) scale(1.03) translateX(2%);
+        filter: blur(2px) brightness(0.95) saturate(1.04);
+    }
+}
+
+ 
+
+  .winner-popup {
+      position: fixed;
+      top: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-12px) scale(0.96);
+      min-width: 220px;
+      max-width: calc(100vw - 40px);
+      padding: 14px 18px;
+      border-radius: 14px;
+      border: 1px solid var(--winner-color, var(--theme-green));
+      background: rgba(8, 8, 8, 0.94);
+      color: #fff;
+      text-align: center;
+      box-shadow:
+          0 0 16px var(--winner-color, var(--theme-green)),
+          0 0 34px var(--winner-color, var(--theme-green));
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+  }
+
+  .winner-popup.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+  }
+
+  .winner-popup-title {
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #9b9b9b;
+      margin-bottom: 6px;
+  }
+
+  .winner-popup-name {
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: var(--winner-color, var(--theme-green));
+      text-shadow: 0 0 10px var(--winner-color, var(--theme-green));
+      word-break: break-word;
+  }
 
   /* --- RECORD SECTION --- */
   .rec-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; height: 32px; }
@@ -436,7 +945,7 @@
 </style>
 </head>
 <body>
-
+    <div id="celebration-layer" class="celebration-layer"></div>
   <div class="play-header">
     <button class="btn-big btn-accent anim-click" id="btn-roll-all" onclick="safeCall('rollAll')">PLAY</button>
     <button class="btn-big anim-click" id="btn-clear" onclick="safeCall('clearBoard')">CLEAR</button>
@@ -495,7 +1004,7 @@
 </div>
 
     <div class="qg-unified-bar">
-        <div class="qg-name-label" style="color:var(--p1-color); text-align:left;" id="lbl-qg-a" onclick="safeCall('rerollSide', 'a')" title="Click to Reroll P1">P1</div>
+        <div class="qg-name-label left-side" style="color:var(--p1-color);" id="lbl-qg-a" onclick="safeCall('rerollSide', 'a')" title="Click to Reroll P1">P1</div>
 
         <div class="qg-content-area">
             <div id="qg-cont-a" style="display:flex; gap:2px; align-items:center;">-</div>
@@ -505,7 +1014,7 @@
             <div id="qg-cont-b" style="display:flex; gap:2px; align-items:center;">-</div>
         </div>
 
-        <div class="qg-name-label" style="color:var(--p2-color); text-align:right;" id="lbl-qg-b" onclick="safeCall('rerollSide', 'b')" title="Click to Reroll P2">P2</div>
+        <div class="qg-name-label right-side" style="color:var(--p2-color);" id="lbl-qg-b" onclick="safeCall('rerollSide', 'b')" title="Click to Reroll P2">P2</div>
     </div>
   </div>
 
@@ -576,6 +1085,11 @@
               </div>
           </div>
       </div>
+  </div>
+
+  <div class="winner-popup" id="winner-popup">
+      <div class="winner-popup-title">Winner</div>
+      <div class="winner-popup-name" id="winner-popup-name">-</div>
   </div>
 
   <script>
@@ -717,59 +1231,263 @@
     });
 
     // --- MAIN GENERATOR LISTENER ---
-    db.ref('gen').on('value', snap => {
-    const g = snap.val() || {};
-    window.lastGenState = g; 
-    
-    // --- UPDATED LABEL LOGIC ---
-    let lblA = document.getElementById('lbl-qg-a');
-    let lblB = document.getElementById('lbl-qg-b');
-    
-    if(g.t === 'ShitWheel') {
-        lblA.innerText = "NAME";
-        lblB.innerText = "NOTE";
-    } 
-    else if (g.t === 'Legendary Trio') {
-        lblA.innerText = g.titleA || "TRIO";
-        lblB.innerText = g.titleB || "TRIO";
-    }
-    else {
-        lblA.innerText = window.p1Name;
-        lblB.innerText = window.p2Name;
-    }
-    // ---------------------------
+    window.qgPrev = window.qgPrev || { a: null, b: null, t: null, stamp: null };
+    window.qgAnimTokens = window.qgAnimTokens || { a: 0, b: 0 };
 
-    window.lastQType = g.t || "";
+    function getQuickGenPool(type, side) {
+        if (type === 'Type') return TYPES.slice();
+        if (type === 'Colour') return COLORS.slice();
+        if (type === 'RNG (1-9)') return ['1','2','3','4','5','6','7','8','9'];
+        if (type === 'Coin Flip') return ['Heads', 'Tails'];
 
-    // ✅ x2/x3 state
-    window.isX2 = g.x2 || false;
-    window.isX3 = g.x3 || false;
-
-    const x2Btn = document.getElementById('btn-qg-x2');
-    const x3Btn = document.getElementById('btn-qg-x3');
-    if (x2Btn) x2Btn.classList.toggle('active', window.isX2);
-    if (x3Btn) x3Btn.classList.toggle('active', window.isX3);
-
-    renderQGBlock('a', g.a || "-", g.t);
-    renderQGBlock('b', g.b || "-", g.t);
-});
-
-    function renderQGBlock(side, text, type) {
-        const container = document.getElementById('qg-cont-' + side);
-        if(!container) return;
-        
-        if(type === 'ShitWheel' || text === '-') {
-            container.innerHTML = `<span style="font-size:1.1rem; font-weight:700; color:#fff;">${text}</span>`;
-            return;
+        if (type === 'Legendary Trio') {
+            return getList('trios')
+                .map(normalizeEntry)
+                .map(item => item.note)
+                .filter(Boolean);
         }
 
-        const parts = text.toString().split(' / ');
-        let html = parts.map((part, idx) => {
-            return `<span class="qg-item" onclick="safeCall('rerollOne', '${side}', ${idx})">${part}</span>`;
-        }).join('<span class="qg-mini-sep">|</span>');
-        
-        container.innerHTML = html;
+        if (type === 'ShitWheel') {
+            const raw = (window.appData && (window.appData.ShitWheelList || window.appData.shitWheelList || window.appData.shitWheel)) || {};
+            return Object.values(raw)
+                .map(item => {
+                    if (typeof item === 'object' && item) {
+                        return side === 'b' ? item.note : item.text;
+                    }
+                    return String(item || '');
+                })
+                .filter(Boolean);
+        }
+
+        return [];
     }
+
+    function renderQGBlockStatic(side, text, type) {
+    const container = document.getElementById('qg-cont-' + side);
+    if (!container) return;
+
+    const safeText = (text === undefined || text === null || text === '') ? '-' : String(text);
+
+    if (type === 'ShitWheel' || safeText === '-') {
+        container.innerHTML = `<span class="qg-plain">${safeText}</span>`;
+        return;
+    }
+
+    const parts = safeText.split(' / ');
+
+    container.innerHTML = parts.map((part, idx) => {
+        return `<span class="qg-item" data-side="${side}" data-idx="${idx}">${part}</span>`;
+    }).join('<span class="qg-mini-sep">|</span>');
+}
+
+    function renderQGBlock(side, text, type) {
+    renderQGBlockStatic(side, text, type);
+}
+
+function animateQuickGenItem(side, idx, finalText, type) {
+    const container = document.getElementById('qg-cont-' + side);
+    if (!container) return Promise.resolve();
+
+    const item = container.querySelector(`.qg-item[data-side="${side}"][data-idx="${idx}"]`);
+    if (!item) return Promise.resolve();
+
+    const pool = getQuickGenPool(type, side);
+    const duration = type === 'Coin Flip' ? 140 : 240;
+
+    if (!pool.length || !finalText || finalText === '-') {
+        item.textContent = finalText || '-';
+        return Promise.resolve();
+    }
+
+    item.classList.remove('item-finished');
+    item.classList.add('item-rolling');
+
+    return new Promise(resolve => {
+        const start = performance.now();
+        let nextSwapAt = 0;
+
+        function tick(now) {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const interval = 20 + Math.pow(progress, 2) * 30;
+
+            if (elapsed >= nextSwapAt) {
+                item.textContent = pool[Math.floor(Math.random() * pool.length)];
+                nextSwapAt += interval;
+            }
+
+            if (elapsed < duration) {
+                requestAnimationFrame(tick);
+            } else {
+                item.textContent = finalText;
+                item.classList.remove('item-rolling');
+                item.classList.add('item-finished');
+
+                setTimeout(() => {
+                    item.classList.remove('item-finished');
+                }, 180);
+
+                resolve();
+            }
+        }
+
+        requestAnimationFrame(tick);
+    });
+}
+
+function handleQuickGenItemClick(e) {
+    const item = e.target.closest('.qg-item');
+    if (!item) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const side = item.dataset.side;
+    const idx = parseInt(item.dataset.idx, 10);
+
+    if (!side || Number.isNaN(idx)) return;
+
+    window.lastQuickGenClicked = { side, idx };
+    safeCall('rerollOne', side, idx);
+}
+
+    function animateQuickGenSide(side, finalText, type) {
+        const container = document.getElementById('qg-cont-' + side);
+        const bar = container ? container.closest('.qg-unified-bar') : null;
+        if (!container) return Promise.resolve();
+
+        window.qgAnimTokens[side] = (window.qgAnimTokens[side] || 0) + 1;
+        const token = window.qgAnimTokens[side];
+
+        const pool = getQuickGenPool(type, side);
+        const finalParts = String(finalText || '-').split(' / ');
+        const duration = type === 'Coin Flip' ? 180 : 380;
+
+        if (!pool.length || !type || finalText === '-') {
+            renderQGBlockStatic(side, finalText, type);
+            return Promise.resolve();
+        }
+
+        if (bar) {
+            bar.classList.remove('qg-roll-finished');
+            bar.classList.add('qg-roll-active');
+        }
+
+        return new Promise(resolve => {
+            const start = performance.now();
+            let nextSwapAt = 0;
+
+            function tick(now) {
+                if (window.qgAnimTokens[side] !== token) {
+                    resolve();
+                    return;
+                }
+
+                const elapsed = now - start;
+                const progress = Math.min(elapsed / duration, 1);
+                const interval = 18 + Math.pow(progress, 2.2) * 48;
+
+                if (elapsed >= nextSwapAt) {
+                    const temp = finalParts.map(() => pool[Math.floor(Math.random() * pool.length)]);
+                    renderQGBlockStatic(side, temp.join(' / '), type);
+                    nextSwapAt += interval;
+                }
+
+                if (elapsed < duration) {
+                    requestAnimationFrame(tick);
+                } else {
+                    if (window.qgAnimTokens[side] === token) {
+                        renderQGBlockStatic(side, finalText, type);
+
+                        if (bar) {
+                            bar.classList.remove('qg-roll-active');
+                            bar.classList.add('qg-roll-finished');
+                            setTimeout(() => {
+                                if (window.qgAnimTokens[side] === token && bar) {
+                                    bar.classList.remove('qg-roll-finished');
+                                }
+                            }, 220);
+                        }
+                    }
+
+                    resolve();
+                }
+            }
+
+            requestAnimationFrame(tick);
+        });
+    }
+
+    db.ref('gen').on('value', snap => {
+        const g = snap.val() || {};
+        window.lastGenState = g;
+
+        let lblA = document.getElementById('lbl-qg-a');
+        let lblB = document.getElementById('lbl-qg-b');
+
+        if (g.t === 'ShitWheel') {
+            lblA.innerText = "NAME";
+            lblB.innerText = "NOTE";
+        } else if (g.t === 'Legendary Trio') {
+            lblA.innerText = g.titleA || "TRIO";
+            lblB.innerText = g.titleB || "TRIO";
+        } else {
+            lblA.innerText = window.p1Name;
+            lblB.innerText = window.p2Name;
+        }
+
+        window.lastQType = g.t || "";
+        window.isX2 = g.x2 || false;
+        window.isX3 = g.x3 || false;
+
+        const x2Btn = document.getElementById('btn-qg-x2');
+        const x3Btn = document.getElementById('btn-qg-x3');
+        if (x2Btn) x2Btn.classList.toggle('active', window.isX2);
+        if (x3Btn) x3Btn.classList.toggle('active', window.isX3);
+
+        const nextA = g.a || "-";
+        const nextB = g.b || "-";
+        const nextType = g.t || "";
+        const nextStamp = g.stamp || 0;
+        const trigger = g.trigger || 'both';
+
+        if (window.qgPrev.a === null && window.qgPrev.b === null) {
+            renderQGBlockStatic('a', nextA, nextType);
+            renderQGBlockStatic('b', nextB, nextType);
+        } else if (nextStamp !== window.qgPrev.stamp) {
+    const clicked = window.lastQuickGenClicked;
+
+    if (
+        clicked &&
+        trigger === clicked.side &&
+        window.qgPrev[clicked.side] &&
+        nextType === window.qgPrev.t
+    ) {
+        renderQGBlockStatic('a', nextA, nextType);
+        renderQGBlockStatic('b', nextB, nextType);
+
+        const oldParts = String(window.qgPrev[clicked.side] || '').split(' / ');
+        const newParts = String((clicked.side === 'a' ? nextA : nextB) || '').split(' / ');
+
+        if (oldParts.length === newParts.length && oldParts[clicked.idx] !== newParts[clicked.idx]) {
+            animateQuickGenItem(clicked.side, clicked.idx, newParts[clicked.idx], nextType);
+        }
+    } else {
+        if (trigger === 'both' || trigger === 'a') animateQuickGenSide('a', nextA, nextType);
+        else renderQGBlockStatic('a', nextA, nextType);
+
+        if (trigger === 'both' || trigger === 'b') animateQuickGenSide('b', nextB, nextType);
+        else renderQGBlockStatic('b', nextB, nextType);
+    }
+
+    window.lastQuickGenClicked = null;
+} else {
+            renderQGBlockStatic('a', nextA, nextType);
+            renderQGBlockStatic('b', nextB, nextType);
+        }
+
+        window.qgPrev = { a: nextA, b: nextB, t: nextType, stamp: nextStamp };
+    });
 
     db.ref('tokens').on('value', snap => {
         const t = snap.val() || { alb:0, biu:0 };
@@ -915,7 +1633,120 @@ function flashSelectedCard(card) {
     card.classList.remove('selected');
     void card.offsetWidth;
     card.classList.add('selected');
-    setTimeout(() => card.classList.remove('selected'), 1400);
+    setTimeout(() => card.classList.remove('selected'), 720);
+}
+
+function runGridLightShow(keys) {
+    const grid = document.querySelector('.card-grid');
+    if (!grid || !Array.isArray(keys) || keys.length === 0) return;
+
+    grid.classList.remove('lightshow-active');
+    void grid.offsetWidth;
+    grid.classList.add('lightshow-active');
+
+    keys.forEach((key, index) => {
+        const card = document.getElementById(`card-${key}`);
+        if (!card) return;
+
+        setTimeout(() => {
+            card.classList.remove('light-pass');
+            void card.offsetWidth;
+            card.classList.add('light-pass');
+            setTimeout(() => card.classList.remove('light-pass'), 540);
+        }, index * 120);
+    });
+
+    setTimeout(() => grid.classList.remove('lightshow-active'), keys.length * 120 + 700);
+}
+
+function getCelebrationLayer() {
+    let layer = document.getElementById('celebration-layer');
+
+    if (!layer) {
+        layer = document.createElement('div');
+        layer.id = 'celebration-layer';
+        layer.className = 'celebration-layer';
+        document.body.appendChild(layer);
+    }
+
+    return layer;
+}
+
+function getCelebrationColors() {
+    const styles = getComputedStyle(document.documentElement);
+
+    return [
+        styles.getPropertyValue('--theme-green').trim() || '#00ff9d',
+        styles.getPropertyValue('--p1-color').trim() || '#ff4444',
+        styles.getPropertyValue('--p2-color').trim() || '#4488ff',
+        '#ffffff'
+    ];
+}
+
+function launchConfetti(targetEl) {
+    const layer = getCelebrationLayer();
+    if (!layer) return;
+
+    layer.classList.remove('active');
+    void layer.offsetWidth;
+    layer.classList.add('active');
+
+    const colors = [
+        '#ff4d6d', '#ffd166', '#06d6a0', '#4cc9f0',
+        '#4361ee', '#b5179e', '#ffffff', '#ff8fab',
+        '#72efdd', '#f7b801', '#9b5de5', '#00f5d4'
+    ];
+
+    const width = window.innerWidth;
+    const totalPieces = Math.max(180, Math.floor(width * 0.16));
+
+    for (let i = 0; i < totalPieces; i++) {
+        const piece = document.createElement('span');
+
+        const variants = ['rect', 'slim', 'dot'];
+        const variant = variants[Math.floor(Math.random() * variants.length)];
+
+        piece.className = `confetti-piece ${variant}`;
+        piece.style.left = `${Math.random() * 100}vw`;
+        piece.style.top = `${-10 - Math.random() * 20}vh`;
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.setProperty('--dx', `${-120 + Math.random() * 240}px`);
+        piece.style.setProperty('--rot', `${-540 + Math.random() * 1080}deg`);
+        piece.style.setProperty('--fall', `${1700 + Math.random() * 1800}ms`);
+
+        const delay = Math.random() * 700;
+        piece.style.animationDelay = `${delay}ms`;
+
+        layer.appendChild(piece);
+        setTimeout(() => piece.remove(), 4200);
+    }
+
+    for (let side = 0; side < 2; side++) {
+        for (let i = 0; i < 65; i++) {
+            const piece = document.createElement('span');
+            const variants = ['rect', 'slim', 'dot'];
+            const variant = variants[Math.floor(Math.random() * variants.length)];
+
+            piece.className = `confetti-piece ${variant}`;
+            piece.style.left = side === 0 ? `${2 + Math.random() * 8}vw` : `${90 + Math.random() * 8}vw`;
+            piece.style.top = `${78 + Math.random() * 16}vh`;
+            piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+            const dxBase = side === 0 ? 80 : -80;
+            piece.style.setProperty('--dx', `${dxBase + (-120 + Math.random() * 240)}px`);
+            piece.style.setProperty('--rot', `${-720 + Math.random() * 1440}deg`);
+            piece.style.setProperty('--fall', `${1400 + Math.random() * 1600}ms`);
+            piece.style.animationDelay = `${Math.random() * 320}ms`;
+
+            layer.appendChild(piece);
+            setTimeout(() => piece.remove(), 4200);
+        }
+    }
+
+    clearTimeout(window._celebrationLayerTimer);
+    window._celebrationLayerTimer = setTimeout(() => {
+        layer.classList.remove('active');
+    }, 2200);
 }
 
 function animateRollCard(key, listKey, finalPick, duration = 2200, delay = 0) {
@@ -1052,7 +1883,13 @@ function playRollCommand(command) {
                 throw err;
             });
         })
-    );
+    ).then(() => {
+        const keys = cardsToPlay.map(cardCfg => cardCfg.key);
+
+        if (keys.length > 1) {
+        runGridLightShow(keys);
+    }
+    });
 }
 
 function requestRoll(defs) {
@@ -1089,20 +1926,24 @@ db.ref('dashboardRoll').on('value', snap => {
 
     window.roll = function(key, listKey, noteKey) {
     requestRoll([
-        { key, listKey, noteKey, duration: 1800, delay: 0 }
+        { key, listKey, noteKey, duration: 1600, delay: 0 }
     ]);
 };
 
 window.rollAll = function() {
     requestRoll([
-        { key: 'mode',   listKey: 'gameModes', noteKey: 'modeNote',   duration: 2200, delay: 0 },
-        { key: 'side',   listKey: 'sides',     noteKey: 'sideNote',   duration: 2450, delay: 0 },
-        { key: 'points', listKey: 'points',    noteKey: 'pointsNote', duration: 2700, delay: 0 },
-        { key: 'sp',     listKey: 'sp',        noteKey: 'spNote',     duration: 2950, delay: 0 }
+        { key: 'mode',   listKey: 'gameModes', noteKey: 'modeNote',   duration: 1700, delay: 0 },
+        { key: 'side',   listKey: 'sides',     noteKey: 'sideNote',   duration: 1700, delay: 0 },
+        { key: 'points', listKey: 'points',    noteKey: 'pointsNote', duration: 1700, delay: 0 },
+        { key: 'sp',     listKey: 'sp',        noteKey: 'spNote',     duration: 1700, delay: 0 }
     ]);
 };
 
     window.clearBoard = function() {
+    document.body.classList.remove('winner-celebrating');
+    const popup = document.getElementById('winner-popup');
+    if (popup) popup.classList.remove('show');
+
     db.ref().update({
         'dashboard/mode': "-", 'dashboard/modeNote': "",
         'dashboard/side': "-", 'dashboard/sideNote': "",
@@ -1143,12 +1984,19 @@ window.toggleX3 = function() {
     };
 
     function generateSet(type, count, excludeItems = []) {
+        if(type === 'Coin Flip') {
+            let result = [];
+            for(let i=0; i<count; i++) {
+                result.push(Math.random() < 0.5 ? 'Heads' : 'Tails');
+            }
+            return result.join(' / ');
+        }
+
         let pool = [];
         if(type === 'Type') pool = [...TYPES];
         else if(type === 'Colour') pool = [...COLORS];
         else if(type === 'RNG (1-9)') pool = [1,2,3,4,5,6,7,8,9];
         else if(type === 'Legendary Trio') {
-            // FIX: Handle Object structure for Trios
             const trios = getList('trios');
             pool = trios.map(t => t.text);
         }
@@ -1175,12 +2023,10 @@ window.toggleX3 = function() {
     let resultA, resultB;
 
     if (count === 1) {
-        // one shared result for both sides
         const single = roll();
         resultA = single;
         resultB = single;
     } else {
-        // x3 mode: each side gets its own 3 random flips
         function rollSet() {
             let arr = [];
             for (let i = 0; i < count; i++) {
@@ -1198,7 +2044,9 @@ window.toggleX3 = function() {
         b: resultB,
         t: "Coin Flip",
         titleA: null,
-        titleB: null
+        titleB: null,
+        trigger: 'both',
+        stamp: Date.now()
     });
 };
 
@@ -1212,10 +2060,17 @@ window.toggleX3 = function() {
         valA.split(' / ').map(s => isNaN(s) ? s : parseInt(s))
     );
 
-    db.ref('gen').update({ a: valA, b: valB, t: type, titleA: null, titleB: null });
+    db.ref('gen').update({
+        a: valA,
+        b: valB,
+        t: type,
+        titleA: null,
+        titleB: null,
+        trigger: 'both',
+        stamp: Date.now()
+    });
 };
 
-    // --- NEW REROLL FUNCTION ---
     window.rerollSide = function(side) {
     const type = window.lastQType;
     if(!type || type === "ShitWheel") return;
@@ -1225,10 +2080,12 @@ window.toggleX3 = function() {
         if (trioList.length === 0) return;
 
         const pick = trioList[Math.floor(Math.random() * trioList.length)];
-        let updates = {};
-        updates['gen/' + side] = pick.note; 
-        updates['gen/title' + side.toUpperCase()] = pick.text;
-        db.ref().update(updates);
+        db.ref('gen').update({
+            [side]: pick.note,
+            ['title' + side.toUpperCase()]: pick.text,
+            trigger: side,
+            stamp: Date.now()
+        });
         return;
     }
 
@@ -1238,12 +2095,16 @@ window.toggleX3 = function() {
     let otherVal = window.lastGenState ? window.lastGenState[otherSide] : "";
     let exclude = [];
 
-    if (otherVal && otherVal !== '-') {
+    if (type !== 'Coin Flip' && otherVal && otherVal !== '-') {
         exclude = otherVal.toString().split(' / ').map(s => isNaN(s) ? s : parseInt(s));
     }
 
     let newVal = generateSet(type, count, exclude);
-    db.ref('gen/' + side).set(newVal);
+    db.ref('gen').update({
+        [side]: newVal,
+        trigger: side,
+        stamp: Date.now()
+    });
 };
 
     window.rollLegendaryTrio = function() {
@@ -1265,7 +2126,9 @@ window.toggleX3 = function() {
             b: p2Group.note,
             titleA: p1Group.text,
             titleB: p2Group.text,
-            t: 'Legendary Trio'
+            t: 'Legendary Trio',
+            trigger: 'both',
+            stamp: Date.now()
         });
     };
 
@@ -1281,22 +2144,47 @@ window.toggleX3 = function() {
         const pick = (typeof rand === 'object' && rand.text) ? rand.text : rand;
         const note = (typeof rand === 'object' && rand.note) ? rand.note : "";
         
-        db.ref('gen').update({ a: pick, b: note, t: "ShitWheel", titleA: null, titleB: null });
+        db.ref('gen').update({
+            a: pick,
+            b: note,
+            t: "ShitWheel",
+            titleA: null,
+            titleB: null,
+            trigger: 'both',
+            stamp: Date.now()
+        });
     };
 
     window.rerollOne = function(side, idx) {
-        if(!window.lastQType || window.lastQType === "ShitWheel") return;
-        let g = window.lastGenState || {};
-        let currentStr = g[side] || "";
-        let parts = currentStr.toString().split(' / ');
-        let otherSide = (side === 'a' ? 'b' : 'a');
-        let otherStr = g[otherSide] || "";
-        let allCurrent = [...parts, ...otherStr.split(' / ')];
-        let exclude = allCurrent.map(s => isNaN(s) ? s : parseInt(s));
-        let newItem = generateSet(window.lastQType, 1, exclude);
-        parts[idx] = newItem;
-        db.ref('gen/' + side).set(parts.join(' / '));
-    };
+    if (!window.lastQType || window.lastQType === "ShitWheel") return;
+
+    const g = window.lastGenState || {};
+    const currentStr = g[side] || "";
+    const parts = currentStr.toString().split(' / ');
+
+    if (idx < 0 || idx >= parts.length) return;
+
+    const otherSide = (side === 'a' ? 'b' : 'a');
+    const otherStr = g[otherSide] || "";
+
+    const exclude = window.lastQType === 'Coin Flip'
+        ? []
+        : [
+            ...parts.filter((_, i) => i !== idx),
+            ...otherStr.toString().split(' / ').filter(Boolean)
+        ].map(s => isNaN(s) ? s : parseInt(s, 10));
+
+    const newItem = generateSet(window.lastQType, 1, exclude);
+    if (!newItem || newItem === '-') return;
+
+    parts[idx] = newItem;
+
+    db.ref('gen').update({
+        [side]: parts.join(' / '),
+        trigger: side,
+        stamp: Date.now()
+    });
+};
 
     window.modToken = function(p, val) {
         db.ref('tokens/' + p).transaction(curr => (curr || 0) + val);
@@ -1451,55 +2339,125 @@ window.toggleX3 = function() {
         }
     };
 
-    window.saveMatch = function() {
+    function getWinnerColor(winnerName) {
+        if (winnerName === window.p1Name) return getComputedStyle(document.documentElement).getPropertyValue('--p1-color').trim() || '#ff4444';
+        if (winnerName === window.p2Name) return getComputedStyle(document.documentElement).getPropertyValue('--p2-color').trim() || '#4488ff';
+        return getComputedStyle(document.documentElement).getPropertyValue('--theme-green').trim() || '#00ff9d';
+    }
+
+    function showWinnerPopup(winnerName, color) {
+        const popup = document.getElementById('winner-popup');
+        const popupName = document.getElementById('winner-popup-name');
+        if (!popup || !popupName) return;
+
+        document.documentElement.style.setProperty('--winner-color', color);
+        popupName.innerText = winnerName;
+        popup.classList.remove('show');
+        void popup.offsetWidth;
+        popup.classList.add('show');
+
+        clearTimeout(window._winnerPopupTimer);
+        window._winnerPopupTimer = setTimeout(() => {
+            popup.classList.remove('show');
+        }, 2800);
+    }
+
+    function runPlayWinnerCelebration(color) {
+        document.documentElement.style.setProperty('--winner-color', color);
+        document.body.classList.remove('winner-celebrating');
+        void document.body.offsetWidth;
+        document.body.classList.add('winner-celebrating');
+
+        clearTimeout(window._playWinnerTimer);
+        window._playWinnerTimer = setTimeout(() => {
+            document.body.classList.remove('winner-celebrating');
+        }, 3400);
+    }
+
+    window.saveMatch = async function() {
     let winner = document.getElementById('win-res').innerText;
     if(winner === '-' || winner === '') return alert("No winner yet.");
 
-    let settings = window.recState?.settings || { mode: 'Regular', format: 'BO3' };
+    const saveBtn = document.getElementById('btn-save-match');
+    if (saveBtn && saveBtn.dataset.busy === '1') return;
 
-    // ✅ Build payload once
-    let payload = {
-        timestamp: Date.now(),
-        winner,
-        settings,
-        record: [],
-        links: []
-    };
-
-    // ✅ IMPORTANT: Save wager/points at TOP LEVEL for Challenge mode
-    if (settings.mode === 'Challenge') {
-        const pts = window.dashState?.points;
-        payload.points = (pts === undefined || pts === null) ? "" : pts;  // keeps 0 valid
-        payload.sp = "4";
-    } else {
-        payload.dashSnapshot = window.dashState;
+    if (saveBtn) {
+        saveBtn.dataset.busy = '1';
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'SAVING...';
     }
 
-    let count = settings.format === 'BO3' ? 3 : 5;
+    try {
+        let settings = window.recState?.settings || { mode: 'Regular', format: 'BO3' };
 
-    for(let i=0; i<count; i++) {
-        let dbVal = window.recState?.dots?.[i] || '';
-        let resName = (dbVal === 'A') ? window.p1Name : (dbVal === 'B' ? window.p2Name : '-');
-        let lVal = document.getElementById('lnk-'+i).value || '';
+        let payload = {
+            timestamp: Date.now(),
+            winner,
+            settings,
+            record: [],
+            links: []
+        };
 
-        let gameInfo = { result: resName };
-
-        if(settings.mode === 'Challenge') {
-            gameInfo.mode = document.getElementById('sel-m-'+i).value;
-            gameInfo.side = document.getElementById('sel-s-'+i).value;
-            gameInfo.sp = "4";
-            gameInfo.points = payload.points; // ✅ copy top-level wager into each game (optional)
+        if (settings.mode === 'Challenge') {
+            const pts = window.dashState?.points;
+            payload.points = (pts === undefined || pts === null) ? "" : pts;
+            payload.sp = "4";
+        } else {
+            payload.dashSnapshot = window.dashState;
         }
 
-        payload.record.push(gameInfo);
+        let count = settings.format === 'BO3' ? 3 : 5;
 
-        if(lVal) payload.links.push(`G${i+1}: ${lVal}`);
+        for(let i=0; i<count; i++) {
+            let dbVal = window.recState?.dots?.[i] || '';
+            let resName = (dbVal === 'A') ? window.p1Name : (dbVal === 'B' ? window.p2Name : '-');
+            let lVal = document.getElementById('lnk-'+i).value || '';
+
+            let gameInfo = { result: resName };
+
+            if(settings.mode === 'Challenge') {
+                gameInfo.mode = document.getElementById('sel-m-'+i).value;
+                gameInfo.side = document.getElementById('sel-s-'+i).value;
+                gameInfo.sp = "4";
+                gameInfo.points = payload.points;
+            }
+
+            payload.record.push(gameInfo);
+
+            if(lVal) payload.links.push(`G${i+1}: ${lVal}`);
+        }
+
+        await db.ref('history').push(payload);
+
+        const winnerColor = getWinnerColor(winner);
+        runPlayWinnerCelebration(winnerColor);
+        showWinnerPopup(winner, winnerColor);
+        launchConfetti(document.getElementById('win-res'));
+
+        setTimeout(() => {
+            db.ref('record').update({ dots:null, links:null, details:null });
+        }, 2600);
+    } catch (err) {
+        console.error(err);
+        alert("Save failed.");
+    } finally {
+        setTimeout(() => {
+            if (saveBtn) {
+                saveBtn.dataset.busy = '0';
+                saveBtn.disabled = false;
+                saveBtn.innerText = 'SAVE';
+            }
+        }, 900);
     }
-
-    db.ref('history').push(payload);
-    alert("Match Saved!");
-    db.ref('record').update({ dots:null, links:null, details:null });
 };
+
+document.addEventListener('DOMContentLoaded', () => {
+    const contA = document.getElementById('qg-cont-a');
+    const contB = document.getElementById('qg-cont-b');
+
+    if (contA) contA.addEventListener('click', handleQuickGenItemClick);
+    if (contB) contB.addEventListener('click', handleQuickGenItemClick);
+});
 
 
   </script>

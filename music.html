@@ -222,11 +222,40 @@
   };
 
   function onPlayerReady(event) {
-     player.setVolume(localVol);
-     document.getElementById('vol-slider').value = localVol;
-     updateVolIcon(localVol);
-     if(musicStatus.currentId) player.cueVideoById(musicStatus.currentId);
-  }
+    player.setVolume(localVol);
+
+    const volSlider = document.getElementById('vol-slider');
+    if (volSlider) volSlider.value = localVol;
+    updateVolIcon(localVol);
+
+    if (musicStatus.currentId) {
+        const startAt = Math.max(0, musicStatus.timestamp || 0);
+
+        if (musicStatus.state === 'PLAYING') {
+            player.loadVideoById(musicStatus.currentId, startAt);
+        } else {
+            player.cueVideoById(musicStatus.currentId, startAt);
+        }
+    }
+
+    if (window.parent) {
+        window.parent.postMessage({
+            type: 'UPDATE_TOP_VOL',
+            value: parseInt(localVol, 10) || 100
+        }, '*');
+
+        window.parent.postMessage({
+            type: 'TRACK_UPDATE',
+            title: musicStatus.currentTitle || 'System Ready',
+            img: musicStatus.currentId ? `https://img.youtube.com/vi/${musicStatus.currentId}/mqdefault.jpg` : ''
+        }, '*');
+
+        window.parent.postMessage({
+            type: 'PLAYER_STATE',
+            state: musicStatus.state === 'PLAYING' ? 'playing' : 'paused'
+        }, '*');
+    }
+}
 
   // --- LISTENERS ---
   db.ref('music/playlists').on('value', snap => {
@@ -242,6 +271,8 @@
   });
 
   db.ref('music/status').on('value', snap => {
+
+    
       const serverStatus = snap.val();
       if(!serverStatus) return;
       musicStatus = serverStatus;
@@ -249,12 +280,22 @@
       document.getElementById('btn-shuffle').classList.toggle('active', musicStatus.shuffle);
       document.getElementById('btn-repeat').classList.toggle('active', musicStatus.repeat === 1);
 
-      if(musicStatus.currentId && musicStatus.currentId !== currentId) {
-          currentId = musicStatus.currentId;
-          updateNowPlaying(musicStatus.currentTitle, musicStatus.currentId);
-          if(player && player.loadVideoById) player.loadVideoById(currentId, Math.max(0, musicStatus.timestamp));
-          renderQueue(); 
-      }
+      if (musicStatus.currentId && musicStatus.currentId !== currentId) {
+    currentId = musicStatus.currentId;
+    updateNowPlaying(musicStatus.currentTitle, musicStatus.currentId);
+
+    if (player) {
+        const startAt = Math.max(0, musicStatus.timestamp || 0);
+
+        if (musicStatus.state === 'PLAYING') {
+            if (player.loadVideoById) player.loadVideoById(currentId, startAt);
+        } else {
+            if (player.cueVideoById) player.cueVideoById(currentId, startAt);
+        }
+    }
+
+    renderQueue();
+}
       
       let isPlaying = (musicStatus.state === 'PLAYING');
       document.getElementById('main-player-ui').classList.toggle('playing', isPlaying);
@@ -270,6 +311,32 @@
               if(pState === 1) player.pauseVideo();
           }
       }
+
+            if (window.parent) {
+          window.parent.postMessage({
+              type: 'TRACK_UPDATE',
+              title: musicStatus.currentTitle || 'System Ready',
+              img: musicStatus.currentId ? `https://img.youtube.com/vi/${musicStatus.currentId}/mqdefault.jpg` : ''
+          }, '*');
+
+          window.parent.postMessage({
+              type: 'PLAYER_STATE',
+              state: isPlaying ? 'playing' : 'paused'
+          }, '*');
+      }
+
+      if (window.parent) {
+    window.parent.postMessage({
+        type: 'TRACK_UPDATE',
+        title: musicStatus.currentTitle || 'System Ready',
+        img: musicStatus.currentId ? `https://img.youtube.com/vi/${musicStatus.currentId}/mqdefault.jpg` : ''
+    }, '*');
+
+    window.parent.postMessage({
+        type: 'PLAYER_STATE',
+        state: isPlaying ? 'playing' : 'paused'
+    }, '*');
+}
   });
 
   db.ref('music/cmd').on('value', snap => {
