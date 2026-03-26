@@ -173,57 +173,6 @@ window.db.ref('config').on('value', snap => {
 
 
 // --- 3. MUSIC SYNC LOGIC ---
-let lastTopVol = 100;
-
-window.db.ref('music/status').on('value', snap => {
-    const m = snap.val() || {};
-    
-    const titleEl = document.getElementById('np-title-top');
-    if(titleEl) titleEl.innerText = m.currentTitle || "System Ready";
-    
-    const imgEl = document.getElementById('np-img-top');
-    if(imgEl) {
-        imgEl.src = m.currentId ? `https://img.youtube.com/vi/${m.currentId}/mqdefault.jpg` : "";
-        imgEl.style.display = m.currentId ? 'block' : 'none';
-    }
-    
-    const playBtn = document.getElementById('top-play-btn');
-    if(playBtn) {
-        let isPlaying = (m.state === 'PLAYING');
-        playBtn.innerHTML = isPlaying ? '<span class="material-icons">pause</span>' : '<span class="material-icons">play_arrow</span>';
-    }
-});
-
-window.mediaAction = function(action) {
-    if(action === 'play') {
-        window.db.ref('music/status/state').once('value', snap => {
-            let current = snap.val() || 'PAUSED'; 
-            let next = (current === 'PLAYING') ? 'PAUSED' : 'PLAYING';
-            window.db.ref('music/status/state').set(next);
-        });
-    } else {
-         window.db.ref('music/cmd').set({ action: action, time: Date.now() });
-    }
-};
-
-window.sendVolume = function(val) {
-    let frame = document.getElementById('frame-music');
-    if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'setVolume', value: val }, '*');
-    updateTopVolIcon(val);
-    if(val > 0) lastTopVol = val;
-};
-
-window.toggleTopMute = function() {
-    let slider = document.getElementById('top-vol-slider');
-    let current = slider.value;
-    if(current > 0) { sendVolume(0); slider.value = 0; } 
-    else { sendVolume(lastTopVol); slider.value = lastTopVol; }
-};
-
-function updateTopVolIcon(val) {
-    let icon = document.getElementById('top-vol-icon');
-    if(!icon) return;
-    if(val == 0) icon.innerText = "volume_off";
-    else if(val < 50) icon.innerText = "volume_down";
-    else icon.innerText = "volume_up";
-}
+// Intentionally removed.
+// Top-bar / music-frame sync now lives in main.js + music.html
+// so there is only one source of truth.

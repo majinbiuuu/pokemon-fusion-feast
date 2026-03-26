@@ -68,6 +68,11 @@ window.addEventListener('message', (event) => {
         const c = window.currentAccent || '#00ff9d';
         if(event.source) event.source.postMessage({ type: 'THEME_UPDATE', color: c }, '*');
     }
+
+    // Winner celebration from Play iframe
+    if (event.data && event.data.type === 'WINNER_CELEBRATION') {
+        window.runWinnerCelebration(event.data.winner, event.data.color);
+    }
     
     // Clear Columns
     if (event.data && event.data.type === 'requestClearCols') {
@@ -81,11 +86,13 @@ window.addEventListener('message', (event) => {
     }
 
     // Volume Sync
-    if (event.data && event.data.type === 'UPDATE_TOP_VOL') {
+        if (event.data && event.data.type === 'UPDATE_TOP_VOL') {
+        const numeric = Math.max(0, Math.min(100, parseInt(event.data.value, 10) || 0));
         const slider = document.getElementById('top-vol-slider');
-        if(slider) slider.value = event.data.value;
-        if(window.updateTopVolIcon) window.updateTopVolIcon(event.data.value);
-        if(event.data.value > 0) window.lastTopVol = event.data.value;
+        if (slider) slider.value = numeric;
+        localStorage.setItem('music_vol', String(numeric));
+        if (window.updateTopVolIcon) window.updateTopVolIcon(numeric);
+        if (numeric > 0) window.lastTopVol = numeric;
     }
 
     // TRACK SYNC
@@ -123,6 +130,39 @@ window.addEventListener('message', (event) => {
         });
     }
 });
+window.runWinnerCelebration = function(winnerName, color) {
+    const winnerColor = color || getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#00ff9d';
+
+    document.body.style.setProperty('--winner-dance-color', winnerColor);
+
+    let banner = document.getElementById('winner-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'winner-banner';
+        banner.className = 'winner-banner';
+        document.body.appendChild(banner);
+    }
+
+    banner.style.setProperty('--winner-dance-color', winnerColor);
+    banner.innerText = `Winner: ${winnerName}`;
+
+    document.body.classList.remove('winner-celebrating');
+    void document.body.offsetWidth;
+    document.body.classList.add('winner-celebrating');
+
+    banner.style.display = 'block';
+
+    clearTimeout(window._winnerBannerTimer);
+    clearTimeout(window._winnerDanceTimer);
+
+    window._winnerBannerTimer = setTimeout(() => {
+        banner.style.display = 'none';
+    }, 2600);
+
+    window._winnerDanceTimer = setTimeout(() => {
+        document.body.classList.remove('winner-celebrating');
+    }, 4800);
+};
 
 // --- 3. INITIALIZATION ON LOAD ---
 document.addEventListener('DOMContentLoaded', function() {
@@ -187,6 +227,22 @@ document.addEventListener('DOMContentLoaded', function() {
         slot.appendChild(nameDiv);
     };
 
+     const savedVol = Math.max(0, Math.min(100, parseInt(localStorage.getItem('music_vol') || '100', 10) || 100));
+    const topSlider = document.getElementById('top-vol-slider');
+
+    if (topSlider) {
+        topSlider.value = savedVol;
+        window.lastTopVol = savedVol > 0 ? savedVol : 100;
+        if (window.updateTopVolIcon) window.updateTopVolIcon(savedVol);
+    }
+
+    const musicFrame = document.getElementById('frame-music');
+    if (musicFrame) {
+        musicFrame.addEventListener('load', () => {
+            window.sendVolume(savedVol);
+        }, { once: true });
+    }
+
     observeColumn('slots-alb');
     observeColumn('slots-biu');
 });
@@ -200,12 +256,16 @@ window.mediaAction = function(action) {
 };
 
 window.sendVolume = function(val) {
+    const numeric = Math.max(0, Math.min(100, parseInt(val, 10) || 0));
+    localStorage.setItem('music_vol', String(numeric));
+
     const frame = document.getElementById('frame-music');
-    if(frame && frame.contentWindow) {
-        frame.contentWindow.postMessage({ type: 'setVolume', value: val }, '*');
+    if (frame && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: 'setVolume', value: numeric }, '*');
     }
-    if(window.updateTopVolIcon) window.updateTopVolIcon(val);
-    if(val > 0) window.lastTopVol = val;
+
+    if (window.updateTopVolIcon) window.updateTopVolIcon(numeric);
+    if (numeric > 0) window.lastTopVol = numeric;
 };
 
 window.toggleTopMute = function() {
@@ -344,4 +404,38 @@ window.exportTeamToClipboard = function(colSuffix) {
     navigator.clipboard.writeText(exportText).then(() => {
         alert(`Team for ${colSuffix.toUpperCase()} copied to clipboard!`);
     });
+};
+
+window.sideColumnsPopout = null;
+
+window.openSideColumnsPopout = function() {
+    const width = 760;
+    const height = 920;
+
+    const left = Math.max(40, window.screenX + Math.round((window.outerWidth - width) / 2));
+    const top = Math.max(40, window.screenY + 40);
+
+    const features = [
+        `width=${width}`,
+        `height=${height}`,
+        `left=${left}`,
+        `top=${top}`,
+        'resizable=yes',
+        'scrollbars=no'
+    ].join(',');
+
+    if (window.sideColumnsPopout && !window.sideColumnsPopout.closed) {
+        window.sideColumnsPopout.focus();
+        return;
+    }
+
+    const pop = window.open('columns-popout.html', 'sideColumnsPopout', features);
+
+    if (!pop) {
+        window.open('columns-popout.html', '_blank');
+        return;
+    }
+
+    window.sideColumnsPopout = pop;
+    pop.focus();
 };

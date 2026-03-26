@@ -38,7 +38,19 @@
     const MIN_WAIT = 5000;
     const MAX_WAIT = 20000;
 
-    let isMascotEnabled = localStorage.getItem('mascot_enabled') !== 'false';
+    let isMascotEnabled = localStorage.getItem('mascot_enabled') === 'true';
+
+function syncMascotButtons() {
+    const onBtn = document.getElementById('mascot-btn-on');
+    const offBtn = document.getElementById('mascot-btn-off');
+
+    if (onBtn) onBtn.classList.toggle('is-selected', !!isMascotEnabled);
+
+    if (offBtn) {
+        offBtn.classList.toggle('is-selected', !isMascotEnabled);
+        offBtn.classList.toggle('off', !isMascotEnabled);
+    }
+}
     let spawnTimeout = null;
     let localCount = 0;
 
@@ -173,20 +185,21 @@
     
     // Toggle On/Off
     window.setMascotState = function(enabled) {
-        isMascotEnabled = enabled;
-        localStorage.setItem('mascot_enabled', enabled);
-        
-        const layer = document.getElementById('minigame-layer');
-        if(layer) layer.style.display = enabled ? 'block' : 'none';
+    isMascotEnabled = !!enabled;
+    localStorage.setItem('mascot_enabled', String(isMascotEnabled));
+    syncMascotButtons();
 
-        if (enabled) {
-            attemptSpawnLoop();
-            initSlingshotInput();
-        } else {
-            if (spawnTimeout) clearTimeout(spawnTimeout);
-            document.querySelectorAll('.mascot').forEach(el => el.remove());
-        }
-    };
+    const layer = document.getElementById('minigame-layer');
+    if (layer) layer.style.display = isMascotEnabled ? 'block' : 'none';
+
+    if (isMascotEnabled) {
+        attemptSpawnLoop();
+        initSlingshotInput();
+    } else {
+        if (spawnTimeout) clearTimeout(spawnTimeout);
+        document.querySelectorAll('.mascot').forEach(el => el.remove());
+    }
+};
 
     // ==========================================
     // 5. INITIALIZATION & LISTENERS
@@ -217,14 +230,24 @@
 
         // A. Spawn Listener
         pokeRunDb.ref('pokeRun/current').on('value', (snap) => {
-            const data = snap.val();
-            const existing = document.querySelector('.mascot');
-            if (!data) { if (existing) existing.remove(); return; }
-            if (!existing || existing.dataset.timestamp != data.timestamp) {
-                if(existing) existing.remove();
-                renderMascotVisuals(data);
-            }
-        });
+    const data = snap.val();
+    const existing = document.querySelector('.mascot');
+
+    if (!isMascotEnabled) {
+        if (existing) existing.remove();
+        return;
+    }
+
+    if (!data) {
+        if (existing) existing.remove();
+        return;
+    }
+
+    if (!existing || existing.dataset.timestamp != data.timestamp) {
+        if (existing) existing.remove();
+        renderMascotVisuals(data);
+    }
+});
 
         // B. Tank Listener
         pokeRunDb.ref('pokeRun/tank').on('value', (snap) => {

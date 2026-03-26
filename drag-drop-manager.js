@@ -155,12 +155,22 @@ window.clearCol = function(p) {
 window.isCollapsed = false;
 window.toggleCollapse = function() {
     window.isCollapsed = !window.isCollapsed;
+
+    const stage = document.querySelector('.stage');
+    if (stage) stage.classList.toggle('side-collapsed', window.isCollapsed);
+
     const icons = document.querySelectorAll('.collapse-btn i');
-    icons.forEach(icon => { icon.className = window.isCollapsed ? "fas fa-expand-alt" : "fas fa-compress-alt"; });
+    icons.forEach(icon => {
+        icon.className = window.isCollapsed ? "fas fa-expand-alt" : "fas fa-compress-alt";
+    });
+
     ['alb', 'biu'].forEach(side => {
         const col = document.getElementById('col-' + side);
         const list = document.getElementById('slots-' + side);
         const miniRow = document.getElementById('mini-' + side);
+
+        if (!col || !list || !miniRow) return;
+
         if (window.isCollapsed) {
             generateMiniIcons(side);
             list.classList.add('collapsed');

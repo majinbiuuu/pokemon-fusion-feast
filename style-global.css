@@ -72,10 +72,11 @@
 
 /* Party Mode Active State for the Button */
 .party-active-btn {
-    background: white !important;
-    color: black !important;
-    box-shadow: 0 0 15px white;
-    animation: spin 2s linear infinite;
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: 0 0 15px #fff, 0 0 30px rgba(255,255,255,0.35);
+    animation: none !important;
+    transform: none !important;
 }
 
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
