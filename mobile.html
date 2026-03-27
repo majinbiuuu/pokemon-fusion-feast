@@ -799,6 +799,18 @@ body.keyboard-active .btm-nav {
         closeLibModal();
     };
 
+    function getWinnerRoleFromHistoryEntry(entry) {
+    if (entry && (entry.winnerRole === 'p1' || entry.winnerRole === 'p2')) {
+        return entry.winnerRole;
+    }
+
+    const w = String(entry?.winner || '').trim().toUpperCase();
+    if ([String(p1Name || '').trim().toUpperCase(), 'ALB', 'P1', 'A'].includes(w)) return 'p1';
+    if ([String(p2Name || '').trim().toUpperCase(), 'BIU', 'P2', 'B'].includes(w)) return 'p2';
+
+    return null;
+}
+
     // --- 6. MATCH CARD BUILDER ---
     // --- 6. MATCH CARD BUILDER (FIXED RECORD CHIPS) ---
     function createMatchCard(data, key, domSuffix = '') {
@@ -808,17 +820,16 @@ body.keyboard-active .btm-nav {
         let sp = data.dashSnapshot ? data.dashSnapshot.sp : (data.sp || "-");
         
         let winnerName = "-";
-        let winnerColor = "#888";
-        let w = (data.winner || "").toUpperCase();
-        
-        // Dynamic Winner Check
-        if(w === 'ALB' || w === 'P1' || w === p1Name.toUpperCase()) { 
-            winnerName = p1Name; 
-            winnerColor = "var(--p1-color)"; 
-        } else if(w === 'BIU' || w === 'P2' || w === p2Name.toUpperCase()) { 
-            winnerName = p2Name; 
-            winnerColor = "var(--p2-color)"; 
-        }
+let winnerColor = "#888";
+const winnerRole = getWinnerRoleFromHistoryEntry(data);
+
+if (winnerRole === 'p1') { 
+    winnerName = p1Name; 
+    winnerColor = "var(--p1-color)"; 
+} else if (winnerRole === 'p2') { 
+    winnerName = p2Name; 
+    winnerColor = "var(--p2-color)"; 
+}
 
         let dateObj = new Date(data.timestamp);
         let dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -958,10 +969,10 @@ body.keyboard-active .btm-nav {
         let total = entries.length;
         let p1Wins = 0, p2Wins = 0;
         entries.forEach(([key, d]) => {
-            let w = (d.winner || "").toUpperCase();
-            if(w === 'ALB' || w === 'P1' || w === p1Name.toUpperCase()) p1Wins++;
-            if(w === 'BIU' || w === 'P2' || w === p2Name.toUpperCase()) p2Wins++;
-        });
+    const winnerRole = getWinnerRoleFromHistoryEntry(d);
+    if (winnerRole === 'p1') p1Wins++;
+    if (winnerRole === 'p2') p2Wins++;
+});
         
         let p1Pct = total > 0 ? (p1Wins / total) * 100 : 50;
         let p2Pct = total > 0 ? (p2Wins / total) * 100 : 50;
@@ -1064,11 +1075,12 @@ body.keyboard-active .btm-nav {
             document.getElementById('ed-points').value = (data.points || data.dashSnapshot?.points || "");
             document.getElementById('ed-sp').value = (data.sp || data.dashSnapshot?.sp || "");
             
-            let w = (data.winner || "").toUpperCase();
-            let sel = document.getElementById('ed-winner');
-            if(w === 'ALB' || w === 'P1' || w === p1Name.toUpperCase()) sel.value = "P1";
-            else if(w === 'BIU' || w === 'P2' || w === p2Name.toUpperCase()) sel.value = "P2";
-            else sel.value = "-";
+            const winnerRole = getWinnerRoleFromHistoryEntry(data);
+let sel = document.getElementById('ed-winner');
+
+if (winnerRole === 'p1') sel.value = "P1";
+else if (winnerRole === 'p2') sel.value = "P2";
+else sel.value = "-";
 
             let games = data.record || [];
             let links = data.links || [];
@@ -1126,15 +1138,16 @@ body.keyboard-active .btm-nav {
         if(winnerVal === 'P2') winnerVal = 'BIU';
 
         const payload = {
-            mode: isChal ? "Challenge" : document.getElementById('ed-mode').value,
-            side: isChal ? "-" : document.getElementById('ed-side').value,
-            points: document.getElementById('ed-points').value,
-            sp: document.getElementById('ed-sp').value,
-            winner: winnerVal,
-            record: record,
-            links: links,
-            settings: { mode: isChal ? "Challenge" : "Standard" }
-        };
+    mode: isChal ? "Challenge" : document.getElementById('ed-mode').value,
+    side: isChal ? "-" : document.getElementById('ed-side').value,
+    points: document.getElementById('ed-points').value,
+    sp: document.getElementById('ed-sp').value,
+    winner: winnerVal,
+    winnerRole: getWinnerRoleFromHistoryEntry({ winner: winnerVal }),
+    record: record,
+    links: links,
+    settings: { mode: isChal ? "Challenge" : "Standard" }
+};
 
         db.ref('history/' + editingMatchId).update(payload);
         document.getElementById('edit-modal').style.display = 'none';

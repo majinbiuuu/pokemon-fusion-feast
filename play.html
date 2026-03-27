@@ -425,6 +425,32 @@
   font-size: 1.1rem;        /* ⬆ bigger text */
   color: #888;
 }
+
+#btn-qg-coin {
+    perspective: 600px;
+}
+
+#btn-qg-coin .x3-lbl {
+    display: inline-block;
+    transform-style: preserve-3d;
+}
+
+#btn-qg-coin.coin-flipping {
+    border-color: var(--theme-green);
+    box-shadow:
+        0 0 12px color-mix(in srgb, var(--theme-green) 30%, transparent),
+        inset 0 0 8px rgba(255,255,255,0.05);
+}
+
+#btn-qg-coin.coin-flipping .x3-lbl {
+    animation: coinFaceSpin 0.16s linear infinite;
+}
+
+@keyframes coinFaceSpin {
+    0%   { transform: rotateY(0deg) scale(1); }
+    50%  { transform: rotateY(90deg) scale(0.82); }
+    100% { transform: rotateY(180deg) scale(1); }
+}
   
   /* --- QUICK GEN OUTPUT BAR (AUTO HEIGHT + QUICK ROLL STATES) --- */
   .qg-unified-bar {
@@ -505,7 +531,6 @@
       box-shadow: 0 0 5px rgba(0,0,0,0.5);
   }
 
-  .qg-item,
 
   .qg-item.item-rolling {
     background: transparent !important;
@@ -1166,6 +1191,294 @@
         if (typeof window[fnName] === 'function') window[fnName](...args);
     };
 
+
+    
+    /* --- UI SOUND FX (ANIMATION-SYNCED) --- */
+let sfxCtx = null;
+
+let lastWinnerSound = '-';
+let winnerSfxReady = false;
+
+let lastCoinSfxStamp = 0;
+let genSfxReady = false;
+const SFX_MASTER = 1.4;
+
+function getSfxCtx() {
+    if (!sfxCtx) sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return sfxCtx;
+}
+
+function unlockSfx() {
+    const ctx = getSfxCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+}
+document.addEventListener('pointerdown', unlockSfx, { passive: true });
+document.addEventListener('keydown', unlockSfx);
+
+function createNoiseBuffer(duration = 0.15) {
+    const ctx = getSfxCtx();
+    const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * duration)), ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    }
+    return buffer;
+}
+
+function playTone({ freq = 440, type = 'sine', when = 0, dur = 0.08, gain = 0.04, slideTo = null }) {
+    const ctx = getSfxCtx();
+    const osc = ctx.createOscillator();
+    const amp = ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, when);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, when + dur);
+
+    const outGain = Math.max(0.0001, gain * SFX_MASTER);
+
+amp.gain.setValueAtTime(0.0001, when);
+amp.gain.exponentialRampToValueAtTime(outGain, when + 0.01);
+amp.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+
+    osc.connect(amp);
+    amp.connect(ctx.destination);
+
+    osc.start(when);
+    osc.stop(when + dur + 0.02);
+}
+
+function playNoiseBurst({ when = 0, dur = 0.08, gain = 0.015, highpass = 900 }) {
+    const ctx = getSfxCtx();
+    const src = ctx.createBufferSource();
+    const filter = ctx.createBiquadFilter();
+    const amp = ctx.createGain();
+
+    src.buffer = createNoiseBuffer(dur);
+    filter.type = 'highpass';
+    filter.frequency.value = highpass;
+
+    const outGain = Math.max(0.0001, gain * SFX_MASTER);
+
+amp.gain.setValueAtTime(outGain, when);
+amp.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+
+    src.connect(filter);
+    filter.connect(amp);
+    amp.connect(ctx.destination);
+
+    src.start(when);
+    src.stop(when + dur + 0.01);
+}
+
+
+
+function playCoinPing(when, pitch = 1500) {
+    playTone({
+        freq: pitch,
+        type: 'triangle',
+        when,
+        dur: 0.026,
+        gain: 0.020,
+        slideTo: pitch * 1.08
+    });
+
+    playTone({
+        freq: pitch * 1.82,
+        type: 'sine',
+        when: when + 0.004,
+        dur: 0.034,
+        gain: 0.010,
+        slideTo: pitch * 1.55
+    });
+
+    playNoiseBurst({
+        when: when + 0.002,
+        dur: 0.010,
+        gain: 0.002,
+        highpass: 2200
+    });
+}
+
+function playCoinLand(when) {
+    playTone({
+        freq: 1320,
+        type: 'triangle',
+        when,
+        dur: 0.05,
+        gain: 0.024,
+        slideTo: 1540
+    });
+
+    playTone({
+        freq: 2100,
+        type: 'sine',
+        when: when + 0.008,
+        dur: 0.07,
+        gain: 0.012,
+        slideTo: 1760
+    });
+
+    playNoiseBurst({
+        when: when + 0.004,
+        dur: 0.016,
+        gain: 0.003,
+        highpass: 2600
+    });
+}
+
+function playCoinFlipFx({ delayMs = 0, durationMs = COIN_SIDE_DURATION } = {}) {
+    const ctx = getSfxCtx();
+    const startAt = ctx.currentTime + (delayMs / 1000);
+    const totalSec = Math.max(0.18, durationMs / 1000);
+
+    const tickCount = Math.max(6, Math.round(durationMs / 90));
+
+    for (let i = 0; i < tickCount; i++) {
+        const p = tickCount === 1 ? 1 : (i / (tickCount - 1));
+        const t = totalSec * 0.78 * Math.pow(p, 1.12);
+        playCoinPing(startAt + t, 1380 + Math.random() * 180);
+    }
+
+    playCoinLand(startAt + totalSec);
+}
+
+function playSaveCelebration() {
+    const ctx = getSfxCtx();
+    const t = ctx.currentTime + 0.01;
+
+    playTone({ freq: 523.25, type: 'triangle', when: t,         dur: 0.09, gain: 0.03 });
+    playTone({ freq: 659.25, type: 'triangle', when: t + 0.10,  dur: 0.09, gain: 0.03 });
+    playTone({ freq: 783.99, type: 'triangle', when: t + 0.20,  dur: 0.10, gain: 0.032 });
+    playTone({ freq: 1046.5, type: 'triangle', when: t + 0.31,  dur: 0.18, gain: 0.032 });
+    playNoiseBurst({ when: t + 0.12, dur: 0.11, gain: 0.008, highpass: 1300 });
+}
+
+function playWinFanfare() {
+    const ctx = getSfxCtx();
+    const t = ctx.currentTime + 0.01;
+
+    playTone({ freq: 523.25, type: 'triangle', when: t,        dur: 0.09, gain: 0.028 });
+    playTone({ freq: 659.25, type: 'triangle', when: t + 0.09, dur: 0.09, gain: 0.03 });
+    playTone({ freq: 783.99, type: 'triangle', when: t + 0.18, dur: 0.14, gain: 0.032 });
+    playNoiseBurst({ when: t + 0.04, dur: 0.12, gain: 0.009, highpass: 1200 });
+}
+
+function playClearSfx() {
+    const ctx = getSfxCtx();
+    const t = ctx.currentTime + 0.01;
+
+    playNoiseBurst({
+        when: t,
+        dur: 0.028,
+        gain: 0.003,
+        highpass: 1400
+    });
+
+    playTone({
+        freq: 520,
+        type: 'triangle',
+        when: t,
+        dur: 0.055,
+        gain: 0.018,
+        slideTo: 340
+    });
+
+    playTone({
+        freq: 330,
+        type: 'triangle',
+        when: t + 0.05,
+        dur: 0.07,
+        gain: 0.014,
+        slideTo: 220
+    });
+}
+
+/* --- MARIO-LIKE DICE ROLL + DECISION CHIME --- */
+function playRollTick(when, flavor = 'play') {
+    const bright = flavor === 'quickgen' ? 1550 : 1320;
+    const base = flavor === 'quickgen' ? 880 : 760;
+
+    playNoiseBurst({
+        when,
+        dur: 0.016,
+        gain: 0.004,
+        highpass: 1600
+    });
+
+    playTone({
+        freq: base + Math.random() * 110,
+        type: 'square',
+        when,
+        dur: 0.018,
+        gain: 0.012,
+        slideTo: bright
+    });
+
+    playTone({
+        freq: bright - 180 + Math.random() * 80,
+        type: 'triangle',
+        when: when + 0.008,
+        dur: 0.016,
+        gain: 0.007
+    });
+}
+
+function playRollDecisionChime(when, flavor = 'play') {
+    const root = flavor === 'quickgen' ? 783.99 : 659.25;
+
+    playTone({
+        freq: root,
+        type: 'triangle',
+        when,
+        dur: 0.07,
+        gain: 0.024
+    });
+
+    playTone({
+        freq: root * 1.25,
+        type: 'triangle',
+        when: when + 0.07,
+        dur: 0.07,
+        gain: 0.024
+    });
+
+    playTone({
+        freq: root * 1.5,
+        type: 'triangle',
+        when: when + 0.14,
+        dur: 0.14,
+        gain: 0.026
+    });
+
+    playNoiseBurst({
+        when: when + 0.03,
+        dur: 0.06,
+        gain: 0.004,
+        highpass: 1900
+    });
+}
+
+function playDiceRollFx({ delayMs = 0, durationMs = 1000, flavor = 'play' } = {}) {
+    const ctx = getSfxCtx();
+    const startAt = ctx.currentTime + (delayMs / 1000);
+    const totalSec = Math.max(0.14, durationMs / 1000);
+
+    /* lots of quick ticks early, slower ticks near the end */
+    const tickCount = Math.max(8, Math.round(durationMs / 60));
+
+    for (let i = 0; i < tickCount; i++) {
+        const p = tickCount === 1 ? 1 : (i / (tickCount - 1));
+
+        /* dense at start, more spaced at end */
+        const t = totalSec * 0.84 * Math.pow(p, 1.75);
+        playRollTick(startAt + t, flavor);
+    }
+
+    playRollDecisionChime(startAt + totalSec, flavor);
+}
+
+
+
     // --- DATA ---
     const TYPES = [
       "🔥 Fire", "💧 Water", "🍃 Grass", "⚡ Electric", "🔮 Psychic", "❄️ Ice", 
@@ -1284,6 +1597,9 @@
     renderQGBlockStatic(side, text, type);
 }
 
+const COIN_SIDE_DURATION = 680;
+const COIN_ITEM_DURATION = 520;
+
 function animateQuickGenItem(side, idx, finalText, type) {
     const container = document.getElementById('qg-cont-' + side);
     if (!container) return Promise.resolve();
@@ -1292,7 +1608,7 @@ function animateQuickGenItem(side, idx, finalText, type) {
     if (!item) return Promise.resolve();
 
     const pool = getQuickGenPool(type, side);
-    const duration = type === 'Coin Flip' ? 140 : 240;
+    const duration = type === 'Coin Flip' ? COIN_ITEM_DURATION : 240;
 
     if (!pool.length || !finalText || finalText === '-') {
         item.textContent = finalText || '-';
@@ -1361,7 +1677,7 @@ function handleQuickGenItemClick(e) {
 
         const pool = getQuickGenPool(type, side);
         const finalParts = String(finalText || '-').split(' / ');
-        const duration = type === 'Coin Flip' ? 180 : 380;
+        const duration = type === 'Coin Flip' ? COIN_SIDE_DURATION : 380;
 
         if (!pool.length || !type || finalText === '-') {
             renderQGBlockStatic(side, finalText, type);
@@ -1422,6 +1738,18 @@ function handleQuickGenItemClick(e) {
         const g = snap.val() || {};
         window.lastGenState = g;
 
+        let coinSoundTriggered = false;
+
+if (!genSfxReady) {
+    genSfxReady = true;
+    lastCoinSfxStamp = g.sfxCoinAt || 0;
+} else if (g.sfxCoinAt && g.sfxCoinAt !== lastCoinSfxStamp) {
+    lastCoinSfxStamp = g.sfxCoinAt;
+    playCoinFlipFx({ durationMs: COIN_SIDE_DURATION });
+    triggerCoinButtonSpin(COIN_SIDE_DURATION);
+    coinSoundTriggered = true;
+}
+
         let lblA = document.getElementById('lbl-qg-a');
         let lblB = document.getElementById('lbl-qg-b');
 
@@ -1458,27 +1786,57 @@ function handleQuickGenItemClick(e) {
     const clicked = window.lastQuickGenClicked;
 
     if (
-        clicked &&
-        trigger === clicked.side &&
-        window.qgPrev[clicked.side] &&
-        nextType === window.qgPrev.t
-    ) {
-        renderQGBlockStatic('a', nextA, nextType);
-        renderQGBlockStatic('b', nextB, nextType);
+    clicked &&
+    trigger === clicked.side &&
+    window.qgPrev[clicked.side] &&
+    nextType === window.qgPrev.t
+) {
+    renderQGBlockStatic('a', nextA, nextType);
+    renderQGBlockStatic('b', nextB, nextType);
 
-        const oldParts = String(window.qgPrev[clicked.side] || '').split(' / ');
-        const newParts = String((clicked.side === 'a' ? nextA : nextB) || '').split(' / ');
+    const oldParts = String(window.qgPrev[clicked.side] || '').split(' / ');
+    const newParts = String((clicked.side === 'a' ? nextA : nextB) || '').split(' / ');
 
-        if (oldParts.length === newParts.length && oldParts[clicked.idx] !== newParts[clicked.idx]) {
-            animateQuickGenItem(clicked.side, clicked.idx, newParts[clicked.idx], nextType);
+    if (oldParts.length === newParts.length && oldParts[clicked.idx] !== newParts[clicked.idx]) {
+        const itemDuration = nextType === 'Coin Flip' ? COIN_ITEM_DURATION : 240;
+
+        if (nextType === 'Coin Flip') {
+            if (!coinSoundTriggered) {
+                playCoinFlipFx({ durationMs: itemDuration });
+            }
+        } else {
+            playDiceRollFx({
+                durationMs: itemDuration,
+                flavor: 'quickgen'
+            });
         }
-    } else {
-        if (trigger === 'both' || trigger === 'a') animateQuickGenSide('a', nextA, nextType);
-        else renderQGBlockStatic('a', nextA, nextType);
 
-        if (trigger === 'both' || trigger === 'b') animateQuickGenSide('b', nextB, nextType);
-        else renderQGBlockStatic('b', nextB, nextType);
+        animateQuickGenItem(clicked.side, clicked.idx, newParts[clicked.idx], nextType);
     }
+} else {
+    const quickSideDuration = nextType === 'Coin Flip' ? COIN_SIDE_DURATION : 380;
+    const willAnimateA = (trigger === 'both' || trigger === 'a');
+    const willAnimateB = (trigger === 'both' || trigger === 'b');
+
+    if (willAnimateA || willAnimateB) {
+        if (nextType === 'Coin Flip') {
+            if (!coinSoundTriggered) {
+                playCoinFlipFx({ durationMs: quickSideDuration });
+            }
+        } else {
+            playDiceRollFx({
+                durationMs: quickSideDuration,
+                flavor: 'quickgen'
+            });
+        }
+    }
+
+    if (willAnimateA) animateQuickGenSide('a', nextA, nextType);
+    else renderQGBlockStatic('a', nextA, nextType);
+
+    if (willAnimateB) animateQuickGenSide('b', nextB, nextType);
+    else renderQGBlockStatic('b', nextB, nextType);
+}
 
     window.lastQuickGenClicked = null;
 } else {
@@ -1535,6 +1893,20 @@ function handleQuickGenItemClick(e) {
             }
         }
     }
+
+    function triggerCoinButtonSpin(durationMs = COIN_SIDE_DURATION) {
+    const btn = document.getElementById('btn-qg-coin');
+    if (!btn) return;
+
+    btn.classList.remove('coin-flipping');
+    void btn.offsetWidth;
+    btn.classList.add('coin-flipping');
+
+    clearTimeout(btn._coinSpinTimer);
+    btn._coinSpinTimer = setTimeout(() => {
+        btn.classList.remove('coin-flipping');
+    }, durationMs);
+}
 
     // --- HELPER: NORMALIZE DATA TO ARRAY ---
     function getList(key) {
@@ -1845,51 +2217,56 @@ function playRollCommand(command) {
     }
 
     const cardsToPlay = command.cards.filter(cardCfg => !isCardRolling(cardCfg.key));
+    
     if (!cardsToPlay.length) return Promise.resolve();
 
     const sharedDelay = Math.max(0, (command.startAt || Date.now()) - Date.now());
 
+    const rollDurationMs = Math.max(
+    ...cardsToPlay.map(cardCfg => (cardCfg.delay || 0) + (cardCfg.duration || 0))
+);
+
+playDiceRollFx({
+    delayMs: sharedDelay,
+    durationMs: rollDurationMs,
+    flavor: 'play'
+});
+
     return Promise.all(
-        cardsToPlay.map(cardCfg => {
-            setCardRollingState(cardCfg.key, true);
+    cardsToPlay.map(cardCfg => {
+        setCardRollingState(cardCfg.key, true);
 
-            const cardEl = document.getElementById('card-' + cardCfg.key);
-            if (cardEl) {
-                cardEl.classList.remove('selected');
-                cardEl.classList.remove('rolling');
-            }
+        const cardEl = document.getElementById('card-' + cardCfg.key);
+        if (cardEl) {
+            cardEl.classList.remove('selected');
+            cardEl.classList.remove('rolling');
+        }
 
-            return animateRollCard(
-                cardCfg.key,
-                cardCfg.listKey,
-                cardCfg.result,
-                cardCfg.duration,
-                sharedDelay + (cardCfg.delay || 0)
-            ).then(finalCard => {
-                setCardRollingState(cardCfg.key, false);
+        return animateRollCard(
+            cardCfg.key,
+            cardCfg.listKey,
+            cardCfg.result,
+            cardCfg.duration,
+            sharedDelay + (cardCfg.delay || 0)
+        ).then(finalCard => {
+            setCardRollingState(cardCfg.key, false);
 
-                if (command.sourceId === window.rollClientId) {
-                    const updates = {};
-                    updates['dashboard/' + cardCfg.key] = finalCard.text || '-';
+            if (command.sourceId === window.rollClientId) {
+                const updates = {};
+                updates['dashboard/' + cardCfg.key] = finalCard.text || '-';
 
-                    if (cardCfg.noteKey) {
-                        updates['dashboard/' + cardCfg.noteKey] = finalCard.note || '';
-                    }
-
-                    return db.ref().update(updates);
+                if (cardCfg.noteKey) {
+                    updates['dashboard/' + cardCfg.noteKey] = finalCard.note || '';
                 }
-            }).catch(err => {
-                setCardRollingState(cardCfg.key, false);
-                throw err;
-            });
-        })
-    ).then(() => {
-        const keys = cardsToPlay.map(cardCfg => cardCfg.key);
 
-        if (keys.length > 1) {
-        runGridLightShow(keys);
-    }
-    });
+                return db.ref().update(updates);
+            }
+        }).catch(err => {
+            setCardRollingState(cardCfg.key, false);
+            throw err;
+        });
+    })
+);
 }
 
 function requestRoll(defs) {
@@ -1940,6 +2317,9 @@ window.rollAll = function() {
 };
 
     window.clearBoard = function() {
+    unlockSfx();
+    playClearSfx();
+
     document.body.classList.remove('winner-celebrating');
     const popup = document.getElementById('winner-popup');
     if (popup) popup.classList.remove('show');
@@ -2039,6 +2419,8 @@ window.toggleX3 = function() {
         resultB = rollSet();
     }
 
+    const now = Date.now();
+
     db.ref('gen').update({
         a: resultA,
         b: resultB,
@@ -2046,7 +2428,8 @@ window.toggleX3 = function() {
         titleA: null,
         titleB: null,
         trigger: 'both',
-        stamp: Date.now()
+        stamp: now,
+        sfxCoinAt: now
     });
 };
 
@@ -2315,22 +2698,42 @@ window.toggleX3 = function() {
     };
 
     function calculateWinner(dots, format) {
-        let a = 0; let b = 0;
-        let max = format === 'BO3' ? 3 : 5;
-        for(let i=0; i<max; i++) { if(dots[i] === 'A') a++; if(dots[i] === 'B') b++; }
-        let winner = (a >= (format === 'BO3' ? 2 : 3)) ? window.p1Name : ((b >= (format === 'BO3' ? 2 : 3)) ? window.p2Name : "-");
-        
-        let wEl = document.getElementById('win-res');
-        if(wEl) { 
-            wEl.innerText = winner;
-            wEl.style.color = ''; wEl.style.borderColor = '#333'; wEl.style.background = '';
-            if (winner === window.p1Name) {
-                wEl.style.color = 'var(--p1-color)'; wEl.style.borderColor = 'var(--p1-color)'; wEl.style.background = 'rgba(255,255,255,0.05)';
-            } else if (winner === window.p2Name) {
-                wEl.style.color = 'var(--p2-color)'; wEl.style.borderColor = 'var(--p2-color)'; wEl.style.background = 'rgba(255,255,255,0.05)';
-            }
+    let a = 0; let b = 0;
+    let max = format === 'BO3' ? 3 : 5;
+    for(let i=0; i<max; i++) { 
+        if(dots[i] === 'A') a++; 
+        if(dots[i] === 'B') b++; 
+    }
+
+    let winner = (a >= (format === 'BO3' ? 2 : 3)) ? window.p1Name : ((b >= (format === 'BO3' ? 2 : 3)) ? window.p2Name : "-");
+    
+    let wEl = document.getElementById('win-res');
+    if(wEl) { 
+        wEl.innerText = winner;
+        wEl.style.color = '';
+        wEl.style.borderColor = '#333';
+        wEl.style.background = '';
+
+        if (winner === window.p1Name) {
+            wEl.style.color = 'var(--p1-color)';
+            wEl.style.borderColor = 'var(--p1-color)';
+            wEl.style.background = 'rgba(255,255,255,0.05)';
+        } else if (winner === window.p2Name) {
+            wEl.style.color = 'var(--p2-color)';
+            wEl.style.borderColor = 'var(--p2-color)';
+            wEl.style.background = 'rgba(255,255,255,0.05)';
         }
     }
+
+    if (!winnerSfxReady) {
+        winnerSfxReady = true;
+        lastWinnerSound = winner;
+    } else {
+        if (winner !== '-' && winner !== lastWinnerSound) {
+        }
+        lastWinnerSound = winner;
+    }
+}
 
     window.broadcastRec = function() {
         for(let i=0; i<5; i++) {
@@ -2374,6 +2777,16 @@ window.toggleX3 = function() {
         }, 3400);
     }
 
+    function getWinnerRoleByName(name) {
+    const raw = String(name || '').trim().toUpperCase();
+    if (!raw || raw === '-') return null;
+
+    if (raw === String(window.p1Name || '').trim().toUpperCase() || raw === 'ALB' || raw === 'P1') return 'p1';
+    if (raw === String(window.p2Name || '').trim().toUpperCase() || raw === 'BIU' || raw === 'P2') return 'p2';
+
+    return null;
+}
+
     window.saveMatch = async function() {
     let winner = document.getElementById('win-res').innerText;
     if(winner === '-' || winner === '') return alert("No winner yet.");
@@ -2391,12 +2804,13 @@ window.toggleX3 = function() {
         let settings = window.recState?.settings || { mode: 'Regular', format: 'BO3' };
 
         let payload = {
-            timestamp: Date.now(),
-            winner,
-            settings,
-            record: [],
-            links: []
-        };
+    timestamp: Date.now(),
+    winner,
+    winnerRole: getWinnerRoleByName(winner),
+    settings,
+    record: [],
+    links: []
+};
 
         if (settings.mode === 'Challenge') {
             const pts = window.dashState?.points;
@@ -2426,6 +2840,7 @@ window.toggleX3 = function() {
 
             if(lVal) payload.links.push(`G${i+1}: ${lVal}`);
         }
+        playSaveCelebration();
 
         await db.ref('history').push(payload);
 
@@ -2458,6 +2873,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contA) contA.addEventListener('click', handleQuickGenItemClick);
     if (contB) contB.addEventListener('click', handleQuickGenItemClick);
 });
+
+
 
 
   </script>

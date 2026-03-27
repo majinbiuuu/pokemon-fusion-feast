@@ -190,3 +190,190 @@ window.db.ref('dashboard').on('value', snap => {
         window.renderColumn('biu', s.slotsBiu);
     }
 });
+
+/* --- 6. HOT STREAK SCORE FX + TIER 5 LIGHTNING SFX --- */
+window.currentHotStreaks = { p1: 0, p2: 0 };
+window.prevHotStreakTiers = { p1: 0, p2: 0 };
+window.hotStreakFxReady = false;
+
+let streakFxCtx = null;
+
+function getStreakFxCtx() {
+    if (!streakFxCtx) {
+        streakFxCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return streakFxCtx;
+}
+
+function unlockStreakFx() {
+    const ctx = getStreakFxCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+}
+
+document.addEventListener('pointerdown', unlockStreakFx, { passive: true });
+document.addEventListener('keydown', unlockStreakFx);
+
+function playLightningNoise(when, dur = 0.10, gain = 0.02, highpass = 1200) {
+    const ctx = getStreakFxCtx();
+    const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * dur)), ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    }
+
+    const src = ctx.createBufferSource();
+    const filter = ctx.createBiquadFilter();
+    const amp = ctx.createGain();
+
+    src.buffer = buffer;
+    filter.type = 'highpass';
+    filter.frequency.value = highpass;
+
+    amp.gain.setValueAtTime(gain, when);
+    amp.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+
+    src.connect(filter);
+    filter.connect(amp);
+    amp.connect(ctx.destination);
+
+    src.start(when);
+    src.stop(when + dur + 0.01);
+}
+
+function playLightningZap(freq, when, dur = 0.08, gain = 0.018, slideTo = 260) {
+    const ctx = getStreakFxCtx();
+    const osc = ctx.createOscillator();
+    const amp = ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, when);
+    osc.frequency.exponentialRampToValueAtTime(slideTo, when + dur);
+
+    amp.gain.setValueAtTime(0.0001, when);
+    amp.gain.exponentialRampToValueAtTime(gain, when + 0.008);
+    amp.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+
+    osc.connect(amp);
+    amp.connect(ctx.destination);
+
+    osc.start(when);
+    osc.stop(when + dur + 0.02);
+}
+
+function playStreakFiveLightningFx() {
+    const ctx = getStreakFxCtx();
+    const t = ctx.currentTime + 0.01;
+
+    playLightningNoise(t, 0.11, 0.022, 1400);
+    playLightningZap(1850, t, 0.08, 0.014, 420);
+
+    playLightningNoise(t + 0.045, 0.08, 0.014, 1800);
+    playLightningZap(1250, t + 0.03, 0.07, 0.012, 240);
+}
+
+function getStreakTier(streak) {
+    if (streak >= 5) return 5;
+    if (streak >= 4) return 4;
+    if (streak >= 3) return 3;
+    if (streak >= 2) return 2;
+    if (streak >= 1) return 1;
+    return 0;
+}
+
+function normalizeWinnerRole(rawWinner) {
+    const raw = String(rawWinner || '').trim().toUpperCase();
+    const p1Now = String(document.getElementById('disp-p1-name')?.innerText || 'ALB').trim().toUpperCase();
+    const p2Now = String(document.getElementById('disp-p2-name')?.innerText || 'BIU').trim().toUpperCase();
+
+    if ([p1Now, 'ALB', 'P1', 'A'].includes(raw)) return 'p1';
+    if ([p2Now, 'BIU', 'P2', 'B'].includes(raw)) return 'p2';
+    return null;
+}
+
+function getWinnerRoleFromHistoryEntry(entry) {
+    if (entry && (entry.winnerRole === 'p1' || entry.winnerRole === 'p2')) {
+        return entry.winnerRole;
+    }
+    return normalizeWinnerRole(entry?.winner);
+}
+
+function getCurrentHotStreaks(historyMap) {
+    const entries = Object.values(historyMap || {})
+        .filter(Boolean)
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    let activeRole = null;
+    let streak = 0;
+
+    for (const entry of entries) {
+        if (!entry) continue;
+
+        if (entry.separator) {
+            if (entry.subtype === 'season') break;
+            continue;
+        }
+
+        const winnerRole = getWinnerRoleFromHistoryEntry(entry);
+        if (!winnerRole) break;
+
+        if (!activeRole) {
+            activeRole = winnerRole;
+            streak = 1;
+            continue;
+        }
+
+        if (winnerRole !== activeRole) break;
+        streak++;
+    }
+
+    return {
+        p1: activeRole === 'p1' ? streak : 0,
+        p2: activeRole === 'p2' ? streak : 0
+    };
+}
+
+function applyStreakTier(el, streak) {
+    if (!el) return;
+
+    el.classList.remove('streak-1', 'streak-2', 'streak-3', 'streak-4', 'streak-5');
+
+    let tierClass = '';
+    if (streak >= 5) tierClass = 'streak-5';
+    else if (streak >= 4) tierClass = 'streak-4';
+    else if (streak >= 3) tierClass = 'streak-3';
+    else if (streak >= 2) tierClass = 'streak-2';
+    else if (streak >= 1) tierClass = 'streak-1';
+
+    if (tierClass) el.classList.add(tierClass);
+
+    el.dataset.streak = streak || 0;
+    el.title = streak ? `Hot streak: ${streak} win${streak === 1 ? '' : 's'}` : '';
+}
+
+function updateHotStreakUI(streaks) {
+    applyStreakTier(document.querySelector('.top-score-box.p1-win'), streaks.p1);
+    applyStreakTier(document.querySelector('.top-score-box.p2-win'), streaks.p2);
+}
+
+window.db.ref('history').limitToLast(250).on('value', snap => {
+    const streaks = getCurrentHotStreaks(snap.val() || {});
+    const nextTiers = {
+        p1: getStreakTier(streaks.p1),
+        p2: getStreakTier(streaks.p2)
+    };
+
+    updateHotStreakUI(streaks);
+
+    const crossedIntoTierFive =
+        (window.prevHotStreakTiers.p1 < 5 && nextTiers.p1 >= 5) ||
+        (window.prevHotStreakTiers.p2 < 5 && nextTiers.p2 >= 5);
+
+    if (window.hotStreakFxReady && crossedIntoTierFive) {
+        playStreakFiveLightningFx();
+    }
+
+    window.hotStreakFxReady = true;
+    window.currentHotStreaks = streaks;
+    window.prevHotStreakTiers = nextTiers;
+});
