@@ -572,13 +572,14 @@
       let p1Wins=0, p2Wins=0, total=0, p1Chal=0, p2Chal=0, chalTotal=0;
       Object.values(data).forEach(match => {
           if(match && match.separator) return; // skip separators for stats
-          let w = (match.winner || "").toUpperCase().trim();
-          let isChal = (match.settings && match.settings.mode === 'Challenge');
-          if(w === window.p1Name.toUpperCase() || w === 'ALB') {
-              p1Wins++; total++; if(isChal) { p1Chal++; chalTotal++; }
-          } else if(w === window.p2Name.toUpperCase() || w === 'BIU') {
-              p2Wins++; total++; if(isChal) { p2Chal++; chalTotal++; }
-          }
+          const winnerRole = getWinnerRoleFromMatch(match);
+let isChal = (match.settings && match.settings.mode === 'Challenge');
+
+if (winnerRole === 'p1') {
+    p1Wins++; total++; if(isChal) { p1Chal++; chalTotal++; }
+} else if (winnerRole === 'p2') {
+    p2Wins++; total++; if(isChal) { p2Chal++; chalTotal++; }
+}
       });
       let p1WR = total > 0 ? ((p1Wins/total)*100).toFixed(1) : 0;
       let p2WR = total > 0 ? ((p2Wins/total)*100).toFixed(1) : 0;
@@ -672,21 +673,21 @@ function syncRedeemWhoOptions() {
 
       // Winner Styling
       let displayWinner = data.winner;
-      let winColor = '#fff';
-      let w = (data.winner || "").toUpperCase().trim();
-      let winIcon = "";
-      
-      if(w === window.p1Name.toUpperCase() || w === 'ALB') { 
-          displayWinner = window.p1Name; 
-          winColor = 'var(--p1-color)'; 
-          winIcon = `<i class="fas fa-trophy" style="font-size:0.8rem; margin-right:2px; opacity:0.8"></i>`;
-      }
-      else if(w === window.p2Name.toUpperCase() || w === 'BIU') { 
-          displayWinner = window.p2Name; 
-          winColor = 'var(--p2-color)'; 
-          winIcon = `<i class="fas fa-trophy" style="font-size:0.8rem; margin-right:2px; opacity:0.8"></i>`;
-      }
-      displayWinner = (displayWinner || "-").toUpperCase();
+let winColor = '#fff';
+let winIcon = "";
+const winnerRole = getWinnerRoleFromMatch(data);
+
+if (winnerRole === 'p1') { 
+    displayWinner = window.p1Name; 
+    winColor = 'var(--p1-color)'; 
+    winIcon = `<i class="fas fa-trophy" style="font-size:0.8rem; margin-right:2px; opacity:0.8"></i>`;
+}
+else if (winnerRole === 'p2') { 
+    displayWinner = window.p2Name; 
+    winColor = 'var(--p2-color)'; 
+    winIcon = `<i class="fas fa-trophy" style="font-size:0.8rem; margin-right:2px; opacity:0.8"></i>`;
+}
+displayWinner = (displayWinner || "-").toUpperCase();
 
       // Records
       let recordHtml = `<div class="rec-container">`;
@@ -800,9 +801,12 @@ function syncRedeemWhoOptions() {
           let points = d.dashSnapshot ? d.dashSnapshot.points : (d.points || "");
           let sp = d.dashSnapshot ? d.dashSnapshot.sp : (d.sp || "");
           document.getElementById('in-mode').value = mode; document.getElementById('in-side').value = side; document.getElementById('in-points').value = points; document.getElementById('in-sp').value = sp;
-          let w = (d.winner || "").toUpperCase();
-          let sel = document.getElementById('in-winner');
-          if(w === window.p1Name.toUpperCase() || w === 'ALB') sel.value = window.p1Name; else if(w === window.p2Name.toUpperCase() || w === 'BIU') sel.value = window.p2Name; else sel.value = d.winner;
+          const winnerRole = getWinnerRoleFromMatch(d);
+let sel = document.getElementById('in-winner');
+
+if (winnerRole === 'p1') sel.value = window.p1Name;
+else if (winnerRole === 'p2') sel.value = window.p2Name;
+else sel.value = d.winner || '-';
           updateGameRows(d.record || [], d.links || []);
       });
   }
@@ -840,6 +844,18 @@ function syncRedeemWhoOptions() {
   
   function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
   function clearInputs() { ['in-mode','in-side','in-points','in-sp'].forEach(id => document.getElementById(id).value = ""); }
+
+  function getWinnerRoleFromMatch(match) {
+    if (match && (match.winnerRole === 'p1' || match.winnerRole === 'p2')) {
+        return match.winnerRole;
+    }
+
+    const w = String(match?.winner || '').trim().toUpperCase();
+    if ([String(window.p1Name || '').trim().toUpperCase(), 'ALB', 'P1', 'A'].includes(w)) return 'p1';
+    if ([String(window.p2Name || '').trim().toUpperCase(), 'BIU', 'P2', 'B'].includes(w)) return 'p2';
+
+    return null;
+}
   
   function saveData() {
       const id = document.getElementById('edit-id').value; 
@@ -858,16 +874,19 @@ function syncRedeemWhoOptions() {
           if(link) links.push(link); 
       }
       
-      const payload = { 
-          mode: document.getElementById('in-mode').value, 
-          side: document.getElementById('in-side').value, 
-          points: document.getElementById('in-points').value, 
-          sp: document.getElementById('in-sp').value, 
-          winner: document.getElementById('in-winner').value, 
-          record: record, 
-          links: links, 
-          timestamp: id ? undefined : Date.now() 
-      };
+      const winnerValue = document.getElementById('in-winner').value;
+
+const payload = { 
+    mode: document.getElementById('in-mode').value, 
+    side: document.getElementById('in-side').value, 
+    points: document.getElementById('in-points').value, 
+    sp: document.getElementById('in-sp').value, 
+    winner: winnerValue, 
+    winnerRole: getWinnerRoleFromMatch({ winner: winnerValue }),
+    record: record, 
+    links: links, 
+    timestamp: id ? undefined : Date.now() 
+};
       
       if(!id) payload.timestamp = Date.now(); else delete payload.timestamp; 
       if(id) db.ref('history/' + id).update(payload); else db.ref('history').push(payload);
