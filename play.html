@@ -221,7 +221,8 @@
     pointer-events: none;
     overflow: hidden;
     z-index: 3000;
-  }
+    contain: paint;
+}
 
   .celebration-layer::before {
     content: '';
@@ -238,7 +239,11 @@
   .celebration-layer::after {
     content: '';
     position: absolute;
-    inset: -18%;
+    width: 180vw;
+    height: 180vh;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     opacity: 0;
     pointer-events: none;
     background:
@@ -265,6 +270,7 @@
     mix-blend-mode: screen;
     filter: blur(2px) saturate(1.08);
     transform-origin: center center;
+    will-change: transform, opacity, filter;
 }
 
   .celebration-layer.active::before {
@@ -605,15 +611,20 @@
   }
 
    body::before,
-  body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0;
-      z-index: 1200;
-      transition: opacity 0.2s ease;
-  }
+body::after {
+    content: '';
+    position: fixed;
+    width: 170vw;
+    height: 170vh;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 1200;
+    transition: opacity 0.2s ease;
+    will-change: transform, opacity, filter;
+}
 
 
   /* sharper neon beams / ambient streaks */
@@ -704,69 +715,81 @@
           0 0 14px color-mix(in srgb, var(--winner-color, var(--theme-green)) 22%, transparent);
   }
 
-  @keyframes neonSweepLayer {
-      0% {
-          transform: translateY(0) scale(1) rotate(-1deg);
-          filter: saturate(1.06) brightness(0.98);
-      }
-      50% {
-          transform: translateY(-1.2%) scale(1.02) rotate(0deg);
-          filter: saturate(1.16) brightness(1.04);
-      }
-      100% {
-          transform: translateY(-2.2%) scale(1.035) rotate(1deg);
-          filter: saturate(1.22) brightness(1.08);
-      }
-  }
+  @keyframes cornerSpotlightsSweep {
+    0% {
+        transform: translate(-50%, -50%) perspective(1400px) rotateX(0deg) rotateZ(-3deg) scale(1.03);
+        filter: brightness(0.96) saturate(1.05);
+    }
+    20% {
+        transform: translate(-50%, -50%) perspective(1400px) rotateX(1deg) rotateZ(-1deg) scale(1.04);
+        filter: brightness(1.01) saturate(1.08);
+    }
+    40% {
+        transform: translate(-50%, -50%) perspective(1400px) rotateX(-1deg) rotateZ(2deg) scale(1.05);
+        filter: brightness(1.08) saturate(1.14);
+    }
+    60% {
+        transform: translate(-50%, -50%) perspective(1400px) rotateX(1deg) rotateZ(0deg) scale(1.06);
+        filter: brightness(1.12) saturate(1.18);
+    }
+    80% {
+        transform: translate(-50%, -50%) perspective(1400px) rotateX(-1deg) rotateZ(3deg) scale(1.05);
+        filter: brightness(1.08) saturate(1.12);
+    }
+    100% {
+        transform: translate(-50%, -50%) perspective(1400px) rotateX(0deg) rotateZ(-2deg) scale(1.04);
+        filter: brightness(1.03) saturate(1.08);
+    }
+}
 
   @keyframes cornerSpotlightsSweep {
     0% {
-        transform: perspective(1400px) rotateX(0deg) rotateZ(-6deg) scale(1);
-        filter: brightness(0.95) saturate(1.05);
+        transform: perspective(1400px) rotateX(0deg) rotateZ(-3deg) scale(1.03);
+        filter: brightness(0.96) saturate(1.05);
     }
     20% {
-        transform: perspective(1400px) rotateX(1deg) rotateZ(-2deg) scale(1.02);
-        filter: brightness(1.02) saturate(1.08);
+        transform: perspective(1400px) rotateX(1deg) rotateZ(-1deg) scale(1.04);
+        filter: brightness(1.01) saturate(1.08);
     }
     40% {
-        transform: perspective(1400px) rotateX(-1deg) rotateZ(3deg) scale(1.03);
-        filter: brightness(1.10) saturate(1.14);
+        transform: perspective(1400px) rotateX(-1deg) rotateZ(2deg) scale(1.05);
+        filter: brightness(1.08) saturate(1.14);
     }
     60% {
-        transform: perspective(1400px) rotateX(1deg) rotateZ(-1deg) scale(1.04);
-        filter: brightness(1.16) saturate(1.18);
+        transform: perspective(1400px) rotateX(1deg) rotateZ(0deg) scale(1.06);
+        filter: brightness(1.12) saturate(1.18);
     }
     80% {
-        transform: perspective(1400px) rotateX(-1deg) rotateZ(5deg) scale(1.03);
-        filter: brightness(1.10) saturate(1.12);
+        transform: perspective(1400px) rotateX(-1deg) rotateZ(3deg) scale(1.05);
+        filter: brightness(1.08) saturate(1.12);
     }
     100% {
-        transform: perspective(1400px) rotateX(0deg) rotateZ(-4deg) scale(1.02);
-        filter: brightness(1.04) saturate(1.08);
+        transform: perspective(1400px) rotateX(0deg) rotateZ(-2deg) scale(1.04);
+        filter: brightness(1.03) saturate(1.08);
     }
 }
 
 
   @keyframes crossSweep {
     0% {
-        transform: rotate(-7deg) scale(1.02) translateX(-2%);
-        filter: blur(2px) brightness(0.9) saturate(1.02);
+        transform: translate(-50%, -50%) rotate(-4deg) scale(1.04);
+        filter: blur(2px) brightness(0.92) saturate(1.02);
     }
     25% {
-        transform: rotate(-2deg) scale(1.04) translateX(1%);
+        transform: translate(-50%, -50%) rotate(-1deg) scale(1.05);
         filter: blur(2px) brightness(1) saturate(1.08);
     }
     50% {
-        transform: rotate(4deg) scale(1.06) translateX(0%);
-        filter: blur(2px) brightness(1.1) saturate(1.12);
+        transform: translate(-50%, -50%) rotate(2deg) scale(1.06);
+        filter: blur(2px) brightness(1.08) saturate(1.12);
     }
     75% {
-        transform: rotate(1deg) scale(1.04) translateX(-1%);
+        transform: translate(-50%, -50%) rotate(1deg) scale(1.05);
         filter: blur(2px) brightness(1.02) saturate(1.08);
     }
     100% {
-        transform: rotate(-5deg) scale(1.03) translateX(2%);
-        filter: blur(2px) brightness(0.95) saturate(1.04);
+        transform: translate(-50%, -50%) rotate(-3deg) scale(1.04);
+        filter: blur(2px) brightness(0.96) saturate(1.04);
     }
 }
 
@@ -1201,7 +1224,7 @@ let winnerSfxReady = false;
 
 let lastCoinSfxStamp = 0;
 let genSfxReady = false;
-const SFX_MASTER = 1.4;
+const SFX_MASTER = 7;
 
 function getSfxCtx() {
     if (!sfxCtx) sfxCtx = new (window.AudioContext || window.webkitAudioContext)();

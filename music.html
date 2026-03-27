@@ -592,7 +592,10 @@
       localVol = val;
       if(val > 0) lastVol = val;
       localStorage.setItem('music_vol', val);
-      if(player && player.setVolume) player.setVolume(val);
+      const uiVal = Number(val);
+const curvedVol = Math.round(Math.pow(uiVal / 100, 1.8) * 100);
+
+if(player && player.setVolume) player.setVolume(curvedVol);
       updateVolIcon(val);
       
       // Notify Parent (unless change came from parent)
