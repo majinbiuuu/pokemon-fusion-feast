@@ -60,11 +60,15 @@ window.drop = function(ev) {
         ev.currentTarget.ondragstart = function(e) { slotDragStart(e, data.id, idx); };
         
         var parentId = ev.currentTarget.parentElement.id;
-        var side = parentId.split('-')[1]; 
-        saveColumnState(side);
-        
-        let frame = document.getElementById('frame-gen');
-        if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'markUsed', id: data.id }, '*');
+var side = parentId.split('-')[1]; 
+saveColumnState(side);
+
+if (typeof window.playUiSfx === 'function') {
+    window.playUiSfx('column_drop');
+}
+
+let frame = document.getElementById('frame-gen');
+if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'markUsed', id: data.id }, '*');
         
         window.GEN_DRAG_PAYLOAD = null;
         setTimeout(() => window.syncLock = false, 1000);

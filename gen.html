@@ -50,7 +50,7 @@
   .amt-val { color: #fff; font-weight: 900; padding: 0 8px; min-width: 20px; font-size: 14px; }
   
   /* SEARCH BAR (UPDATED) */
-  .search-wrapper { position: relative; width: 160px; }
+  .search-wrapper { position: relative; width: 225px; }
   .search-input {
       width: 100%; background: #050505; border: 1px solid var(--theme-green); color: #fff;
       padding: 6px 10px 6px 28px; border-radius: 6px; font-weight: 700; font-size: 12px;
@@ -209,9 +209,15 @@
       <button class="toggle-btn active" id="btn-evolved" onclick="toggleSetting('evolved')"><span>&#11014;</span> EVOLVED</button>
       
       <div class="search-wrapper">
-          <span class="search-icon"><i class="fas fa-search"></i></span>
-          <input type="text" class="search-input" id="search-input" placeholder="Search..." oninput="handleSearch(this.value)">
-      </div>
+    <span class="search-icon"><i class="fas fa-search"></i></span>
+    <input
+        type="text"
+        class="search-input"
+        id="search-input"
+        placeholder="Name, move, ability, color, gen..."
+        oninput="handleSearch(this.value)"
+    >
+</div>
     </div>
 
     <div class="cp-row bottom">
@@ -237,20 +243,25 @@
 
   // --- CONFIG ---
   var TYPES = [ {v:'fire',t:'🔥 Fire'}, {v:'water',t:'💧 Water'}, {v:'grass',t:'🍃 Grass'}, {v:'electric',t:'⚡ Electric'}, {v:'psychic',t:'🔮 Psychic'}, {v:'ice',t:'❄️ Ice'}, {v:'dragon',t:'🐉 Dragon'}, {v:'dark',t:'🌑 Dark'}, {v:'fairy',t:'🎀 Fairy'}, {v:'normal',t:'🙂 Normal'}, {v:'fighting',t:'🥊 Fighting'}, {v:'flying',t:'🌪️ Flying'}, {v:'poison',t:'💀 Poison'}, {v:'ground',t:'🌎 Ground'}, {v:'rock',t:'🏔️ Rock'}, {v:'bug',t:'🦗 Bug'}, {v:'ghost',t:'👻 Ghost'}, {v:'steel',t:'⚙️ Steel'} ];
-  var COLORS = ['Black','Blue','Brown','Green','Pink','Purple','Red','White','Yellow'];
-  var GENS = [ {v:'1',t:'Gen 1 - Kanto'},{v:'2',t:'Gen 2 - Johto'},{v:'3',t:'Gen 3 - Hoenn'}, {v:'4',t:'Gen 4 - Sinnoh'},{v:'5',t:'Gen 5 - Unova'},{v:'6',t:'Gen 6 - Kalos'}, {v:'7',t:'Gen 7 - Alola'},{v:'8',t:'Gen 8 - Galar'},{v:'9',t:'Gen 9 - Paldea'} ];
-  var SHINY_MAP = { 'charizard':'black','greninja':'black','rayquaza':'black','haxorus':'black','gyarados':'red','metagross':'silver','umbreon':'blue','psyduck':'blue','ponyta':'blue','mew':'blue','ditto':'blue','wooloo':'black','cetitan':'black','koraidon':'black', 'ninetalesalola':'white','miraidon':'white' };
-  var COLOR_OVERRIDE = { 'ironbundle': ['white','blue'], 'ninetalesalola': ['white','blue'] };
+  var COLORS = ['Black','Blue','Brown','Gray','Green','Pink','Purple','Red','White','Yellow'];
+var GENS = [ {v:'1',t:'Gen 1 - Kanto'},{v:'2',t:'Gen 2 - Johto'},{v:'3',t:'Gen 3 - Hoenn'}, {v:'4',t:'Gen 4 - Sinnoh'},{v:'5',t:'Gen 5 - Unova'},{v:'6',t:'Gen 6 - Kalos'}, {v:'7',t:'Gen 7 - Alola'},{v:'8',t:'Gen 8 - Galar'},{v:'9',t:'Gen 9 - Paldea'} ];
+var SHINY_MAP = { 'charizard':'black','greninja':'black','rayquaza':'black','haxorus':'black','gyarados':'red','metagross':'silver','umbreon':'blue','psyduck':'blue','ponyta':'blue','mew':'blue','ditto':'blue','wooloo':'black','cetitan':'black','koraidon':'black', 'ninetalesalola':'white','miraidon':'white' };
+var COLOR_OVERRIDE = { 'ironbundle': ['white','blue'], 'ninetalesalola': ['white','blue'] };
 
-  // --- STATE ---
-  var RAW_DB = {};
-  var ALL_KEYS = [];
-  var GLOBAL_SEEN = []; 
-  var USED_IDS = []; 
-  var FILTERS = { gen:[], type:[], color:[] };
-  var SETTINGS = { mega:false, evolved:true, dupes:true };
-  var HISTORY = []; var HIST_PTR = -1;
-  var AMT_OPTS = [1,2,3,6,10,25,50]; var AMT_IDX = 3;
+// --- STATE ---
+var RAW_DB = {};
+var ALL_KEYS = [];
+var GLOBAL_SEEN = [];
+var USED_IDS = [];
+var FILTERS = { gen:[], type:[], color:[] };
+var SETTINGS = { mega:false, evolved:true, dupes:true };
+var HISTORY = []; var HIST_PTR = -1;
+var AMT_OPTS = [1,2,3,6,10,25,50]; var AMT_IDX = 3;
+
+var SHINY_ODDS = 0.01;
+var LEARNSET_DB = {};
+var LEARNSET_PROMISE = null;
+var SEARCH_REQUEST_ID = 0;
 
   // ---------------------------
   // LOCAL MODE (PRIVATE VIEW)
@@ -357,17 +368,19 @@
   });
 
   fetch("https://play.pokemonshowdown.com/data/pokedex.json").then(res => res.json()).then(data => {
-      RAW_DB = data;
-      ALL_KEYS = Object.keys(data).filter(k => data[k].num > 0);
-      document.getElementById('gen-overlay').style.display = 'none';
-      startSync();
-      setLocalMode(false);
-  }).catch(e => { document.getElementById('gen-msg').innerText = "DATA ERROR"; });
+    RAW_DB = data;
+    ALL_KEYS = Object.keys(data).filter(k => data[k].num > 0);
+    document.getElementById('gen-overlay').style.display = 'none';
+    startSync();
+    setLocalMode(false);
+    ensureLearnsetsLoaded();
+}).catch(e => { document.getElementById('gen-msg').innerText = "DATA ERROR"; });
 
   window.addEventListener('message', (event) => {
       if (event.data && event.data.type === 'THEME_UPDATE') {
-          document.documentElement.style.setProperty('--accent', event.data.color);
-      }
+    document.documentElement.style.setProperty('--accent', event.data.color);
+    document.documentElement.style.setProperty('--theme-green', event.data.color);
+}
       if (event.data && event.data.type === 'markUsed') {
           markUsedLocal(event.data.id);
       }
@@ -418,9 +431,134 @@
       }
   }
 
-  function isSameTeam(a, b) {
-      return JSON.stringify(a) === JSON.stringify(b);
-  }
+  function toId(text) {
+    return (text || '').toString().toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+function ensureLearnsetsLoaded() {
+    if (Object.keys(LEARNSET_DB).length > 0) return Promise.resolve(LEARNSET_DB);
+
+    if (!LEARNSET_PROMISE) {
+        LEARNSET_PROMISE = fetch("https://play.pokemonshowdown.com/data/learnsets.json")
+            .then(res => res.json())
+            .then(data => {
+                LEARNSET_DB = data || {};
+                return LEARNSET_DB;
+            })
+            .catch(err => {
+                console.warn('Learnset load failed', err);
+                LEARNSET_DB = {};
+                return LEARNSET_DB;
+            });
+    }
+
+    return LEARNSET_PROMISE;
+}
+
+function getEffectiveGen(p) {
+    var forme = (p.forme || "").toLowerCase();
+    var effectiveGen = p.gen || getGenByNum(p.num || p.id);
+
+    if (forme.includes('alola')) effectiveGen = 7;
+    else if (forme.includes('galar')) effectiveGen = 8;
+    else if (forme.includes('hisui')) effectiveGen = 8;
+    else if (forme.includes('paldea')) effectiveGen = 9;
+
+    return effectiveGen;
+}
+
+function getAbilityIds(p) {
+    var out = [];
+    if (!p || !p.abilities) return out;
+
+    Object.keys(p.abilities).forEach(function(slot) {
+        if (p.abilities[slot]) out.push(toId(p.abilities[slot]));
+    });
+
+    return out;
+}
+
+function getLearnsetIds(key, p) {
+    var direct = LEARNSET_DB[key] && LEARNSET_DB[key].learnset
+        ? Object.keys(LEARNSET_DB[key].learnset)
+        : null;
+
+    if (direct && direct.length) return direct;
+
+    var base = toId((p && (p.baseSpecies || p.name)) || key);
+    var baseSet = LEARNSET_DB[base] && LEARNSET_DB[base].learnset
+        ? Object.keys(LEARNSET_DB[base].learnset)
+        : null;
+
+    return baseSet || [];
+}
+
+function parseSearchTokens(term) {
+    return term
+        .split(',')
+        .map(function(part) { return part.trim(); })
+        .filter(Boolean);
+}
+
+function isTypeToken(id) {
+    return TYPES.some(function(t) { return toId(t.v) === id; });
+}
+
+function isColorToken(id) {
+    return COLORS.some(function(c) { return toId(c) === id; }) || id === 'grey';
+}
+
+function matchesSearchToken(key, p, rawToken) {
+    var token = rawToken.trim().toLowerCase();
+    var tokenId = toId(token);
+    if (!tokenId) return true;
+
+    var genMatch = token.match(/^(?:gen\s*)?([1-9])$/i);
+    if (genMatch) {
+        return getEffectiveGen(p).toString() === genMatch[1];
+    }
+
+    var normalizedColor = (tokenId === 'grey') ? 'gray' : tokenId;
+
+    if (isColorToken(tokenId)) {
+        return toId(p.color || '') === normalizedColor;
+    }
+
+    if (isTypeToken(tokenId)) {
+        return (p.types || []).some(function(type) {
+            return toId(type) === tokenId;
+        });
+    }
+
+    var abilityIds = getAbilityIds(p);
+    if (abilityIds.some(function(id) { return id === tokenId || id.indexOf(tokenId) > -1; })) {
+        return true;
+    }
+
+    var learnsetIds = getLearnsetIds(key, p);
+    if (learnsetIds.some(function(id) { return id === tokenId || id.indexOf(tokenId) > -1; })) {
+        return true;
+    }
+
+    var nameId = toId(p.name || '');
+    var baseNameId = toId(p.baseSpecies || '');
+    var keyId = toId(key);
+
+    return nameId.indexOf(tokenId) > -1 ||
+           baseNameId.indexOf(tokenId) > -1 ||
+           keyId.indexOf(tokenId) > -1;
+}
+
+function matchesAllTokens(key, p, tokens) {
+    for (var i = 0; i < tokens.length; i++) {
+        if (!matchesSearchToken(key, p, tokens[i])) return false;
+    }
+    return true;
+}
+
+function isSameTeam(a, b) {
+    return JSON.stringify(a) === JSON.stringify(b);
+}
 
   function startSync() {
       // 1. SYNC GENERATED TEAM WITH INTELLIGENT NAVIGATION CHECK
@@ -499,135 +637,181 @@
       });
   }
 
-  // --- LOGIC ---
   function runGen() {
     document.getElementById('search-input').value = "";
-    
+
+    try {
+        if (window.parent && typeof window.parent.playUiSfx === 'function') {
+            window.parent.playUiSfx('generator_roll');
+        } else if (window.parent) {
+            window.parent.postMessage({ type: 'PLAY_UI_SFX', sound: 'generator_roll' }, '*');
+        }
+    } catch (e) {}
+
     var amount = AMT_OPTS[AMT_IDX];
-    if(ALL_KEYS.length===0) return;
+    if (ALL_KEYS.length === 0) return;
 
     var pool = [];
     var activeColors = FILTERS.color.map(c => c.toLowerCase());
     var allowedForms = ["alola","galar","hisui","paldea"];
 
-    for(var i=0; i<ALL_KEYS.length; i++){
-      var key = ALL_KEYS[i];
-      var p = RAW_DB[key];
-      if(key.includes('totem') || key.includes('eternamax') || key.includes('starter') || key.includes('gmax')) continue;
+    for (var i = 0; i < ALL_KEYS.length; i++) {
+        var key = ALL_KEYS[i];
+        var p = RAW_DB[key];
+        if (key.includes('totem') || key.includes('eternamax') || key.includes('starter') || key.includes('gmax')) continue;
 
-      var root = p.baseSpecies || p.name;
-      
-      if(SETTINGS.dupes) {
-          if(GLOBAL_SEEN.includes(root)) continue;
-          if(USED_IDS.includes(key)) continue; 
-      }
+        var root = p.baseSpecies || p.name;
 
-      var forme = (p.forme || "").toLowerCase();
-      var isMega = forme.includes("mega");
+        if (SETTINGS.dupes) {
+            if (GLOBAL_SEEN.includes(root)) continue;
+            if (USED_IDS.includes(key)) continue;
+        }
 
-      if(SETTINGS.mega && !isMega) continue;
-      if(!SETTINGS.mega && isMega) continue;
+        var forme = (p.forme || "").toLowerCase();
+        var isMega = forme.includes("mega");
 
-      if(FILTERS.gen.length > 0) {
-         var effectiveGen = p.gen || getGenByNum(p.num || p.id);
-         if(forme.includes('alola')) effectiveGen = 7;
-         else if(forme.includes('galar')) effectiveGen = 8;
-         else if(forme.includes('hisui')) effectiveGen = 8;
-         else if(forme.includes('paldea')) effectiveGen = 9;
-         if(!FILTERS.gen.includes(effectiveGen.toString())) continue;
-      }
-      
-      if(!SETTINGS.mega) {
-         var isRegional = allowedForms.includes(forme);
-         var isBase = !p.forme; 
-         if(!isBase && !isRegional) continue; 
-      }
+        if (SETTINGS.mega && !isMega) continue;
+        if (!SETTINGS.mega && isMega) continue;
 
-      if(SETTINGS.evolved && p.evos) continue;
+        if (FILTERS.gen.length > 0) {
+            var effectiveGen = getEffectiveGen(p);
+            if (!FILTERS.gen.includes(effectiveGen.toString())) continue;
+        }
 
-      if(FILTERS.type.length > 0) {
-         var tMatch = false;
-         for(var t=0; t<p.types.length; t++) { if(FILTERS.type.indexOf(p.types[t].toLowerCase()) > -1) tMatch=true; }
-         if(!tMatch) continue;
-      }
+        if (!SETTINGS.mega) {
+            var isRegional = allowedForms.includes(forme);
+            var isBase = !p.forme;
+            if (!isBase && !isRegional) continue;
+        }
 
-      var shiny = false;
-      if(activeColors.length > 0) {
-         var colorMatch = false;
-         var pColor = (p.color || "").toLowerCase();
-         if(pColor === 'gray') { if(activeColors.includes('black') || activeColors.includes('white')) colorMatch = true; } 
-         else if(activeColors.includes(pColor)) colorMatch = true;
-         if(COLOR_OVERRIDE[key] && COLOR_OVERRIDE[key].some(c => activeColors.includes(c))) colorMatch = true;
-         var baseKey = key;
-         for(var k in SHINY_MAP) { if(baseKey.includes(k) && activeColors.includes(SHINY_MAP[k])) { colorMatch=true; shiny=true; } }
-         if(!colorMatch) continue;
-      }
-      pool.push({ key: key, data: p, shiny: shiny });
+        if (SETTINGS.evolved && p.evos) continue;
+
+        if (FILTERS.type.length > 0) {
+            var tMatch = false;
+            for (var t = 0; t < p.types.length; t++) {
+                if (FILTERS.type.indexOf(p.types[t].toLowerCase()) > -1) tMatch = true;
+            }
+            if (!tMatch) continue;
+        }
+
+        var shiny = false;
+        if (activeColors.length > 0) {
+            var colorMatch = false;
+            var pColor = (p.color || "").toLowerCase();
+
+            if (activeColors.includes(pColor)) colorMatch = true;
+
+            if (COLOR_OVERRIDE[key] && COLOR_OVERRIDE[key].some(function(c) {
+                return activeColors.includes(c);
+            })) {
+                colorMatch = true;
+            }
+
+            for (var shinyKey in SHINY_MAP) {
+                if (key.includes(shinyKey) && activeColors.includes(SHINY_MAP[shinyKey])) {
+                    colorMatch = true;
+                    shiny = true;
+                }
+            }
+
+            if (!colorMatch) continue;
+        }
+
+        pool.push({ key: key, data: p, shiny: shiny });
     }
 
-    if(pool.length === 0) { 
-        document.getElementById('gen-grid').innerHTML = '<div class="empty-msg" onclick="doReset()">POOL EMPTY - RESET MEMORY</div>'; 
-        return; 
+    if (pool.length === 0) {
+        document.getElementById('gen-grid').innerHTML = '<div class="empty-msg" onclick="doReset()">POOL EMPTY - RESET MEMORY</div>';
+        return;
     }
 
     var picked = [];
-    var batchSpecies = []; 
-    
-    for(var k=0; k<amount; k++) {
-       if(pool.length===0) break;
-       var r = Math.floor(Math.random() * pool.length);
-       var candidate = pool[r];
-       var root = candidate.data.baseSpecies || candidate.data.name;
-       
-       if(SETTINGS.dupes) {
-           if(batchSpecies.includes(root)) { pool.splice(r,1); k--; continue; }
-           batchSpecies.push(root);
-           GLOBAL_SEEN.push(root); 
-       }
-       picked.push(candidate);
-       if(!SETTINGS.dupes) pool.splice(r,1); 
+    var batchSpecies = [];
+
+    for (var k = 0; k < amount; k++) {
+        if (pool.length === 0) break;
+
+        var r = Math.floor(Math.random() * pool.length);
+        var candidate = pool[r];
+        var root = candidate.data.baseSpecies || candidate.data.name;
+
+        if (SETTINGS.dupes) {
+            if (batchSpecies.includes(root)) {
+                pool.splice(r, 1);
+                k--;
+                continue;
+            }
+            batchSpecies.push(root);
+            GLOBAL_SEEN.push(root);
+        }
+
+        picked.push({
+            key: candidate.key,
+            data: candidate.data,
+            shiny: !!candidate.shiny || (activeColors.length === 0 && Math.random() < SHINY_ODDS)
+        });
+
+        if (!SETTINGS.dupes) pool.splice(r, 1);
     }
-    
-    // Only update DB. The listener handles the history push and rendering for everyone.
+
     if (LOCAL_MODE) {
-      showFinal(picked, true);
+        showFinal(picked, true);
     } else {
-      db.ref('gen/team').set(picked);
+        db.ref('gen/team').set(picked);
     }
-  }
+}
+
+  // --- LOGIC ---
+  async function handleSearch(term) {
+    var requestId = ++SEARCH_REQUEST_ID;
+    term = term.trim();
+
+    var g = document.getElementById('gen-grid');
+
+    if (term === "") {
+        g.innerHTML = "";
+
+        if (LOCAL_MODE) {
+            renderGrid(HISTORY[HIST_PTR] || []);
+            return;
+        }
+
+        db.ref('gen/team').once('value', snap => {
+            if (requestId !== SEARCH_REQUEST_ID) return;
+            showFinal(snap.val() || [], false);
+        });
+        return;
+    }
+
+    await ensureLearnsetsLoaded();
+    if (requestId !== SEARCH_REQUEST_ID) return;
+
+    var tokens = parseSearchTokens(term.toLowerCase());
+    var results = [];
+    var limit = 50;
+
+    for (var i = 0; i < ALL_KEYS.length; i++) {
+        if (results.length >= limit) break;
+
+        var key = ALL_KEYS[i];
+        var p = RAW_DB[key];
+
+        if (key.includes('totem') || key.includes('starter') || key.includes('gmax') || key.includes('eternamax')) continue;
+
+        if (matchesAllTokens(key, p, tokens)) {
+            results.push({ key: key, data: p, shiny: false });
+        }
+    }
+
+    if (results.length === 0) {
+        g.innerHTML = '<div class="empty-msg">NO MATCHES</div>';
+        return;
+    }
+
+    renderGrid(results);
+}
 
   // --- SEARCH LOGIC ---
-  function handleSearch(term) {
-      term = term.trim().toLowerCase();
-      var g = document.getElementById('gen-grid'); 
-      
-      if(term === "") {
-          g.innerHTML = "";
-          db.ref('gen/team').once('value', snap => {
-              showFinal(snap.val() || [], false);
-          });
-          return;
-      }
-
-      var results = [];
-      var limit = 50; 
-      
-      for(var i=0; i<ALL_KEYS.length; i++) {
-          if(results.length >= limit) break;
-          var key = ALL_KEYS[i];
-          var p = RAW_DB[key];
-          
-          if(key.includes('totem') || key.includes('starter') || key.includes('gmax')) continue;
-          
-          var nameLow = p.name.toLowerCase();
-          
-          if(nameLow.includes(term) || key.includes(term)) {
-              results.push({ key: key, data: p, shiny: false });
-          }
-      }
-      
-      renderGrid(results);
-  }
 
   function getGenByNum(num) {
     if(!num) return 0;
@@ -674,11 +858,7 @@
     team.forEach(function(item) {
        // ... existing code inside the loop remains exactly the same ...
        var p = item.data;
-       var shiny = item.shiny;
-       // (Keep the rest of your existing loop logic here)
-       if(shiny === undefined || shiny === false) {
-           if(activeColorsLength() === 0 && Math.random() < 0.01) shiny = true;
-       }
+var shiny = !!item.shiny;
        
        var displayName = p.name.replace(/-/g, ' '); 
        var types = p.types; 

@@ -55,7 +55,14 @@
   .stat-label { color: #888; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
   .stat-val { font-size: 1.1rem; font-weight: 800; color: #fff; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
   .stat-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 5px 0; }
-  .chal-highlight { color: var(--accent); }
+  .chal-highlight,
+#s-alb-cw,
+#s-alb-cwr,
+#s-biu-cw,
+#s-biu-cwr {
+    color: var(--theme-green);
+    text-shadow: 0 0 10px var(--theme-green);
+}
 
   /* HEADER ACTIONS */
   .header-actions { display: flex; justify-content: flex-end; margin-bottom: 20px; gap:10px; align-items:center; }
@@ -467,8 +474,9 @@
   window.addEventListener('message', (event) => {
       if(event.data) {
           if (event.data.type === 'THEME_UPDATE') {
-              document.documentElement.style.setProperty('--theme-green', event.data.color);
-          }
+    document.documentElement.style.setProperty('--accent', event.data.color);
+    document.documentElement.style.setProperty('--theme-green', event.data.color);
+}
           if (event.data.type === 'CONFIG_UPDATE') {
               if(event.data.p1Color) document.documentElement.style.setProperty('--p1-color', event.data.p1Color);
               if(event.data.p2Color) document.documentElement.style.setProperty('--p2-color', event.data.p2Color);
