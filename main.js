@@ -4,6 +4,105 @@
 const mainDb = firebase.database(); // Local ref
 window.lastTopVol = 100; // Track last volume for unmuting
 
+/* --- UI SFX (Generator + Column Drop) --- */
+let uiSfxCtx = null;
+const UI_SFX_MASTER = 7; // Match play.html SFX_MASTER
+
+function getUiSfxCtx() {
+    if (!uiSfxCtx) uiSfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return uiSfxCtx;
+}
+
+function createUiNoiseBuffer(duration = 0.15) {
+    const ctx = getUiSfxCtx();
+    const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * duration)), ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    }
+
+    return buffer;
+}
+
+function playUiTone({ freq = 440, type = 'sine', when = 0, dur = 0.08, gain = 0.04, slideTo = null }) {
+    const ctx = getUiSfxCtx();
+    const osc = ctx.createOscillator();
+    const amp = ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, when);
+
+    if (slideTo) {
+        osc.frequency.exponentialRampToValueAtTime(slideTo, when + dur);
+    }
+
+    const outGain = Math.max(0.0001, gain * UI_SFX_MASTER);
+
+    amp.gain.setValueAtTime(0.0001, when);
+    amp.gain.exponentialRampToValueAtTime(outGain, when + 0.01);
+    amp.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+
+    osc.connect(amp);
+    amp.connect(ctx.destination);
+
+    osc.start(when);
+    osc.stop(when + dur + 0.02);
+}
+
+function playUiNoiseBurst({ when = 0, dur = 0.08, gain = 0.015, highpass = 900 }) {
+    const ctx = getUiSfxCtx();
+    const src = ctx.createBufferSource();
+    const filter = ctx.createBiquadFilter();
+    const amp = ctx.createGain();
+
+    src.buffer = createUiNoiseBuffer(dur);
+    filter.type = 'highpass';
+    filter.frequency.value = highpass;
+
+    const outGain = Math.max(0.0001, gain * UI_SFX_MASTER);
+
+    amp.gain.setValueAtTime(outGain, when);
+    amp.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+
+    src.connect(filter);
+    filter.connect(amp);
+    amp.connect(ctx.destination);
+
+    src.start(when);
+    src.stop(when + dur + 0.01);
+}
+
+function playUiSfxNow(name) {
+    const ctx = getUiSfxCtx();
+    const t = ctx.currentTime + 0.01;
+
+    if (name === 'generator_roll') {
+        playUiNoiseBurst({ when: t, dur: 0.016, gain: 0.003, highpass: 1500 });
+        playUiTone({ freq: 760, type: 'square', when: t, dur: 0.030, gain: 0.010, slideTo: 980 });
+        playUiTone({ freq: 980, type: 'triangle', when: t + 0.030, dur: 0.050, gain: 0.012, slideTo: 1280 });
+        playUiTone({ freq: 1310, type: 'triangle', when: t + 0.075, dur: 0.080, gain: 0.013, slideTo: 1560 });
+        return;
+    }
+
+    if (name === 'column_drop') {
+        playUiNoiseBurst({ when: t, dur: 0.012, gain: 0.0025, highpass: 1400 });
+        playUiTone({ freq: 520, type: 'triangle', when: t, dur: 0.035, gain: 0.010, slideTo: 430 });
+        playUiTone({ freq: 690, type: 'sine', when: t + 0.012, dur: 0.055, gain: 0.007, slideTo: 560 });
+    }
+}
+
+window.playUiSfx = function(name) {
+    const ctx = getUiSfxCtx();
+
+    if (ctx.state === 'suspended') {
+        ctx.resume().then(() => playUiSfxNow(name));
+        return;
+    }
+
+    playUiSfxNow(name);
+};
+
 /* --- 0. FORCE INJECT STYLES (Fixed Glow to Match Global Theme) --- */
 const nameOverlayStyle = document.createElement('style');
 nameOverlayStyle.innerHTML = `
@@ -69,6 +168,8 @@ window.addEventListener('message', (event) => {
         if(event.source) event.source.postMessage({ type: 'THEME_UPDATE', color: c }, '*');
     }
 
+    
+
     // Winner celebration from Play iframe
     if (event.data && event.data.type === 'WINNER_CELEBRATION') {
         window.runWinnerCelebration(event.data.winner, event.data.color);
@@ -84,6 +185,10 @@ window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'GENERATOR_DROP') {
         window.handleReturnLogic();
     }
+
+    if (event.data && event.data.type === 'PLAY_UI_SFX' && event.data.sound) {
+    window.playUiSfx(event.data.sound);
+}
 
     // Volume Sync
         if (event.data && event.data.type === 'UPDATE_TOP_VOL') {

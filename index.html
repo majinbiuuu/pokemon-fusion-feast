@@ -335,27 +335,28 @@
         <div class="chat-room-tabs">
             <button type="button" class="chat-room-tab active" data-room="general" onclick="switchChatRoom('general')">General</button>
             <button type="button" class="chat-room-tab" data-room="improvements" onclick="switchChatRoom('improvements')">Improvements</button>
-            <button type="button" class="chat-room-tab" data-room="other" onclick="switchChatRoom('other')">Other</button>
+            <button type="button" class="chat-room-tab" data-room="local" onclick="switchChatRoom('local')">Local</button>
         </div>
 
         <div class="chat-header-actions">
-            <button type="button" class="chat-icon-btn" onclick="zoomChatFont(-1)" title="Smaller">-</button>
-            <button type="button" class="chat-icon-btn" onclick="zoomChatFont(1)" title="Larger">+</button>
-            <span class="chat-close" onclick="toggleChat()">&times;</span>
-        </div>
+    <button type="button" id="chat-local-clear" class="chat-icon-btn chat-local-clear" onclick="clearLocalChat()" title="Clear Local Notes" style="display:none;">
+        <i class="fas fa-trash"></i>
+    </button>
+    <button type="button" class="chat-icon-btn" onclick="zoomChatFont(-1)" title="Smaller">
+        <i class="fas fa-minus"></i>
+    </button>
+    <button type="button" class="chat-icon-btn" onclick="zoomChatFont(1)" title="Larger">
+        <i class="fas fa-plus"></i>
+    </button>
+    <div class="chat-close" onclick="toggleChat()">&times;</div>
+</div>
     </div>
 
     <div class="chat-content">
         <div id="chat-output" class="chat-output"></div>
 
         <div class="chat-input-area">
-            <input
-                id="chat-input"
-                class="chat-input"
-                placeholder="Type a message..."
-                maxlength="300"
-                autocomplete="off"
-            >
+            <textarea id="chat-input" class="chat-input" placeholder="Type a message..." maxlength="1000" rows="1" autocomplete="off"></textarea>
             <button class="chat-send-btn" onclick="sendMessage()">
                 <i class="fas fa-paper-plane"></i>
             </button>

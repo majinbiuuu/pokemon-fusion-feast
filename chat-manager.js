@@ -2,9 +2,9 @@
 /* Compact chat: room tabs + message-only zoom + draggable window */
 
 const CHAT_ROOMS = {
-    general: { path: 'chat' },
-    improvements: { path: 'chatRooms/improvements' },
-    other: { path: 'chatRooms/other' }
+    general: { path: 'chat', local: false, label: 'General' },
+    improvements: { path: 'chatRooms/improvements', local: false, label: 'Improvements' },
+    local: { path: null, local: true, label: 'Local' }
 };
 
 window.isChatOpen = false;
@@ -32,13 +32,25 @@ function initChatSystem() {
 
     if (window.db) {
         runChatCleanup();
-        subscribeToChatRoom(window.currentChatRoom);
     }
+
+    subscribeToChatRoom(window.currentChatRoom);
 
     if (input) {
         input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') sendMessage();
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
         });
+
+        input.addEventListener('input', autoResizeChatInput);
+
+        ['paste', 'copy', 'cut', 'drop'].forEach(evt => {
+            input.addEventListener(evt, ev => ev.stopPropagation());
+        });
+
+        autoResizeChatInput();
     }
 }
 
@@ -48,7 +60,71 @@ function getChatPath(room) {
 
 function getChatRoomLabel(room) {
     const safeRoom = CHAT_ROOMS[room] ? room : 'general';
-    return safeRoom.charAt(0).toUpperCase() + safeRoom.slice(1);
+    return CHAT_ROOMS[safeRoom].label || safeRoom.charAt(0).toUpperCase() + safeRoom.slice(1);
+}
+
+function isLocalRoom(room) {
+    const safeRoom = CHAT_ROOMS[room] ? room : 'general';
+    return !!CHAT_ROOMS[safeRoom].local;
+}
+
+function getLocalChatStorageKey() {
+    const presenceId = localStorage.getItem('presenceId') || 'local';
+    const role = window.myRole || 'spectator';
+    return `chat_local_notes::${presenceId}::${role}`;
+}
+
+function getLocalChatMessages() {
+    try {
+        const data = JSON.parse(localStorage.getItem(getLocalChatStorageKey()) || '[]');
+        return Array.isArray(data) ? data : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function setLocalChatMessages(list) {
+    localStorage.setItem(getLocalChatStorageKey(), JSON.stringify((list || []).slice(-300)));
+}
+
+function clearLocalChatMessages() {
+    localStorage.removeItem(getLocalChatStorageKey());
+}
+
+window.clearLocalChat = function() {
+    if (!isLocalRoom(window.currentChatRoom)) return;
+    if (!confirm('Clear local notes?')) return;
+
+    clearLocalChatMessages();
+    renderAllMessages({});
+};
+
+function autoResizeChatInput() {
+    const input = document.getElementById('chat-input');
+    if (!input) return;
+    if (input.tagName !== 'TEXTAREA') return;
+
+    input.style.height = '40px';
+    input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+}
+
+function updateChatRoomUI() {
+    const clearBtn = document.getElementById('chat-local-clear');
+    const input = document.getElementById('chat-input');
+
+    const local = isLocalRoom(window.currentChatRoom);
+
+    if (clearBtn) {
+        clearBtn.style.display = local ? 'flex' : 'none';
+    }
+
+    if (input) {
+        input.placeholder = local
+            ? 'Write a private note...'
+            : `Message ${getChatRoomLabel(window.currentChatRoom)}...`;
+    }
+
+    autoResizeChatInput();
 }
 
 window.switchChatRoom = function(room) {
@@ -66,6 +142,17 @@ function subscribeToChatRoom(room) {
     }
 
     syncChatTabs();
+    updateChatRoomUI();
+
+    if (isLocalRoom(safeRoom)) {
+        const localMsgs = getLocalChatMessages();
+        const fakeMap = {};
+        localMsgs.forEach((msg, i) => {
+            fakeMap['local_' + i] = msg;
+        });
+        renderAllMessages(fakeMap);
+        return;
+    }
 
     if (!window.db) return;
 
@@ -80,6 +167,7 @@ function syncChatTabs() {
     document.querySelectorAll('.chat-room-tab').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.room === window.currentChatRoom);
     });
+    updateChatRoomUI();
 }
 
 function applyChatMessageFont(px) {
@@ -102,7 +190,13 @@ window.zoomChatFont = function(step) {
 function renderEmptyState() {
     const out = document.getElementById('chat-output');
     if (!out) return;
-    out.innerHTML = `<div class="chat-empty">No messages in ${getChatRoomLabel(window.currentChatRoom)} yet.</div>`;
+
+    const roomLabel = getChatRoomLabel(window.currentChatRoom);
+    const text = isLocalRoom(window.currentChatRoom)
+        ? `No notes in ${roomLabel} yet.`
+        : `No messages in ${roomLabel} yet.`;
+
+    out.innerHTML = `<div class="chat-empty">${text}</div>`;
 }
 
 function formatChatTime(timestamp) {
@@ -170,15 +264,17 @@ function renderAllMessages(data) {
 }
 
 function buildMessageHTML(msg) {
-    const own = isOwnMessage(msg);
+    const local = !!msg.localOnly;
+    const own = local ? true : isOwnMessage(msg);
     const rowClass = own ? 'self' : 'other';
-    const safeName = escapeHtml(msg.name || 'Guest');
+    const extraClass = local ? ' local-note' : '';
+    const safeName = escapeHtml(local ? 'Local' : (msg.name || 'Guest'));
     const safeText = escapeHtml(msg.text || '');
     const timeText = formatChatTime(msg.timestamp);
-    const nameColor = msg.color || '#fff';
+    const nameColor = local ? 'var(--accent)' : (msg.color || '#fff');
 
     return `
-        <div class="chat-row ${rowClass}">
+        <div class="chat-row ${rowClass}${extraClass}">
             <div class="chat-meta">
                 <span class="chat-name" style="color:${nameColor}">${safeName}</span>
                 <span class="chat-time">${timeText}</span>
@@ -203,6 +299,8 @@ window.toggleChat = function() {
         }
 
         syncChatTabs();
+        updateChatRoomUI();
+        autoResizeChatInput();
 
         setTimeout(() => {
             const out = document.getElementById('chat-output');
@@ -217,23 +315,42 @@ window.sendMessage = function() {
     const input = document.getElementById('chat-input');
     if (!input) return;
 
-    const text = input.value.trim();
+    const text = input.value.replace(/\r/g, '').trim();
     if (!text) return;
 
-    const user = getCurrentUserInfo();
+    if (isLocalRoom(window.currentChatRoom)) {
+        const notes = getLocalChatMessages();
+        notes.push({
+            name: 'Local',
+            color: '#ffffff',
+            text: text,
+            timestamp: Date.now(),
+            localOnly: true
+        });
+        setLocalChatMessages(notes);
 
-    const payload = {
-        name: user.name,
-        color: user.color,
-        text,
-        timestamp: Date.now()
-    };
+        const fakeMap = {};
+        getLocalChatMessages().forEach((msg, i) => {
+            fakeMap['local_' + i] = msg;
+        });
+        renderAllMessages(fakeMap);
+    } else {
+        const user = getCurrentUserInfo();
 
-    if (window.db) {
-        window.db.ref(getChatPath(window.currentChatRoom)).push(payload);
+        const payload = {
+            name: user.name,
+            color: user.color,
+            text,
+            timestamp: Date.now()
+        };
+
+        if (window.db) {
+            window.db.ref(getChatPath(window.currentChatRoom)).push(payload);
+        }
     }
 
     input.value = "";
+    autoResizeChatInput();
 };
 
 /* --- 30 DAY CLEANUP --- */
@@ -241,7 +358,7 @@ function runChatCleanup() {
     if (window.chatCleanupRan || !window.db) return;
     window.chatCleanupRan = true;
 
-    ['chat', 'chatRooms/improvements', 'chatRooms/other'].forEach(cleanupChatPath);
+    ['chat', 'chatRooms/improvements'].forEach(cleanupChatPath);
 }
 
 function cleanupChatPath(path) {
@@ -279,9 +396,9 @@ function initDraggableChat() {
     let offsetY = 0;
 
     header.addEventListener('mousedown', (e) => {
-        if (e.target.closest('.chat-room-tab, .chat-header-actions, .chat-close')) {
-            return;
-        }
+        if (e.target.closest('.chat-room-tab, .chat-header-actions, .chat-close, .chat-local-clear')) {
+    return;
+}
 
         isDragging = true;
         offsetX = e.clientX - win.offsetLeft;

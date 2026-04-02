@@ -1151,6 +1151,16 @@ html, body {
     flex-shrink: 0;
 }
 
+.chat-local-clear {
+    display: none;
+}
+
+.chat-local-clear:hover {
+    border-color: #ff4444;
+    color: #fff;
+    background: rgba(255,68,68,0.12);
+}
+
 .chat-icon-btn,
 .chat-close {
     width: 30px;
@@ -1268,6 +1278,22 @@ html, body {
     box-shadow: 0 6px 16px rgba(0,0,0,0.18);
 }
 
+.chat-output,
+.chat-bubble,
+.chat-input {
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+.chat-row.local-note .chat-bubble {
+    background: rgba(255,255,255,0.05);
+    border-style: dashed;
+}
+
+.chat-row.local-note .chat-name {
+    color: var(--accent) !important;
+}
+
 .chat-row.other .chat-bubble {
     background: rgba(255,255,255,0.06);
     color: #f0f0f0;
@@ -1285,7 +1311,7 @@ html, body {
     padding: 10px;
     border-top: 1px solid rgba(255,255,255,0.08);
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 8px;
     background: rgba(255,255,255,0.03);
     flex-shrink: 0;
@@ -1293,14 +1319,19 @@ html, body {
 
 .chat-input {
     flex: 1;
+    min-height: 40px;
+    max-height: 140px;
     height: 40px;
+    resize: none;
+    overflow-y: auto;
     background: #070707;
     border: 1px solid #2b2b2b;
     color: #fff;
     border-radius: 10px;
-    padding: 0 14px;
+    padding: 10px 14px;
     outline: none;
     font-size: 0.92rem;
+    line-height: 1.35;
     font-family: inherit;
     transition: 0.18s;
 }
