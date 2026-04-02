@@ -265,136 +265,392 @@
             transform: scale(0.9); box-shadow: 0 0 15px var(--accent);
         }
 
-        /* --- CHAT STYLES (FIXED) --- */
-#view-chat { 
-    display: flex; 
-    flex-direction: column; 
-    height: 100dvh; /* Forces full screen height */
-    position: fixed; /* Locks to screen */
-    top: 0; left: 0; width: 100%;
-    padding: 0 !important; /* Removes old padding that caused clipping */
-    z-index: 150;
-    overflow: hidden; /* Prevents double scrollbars */
-}
-
-.chat-area { 
-    flex: 1; 
-    overflow-y: auto; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 6px; /* REDUCED SPACING (was 12px) */
-    padding: 15px; 
-    padding-top: 80px; /* Clear Header */
-    /* Huge bottom padding ensures the last message clears the input bar */
-    padding-bottom: 150px; 
-    scroll-behavior: smooth;
-}
-
-/* Message Bubbles */
-.message-row { display: flex; flex-direction: column; max-width: 75%; }
-.message-row.received { align-self: flex-start; }
-.message-row.sent { align-self: flex-end; align-items: flex-end; }
-
-.bubble {
-    padding: 8px 12px; /* Tighter padding inside bubbles */
-    font-size: 0.95rem; 
-    line-height: 1.4;
-    position: relative; 
-    word-wrap: break-word; 
-    backdrop-filter: blur(5px);
-}
-
-.message-row.received .bubble {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.1); color: #fff;
-    border-radius: 18px 18px 18px 4px;
-}
-.message-row.sent .bubble {
-    background: rgba(var(--accent-rgb, 0, 190, 255), 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.2); color: #fff;
-    border-radius: 18px 18px 4px 18px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-.sender-name { font-size: 0.7rem; color: #888; margin-bottom: 2px; margin-left: 5px; font-weight: 700; }
-
-/* Input Bar - FIXED POSITIONING */
-.chat-input-bar { 
-    position: absolute; /* Changed to absolute relative to #view-chat */
-    left: 0; width: 100%; 
-    z-index: 9999;
-    background-color: #000; /* Solid background to hide what's behind */
-    border-top: 1px solid #333; 
-    padding: 10px 15px; 
-    box-sizing: border-box;
-    display: flex; gap: 8px; align-items: center;
-    
-    /* Sit exactly on top of the Nav Bar normally */
-    bottom: calc(var(--nav-height) + var(--safe-area-bottom));
-    transition: bottom 0.2s ease-out;
-}
-
-/* KEYBOARD OPEN STATE (Applied by JS) */
-body.keyboard-active .chat-input-bar {
-    bottom: 0 !important; /* Stick to very bottom when keyboard is up */
-    padding-bottom: 10px;
-}
-
-body.keyboard-active .btm-nav {
-    display: none !important; /* Hide nav bar when keyboard is up */
-}
-
-        /* Message Row */
-        .message-row { display: flex; flex-direction: column; max-width: 75%; }
-        
-        /* RECEIVED (Left) */
-        .message-row.received { align-self: flex-start; }
-        .message-row.received .bubble {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1); color: #fff;
-            border-radius: 18px 18px 18px 4px;
-        }
-        .message-row.received .sender-name {
-            font-size: 0.7rem; color: #888; margin-bottom: 4px; margin-left: 5px; font-weight: 700;
+        /* --- HISTORY SEPARATORS --- */
+        .match-card.separator-card {
+            padding: 0;
+            overflow: hidden;
         }
 
-        /* SENT (Right) */
-        .message-row.sent { align-self: flex-end; align-items: flex-end; }
-        .message-row.sent .bubble {
-            background: rgba(var(--accent-rgb, 0, 190, 255), 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2); color: #fff;
-            border-radius: 18px 18px 4px 18px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        .sep-card-shell {
+            display: flex;
+            align-items: stretch;
+            min-height: 84px;
+        }
+
+        .sep-card-bar {
+            width: 6px;
+            flex-shrink: 0;
+            background: var(--sep-color, var(--accent));
+            box-shadow: 0 0 18px color-mix(in srgb, var(--sep-color, var(--accent)) 55%, transparent);
+        }
+
+        .sep-card-body {
+            flex: 1;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sep-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .sep-card-title-wrap {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sep-card-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.06);
+            color: var(--sep-color, var(--accent));
+            flex-shrink: 0;
+        }
+
+        .sep-card-title {
+            font-size: 0.95rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: var(--sep-color, var(--accent));
+            line-height: 1.2;
+            word-break: break-word;
+        }
+
+        .sep-card-kind {
+            font-size: 0.62rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #777;
+        }
+
+        .sep-card-date {
+            font-size: 0.72rem;
+            color: #8f8f8f;
+            font-weight: 700;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .sep-card-note {
+            font-size: 0.86rem;
+            color: #ddd;
+            line-height: 1.45;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .mc-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+
+        .mc-game-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 54px;
+            height: 22px;
+            padding: 0 8px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: var(--accent);
+            font-size: 0.62rem;
+            font-weight: 900;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        /* --- MOBILE CHAT --- */
+        #view-chat {
+            padding: 0 !important;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        #view-chat.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .chat-shell {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(180deg, rgba(14,14,18,0.94), rgba(8,8,10,0.98));
+            padding-bottom: calc(var(--nav-height) + var(--safe-area-bottom));
+            transition: padding-bottom 0.18s ease;
+        }
+
+        .chat-mobile-header {
+            flex-shrink: 0;
+            padding: 14px 14px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+            backdrop-filter: blur(12px);
+        }
+
+        .chat-mobile-topline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .chat-mobile-title {
+            font-size: 1rem;
+            font-weight: 900;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1.4px;
+        }
+
+        .chat-room-strip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .chat-room-strip::-webkit-scrollbar {
+            display: none;
+        }
+
+        .chat-room-btn {
+            flex: 0 0 auto;
+            height: 34px;
+            padding: 0 14px;
+            border: none;
+            border-radius: 12px 12px 6px 6px;
+            background: rgba(255,255,255,0.06);
+            color: #8f8f8f;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.9px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.18s;
+        }
+
+        .chat-room-btn:active {
+            transform: scale(0.97);
+        }
+
+        .chat-room-btn.active {
+            background: var(--accent);
+            color: #000;
+            box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 30%, transparent);
+        }
+
+        .chat-room-clear {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            background: rgba(255,255,255,0.04);
+            color: #888;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .chat-room-clear:active {
+            transform: scale(0.95);
+        }
+
+        .chat-room-clear.visible {
+            display: inline-flex;
+        }
+
+        .chat-room-clear:hover,
+        .chat-room-clear:focus-visible {
+            border-color: #ff4444;
+            color: #fff;
+            background: rgba(255,68,68,0.12);
+        }
+
+        .chat-area {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 14px;
+            scroll-behavior: smooth;
+            overscroll-behavior: contain;
+        }
+
+        .chat-empty {
+            margin: auto;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .message-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-width: min(84%, 500px);
+            animation: mobileChatPop 0.16s ease-out;
+        }
+
+        .message-row.received {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        .message-row.sent {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        @keyframes mobileChatPop {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-meta {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 0 2px;
+            font-size: 0.66rem;
+            font-weight: 700;
+        }
+
+        .sender-name {
+            color: #888;
+            letter-spacing: 0.45px;
+            text-transform: uppercase;
+        }
+
+        .msg-time {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .message-row.local-note .sender-name {
+            color: var(--accent) !important;
         }
 
         .bubble {
-            padding: 10px 14px; font-size: 0.95rem; line-height: 1.4;
-            position: relative; word-wrap: break-word; backdrop-filter: blur(5px);
+            padding: 10px 13px;
+            font-size: 0.95rem;
+            line-height: 1.42;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+            white-space: pre-wrap;
+            word-break: break-word;
+            backdrop-filter: blur(6px);
         }
 
-        /* Standard Input Bar Position */
-.chat-input-bar { 
-    position: absolute; 
-    bottom: calc(var(--nav-height) + var(--safe-area-bottom)); /* Sit above Nav */
-    left: 0; width: 100%; 
-    padding: 10px; 
-    background: #111; 
-    border-top: 1px solid #333; 
-    display: flex; gap: 8px; align-items: center; z-index: 2000; 
-    transition: bottom 0.2s ease;
-}
-
-        .m-input { 
-            flex: 1; min-width: 0; background: #222; border: 1px solid #444; 
-            color: #fff; padding: 10px 15px; border-radius: 20px; 
-            outline: none; font-size: 0.95rem; 
+        .message-row.received .bubble {
+            background: rgba(255,255,255,0.07);
+            border-radius: 18px 18px 18px 6px;
         }
-        .m-send { 
-            background: var(--accent); width: 40px; height: 40px; 
-            border-radius: 50%; border: none; color: #000; font-weight: 900; 
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+
+        .message-row.sent .bubble {
+            background: rgba(var(--accent-rgb, 0, 190, 255), 0.26);
+            border-radius: 18px 18px 6px 18px;
+        }
+
+        .message-row.local-note .bubble {
+            border-style: dashed;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .chat-input-bar {
+            flex-shrink: 0;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            padding: 10px 14px max(10px, env(safe-area-inset-bottom));
+            border-top: 1px solid rgba(255,255,255,0.08);
+            background: rgba(10,10,10,0.95);
+            backdrop-filter: blur(12px);
+        }
+
+        .m-input {
+            flex: 1;
+            min-width: 0;
+            min-height: 44px;
+            max-height: 132px;
+            resize: none;
+            overflow-y: auto;
+            background: #171717;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 12px 14px;
+            border-radius: 14px;
+            outline: none;
+            font-size: 0.95rem;
+            line-height: 1.35;
+            font-family: inherit;
+        }
+
+        .m-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.02), 0 0 14px rgba(0,0,0,0.24);
+        }
+
+        .m-send {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            border: none;
+            background: var(--accent);
+            color: #000;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 0 16px rgba(255,255,255,0.06);
+        }
+
+        .m-send:active {
+            transform: scale(0.95);
+        }
+
+        body.keyboard-active .btm-nav {
+            display: none !important;
+        }
+
+        body.keyboard-active .chat-shell {
+            padding-bottom: max(var(--safe-area-bottom), var(--chat-keyboard-offset, 0px));
         }
 
         /* --- SETTINGS STYLES --- */
+
         .set-group { margin-bottom: 20px; }
         .set-label { 
             font-size: 0.75rem; color: var(--accent); font-weight: 800; 
@@ -518,13 +774,30 @@ body.keyboard-active .btm-nav {
             <div id="full-hist-list"></div>
         </div>
 
+        
         <div id="view-chat" class="view-section">
-            <div class="chat-area" id="m-chat-output"></div>
-            <div class="chat-input-bar">
-                <input id="m-chat-input" class="m-input" placeholder="Say something..." autocomplete="off">
-                <button class="m-send" onclick="sendMobileChat()"><i class="fas fa-paper-plane"></i></button>
+            <div class="chat-shell">
+                <div class="chat-mobile-header">
+                    <div class="chat-mobile-topline">
+                        <div class="chat-mobile-title">Chat</div>
+                        <button class="chat-room-clear" id="m-chat-clear" onclick="clearMobileLocalChat()" title="Clear local notes">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="chat-room-strip" id="m-chat-room-strip">
+                        <button class="chat-room-btn active" data-room="general" onclick="switchMobileChatRoom('general')">General</button>
+                        <button class="chat-room-btn" data-room="improvements" onclick="switchMobileChatRoom('improvements')">Improvements</button>
+                        <button class="chat-room-btn" data-room="local" onclick="switchMobileChatRoom('local')">Local</button>
+                    </div>
+                </div>
+                <div class="chat-area" id="m-chat-output"></div>
+                <div class="chat-input-bar">
+                    <textarea id="m-chat-input" class="m-input" placeholder="Message General..." autocomplete="off" rows="1"></textarea>
+                    <button class="m-send" onclick="sendMobileChat()"><i class="fas fa-paper-plane"></i></button>
+                </div>
             </div>
         </div>
+
 
         <div id="view-set" class="view-section">
             <div class="section-header">Settings</div>
@@ -657,6 +930,10 @@ body.keyboard-active .btm-nav {
 
         document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
+
+        if (viewId === 'chat' && typeof scrollMobileChatToBottom === 'function') {
+            setTimeout(() => scrollMobileChatToBottom('auto'), 60);
+        }
     };
 
     // --- 4. DATA SYNC (LIVE SCORES, CONFIG, STATS) ---
@@ -813,7 +1090,7 @@ body.keyboard-active .btm-nav {
 
     // --- 6. MATCH CARD BUILDER ---
     // --- 6. MATCH CARD BUILDER (FIXED RECORD CHIPS) ---
-    function createMatchCard(data, key, domSuffix = '') {
+    function createMatchCard(data, key, domSuffix = '', seasonGameNum = null) {
         let mode = data.dashSnapshot ? data.dashSnapshot.mode : (data.mode || "Mixed");
         let side = data.dashSnapshot ? data.dashSnapshot.side : (data.side || "-");
         let points = data.dashSnapshot ? data.dashSnapshot.points : (data.points || "-");
@@ -897,12 +1174,17 @@ if (winnerRole === 'p1') {
                 </div>`;
         }
 
+        const gameBadge = seasonGameNum ? `<div class="mc-game-badge">Game ${seasonGameNum}</div>` : "";
+
         return `
             <div class="match-card">
                 <div class="mc-header">
                     <div class="mh-left">
-                        <div class="mc-date-small">${dateStr}</div>
-                        ${chalBadge}
+                        <div class="mc-meta-row">
+                            ${gameBadge}
+                            <div class="mc-date-small">${dateStr}</div>
+                            ${chalBadge}
+                        </div>
                         <button class="mc-edit-btn" onclick="openEditModal('${key}')"><i class="fas fa-pen"></i></button>
                     </div>
                     <div class="mh-right">
@@ -924,103 +1206,432 @@ if (winnerRole === 'p1') {
         `;
     }
 
-
-
-
     // --- 7. HISTORY & STATS ---
-    db.ref('history').limitToLast(50).on('value', snap => {
-        fullHistoryData = snap.val(); 
+    db.ref('history').limitToLast(120).on('value', snap => {
+        fullHistoryData = snap.val() || {};
         renderHistoryAndStats(fullHistoryData);
     });
+
+    function escapeHtml(str) {
+        return String(str || '').replace(/[&<>"']/g, function(m) {
+            return ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            })[m];
+        });
+    }
+
+    function isHistorySeparator(entry) {
+        return !!(entry && entry.separator);
+    }
+
+    function getProcessedHistoryEntries(raw) {
+        const asc = Object.entries(raw || {}).sort((a, b) => (a[1].timestamp || 0) - (b[1].timestamp || 0));
+        let seasonGameNum = 0;
+
+        return asc.map(([key, data]) => {
+            if (isHistorySeparator(data)) {
+                if (data.subtype === 'season') seasonGameNum = 0;
+                return { key, data, seasonGameNum: null };
+            }
+
+            seasonGameNum += 1;
+            return { key, data, seasonGameNum };
+        });
+    }
+
+    function getSeparatorMeta(data) {
+        const subtype = data && data.subtype ? data.subtype : 'separator';
+        if (subtype === 'redeem') {
+            const isP1 = data.user === 'p1';
+            return {
+                color: isP1 ? 'var(--p1-color)' : 'var(--p2-color)',
+                icon: 'fa-ticket-alt',
+                kind: 'Redeem',
+                title: `${isP1 ? p1Name : p2Name} Redeemed`
+            };
+        }
+
+        return {
+            color: 'var(--accent)',
+            icon: 'fa-layer-group',
+            kind: 'Season',
+            title: data.title || `Season ${data.seasonNumber || ''}`.trim()
+        };
+    }
+
+    function createSeparatorCard(data) {
+        const meta = getSeparatorMeta(data || {});
+        const note = escapeHtml(data && data.notes ? data.notes : '');
+        const dateLabel = new Date((data && data.timestamp) || Date.now()).toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+
+        return `
+            <div class="match-card separator-card" style="--sep-color:${meta.color};">
+                <div class="sep-card-shell">
+                    <div class="sep-card-bar"></div>
+                    <div class="sep-card-body">
+                        <div class="sep-card-top">
+                            <div class="sep-card-title-wrap">
+                                <div class="sep-card-icon"><i class="fas ${meta.icon}"></i></div>
+                                <div>
+                                    <div class="sep-card-kind">${escapeHtml(meta.kind)}</div>
+                                    <div class="sep-card-title">${escapeHtml(meta.title)}</div>
+                                </div>
+                            </div>
+                            <div class="sep-card-date">${escapeHtml(dateLabel)}</div>
+                        </div>
+                        ${note ? `<div class="sep-card-note">${note}</div>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 
     function renderHistoryAndStats(raw) {
         const container = document.getElementById('full-hist-list');
         const latestContainer = document.getElementById('latest-match-container');
         if(!container || !latestContainer) return;
-        
+
         container.innerHTML = "";
         latestContainer.innerHTML = "";
 
-        if(!raw) {
-            container.innerHTML = "<div style='text-align:center; padding:20px; color:#666;'>No matches found.</div>";
-            latestContainer.innerHTML = "<div style='text-align:center; padding:20px; color:#666; font-style:italic;'>No matches yet...</div>";
-            updateStatsUI(0, 0);
+        const processed = getProcessedHistoryEntries(raw || {});
+        const newestFirst = processed.slice().reverse();
+
+        if(newestFirst.length === 0) {
+            container.innerHTML = "<div style='text-align:center; padding:20px; color:#666;'>No history found.</div>";
+            latestContainer.innerHTML = "<div style='text-align:center; padding:20px; color:#666; font-style:italic;'>No activity yet...</div>";
+            updateStatsUI(50, 50);
             return;
         }
 
-        const entries = Object.entries(raw).sort((a,b) => (b[1].timestamp||0) - (a[1].timestamp||0));
-        
-        // 1. History
-        entries.forEach(([key, data]) => {
-            container.innerHTML += createMatchCard(data, key);
+        newestFirst.forEach(item => {
+            container.insertAdjacentHTML(
+                'beforeend',
+                isHistorySeparator(item.data)
+                    ? createSeparatorCard(item.data)
+                    : createMatchCard(item.data, item.key, '', item.seasonGameNum)
+            );
         });
 
-        // 2. Recent
-        const recentGames = entries.slice(0, 3);
-        if(recentGames.length > 0) {
-            recentGames.forEach(([key, data]) => {
-                latestContainer.innerHTML += createMatchCard(data, key, '-home');
-            });
-        } else {
-            latestContainer.innerHTML = "<div style='text-align:center; padding:20px; color:#666; font-style:italic;'>No matches yet...</div>";
-        }
+        const recentActivity = newestFirst.slice(0, 3);
+        recentActivity.forEach(item => {
+            latestContainer.insertAdjacentHTML(
+                'beforeend',
+                isHistorySeparator(item.data)
+                    ? createSeparatorCard(item.data)
+                    : createMatchCard(item.data, item.key, '-home', item.seasonGameNum)
+            );
+        });
 
-        // 3. Stats (Robust name check)
-        let total = entries.length;
+        const realMatches = processed.filter(item => !isHistorySeparator(item.data));
+        const total = realMatches.length;
         let p1Wins = 0, p2Wins = 0;
-        entries.forEach(([key, d]) => {
-    const winnerRole = getWinnerRoleFromHistoryEntry(d);
-    if (winnerRole === 'p1') p1Wins++;
-    if (winnerRole === 'p2') p2Wins++;
-});
-        
-        let p1Pct = total > 0 ? (p1Wins / total) * 100 : 50;
-        let p2Pct = total > 0 ? (p2Wins / total) * 100 : 50;
 
+        realMatches.forEach(({ data }) => {
+            const winnerRole = getWinnerRoleFromHistoryEntry(data);
+            if (winnerRole === 'p1') p1Wins += 1;
+            if (winnerRole === 'p2') p2Wins += 1;
+        });
+
+        const p1Pct = total > 0 ? (p1Wins / total) * 100 : 50;
+        const p2Pct = total > 0 ? (p2Wins / total) * 100 : 50;
         updateStatsUI(p1Pct, p2Pct);
     }
 
     function updateStatsUI(p1Pct, p2Pct) {
         const stP1 = document.getElementById('st-p1-rate'); if(stP1) stP1.innerText = p1Pct.toFixed(0) + "%";
         const stP2 = document.getElementById('st-p2-rate'); if(stP2) stP2.innerText = p2Pct.toFixed(0) + "%";
-        
+
         const barP1 = document.getElementById('wr-bar-p1'); if(barP1) barP1.style.width = p1Pct + "%";
         const barP2 = document.getElementById('wr-bar-p2'); if(barP2) barP2.style.width = p2Pct + "%";
     }
 
     // --- 8. CHAT ---
-    const chatOut = document.getElementById('m-chat-output');
-    const MY_NAME = "Mobile"; 
-
-    db.ref('chat').limitToLast(50).on('child_added', snap => {
-    const msg = snap.val();
-    if(chatOut) {
-            const div = document.createElement('div');
-            const isMe = (msg.name === MY_NAME);
-            div.className = isMe ? 'message-row sent' : 'message-row received';
-            
-            let nameHtml = isMe ? '' : `<div class="sender-name" style="color:${msg.color}">${msg.name}</div>`;
-            
-            div.innerHTML = `
-                ${nameHtml}
-                <div class="bubble">${msg.text}</div>
-            `;
-            chatOut.appendChild(div);
-            scrollToBottom();
-            chatOut.scrollTop = chatOut.scrollHeight;
-        }
-    });
-
-    window.sendMobileChat = function() {
-        const inp = document.getElementById('m-chat-input');
-        if(!inp) return;
-        const txt = inp.value.trim();
-        if(!txt) return;
-        db.ref('chat').push({ name: MY_NAME, color: "#aaa", text: txt, timestamp: Date.now() });
-        inp.value = "";
+    const MOBILE_CHAT_ROOMS = {
+        general: { path: 'chat', local: false, label: 'General' },
+        improvements: { path: 'chatRooms/improvements', local: false, label: 'Improvements' },
+        local: { path: null, local: true, label: 'Local' }
     };
 
+    let mobileChatRoomRef = null;
+    let currentMobileChatRoom = MOBILE_CHAT_ROOMS[localStorage.getItem('chatRoom')]
+        ? localStorage.getItem('chatRoom')
+        : 'general';
+
+    const chatOut = document.getElementById('m-chat-output');
+    const mobileChatInput = document.getElementById('m-chat-input');
+
+    function getMobileSenderKey() {
+        const presenceId = localStorage.getItem('presenceId') || 'mobile';
+        const role = localStorage.getItem('myRole') || 'spectator';
+        return `${presenceId}::${role}`;
+    }
+
+    function getMobileChatPath(room) {
+        return (MOBILE_CHAT_ROOMS[room] || MOBILE_CHAT_ROOMS.general).path;
+    }
+
+    function getMobileChatRoomLabel(room) {
+        const safeRoom = MOBILE_CHAT_ROOMS[room] ? room : 'general';
+        return MOBILE_CHAT_ROOMS[safeRoom].label;
+    }
+
+    function isMobileLocalRoom(room) {
+        const safeRoom = MOBILE_CHAT_ROOMS[room] ? room : 'general';
+        return !!MOBILE_CHAT_ROOMS[safeRoom].local;
+    }
+
+    function getMobileLocalChatStorageKey() {
+        const presenceId = localStorage.getItem('presenceId') || 'mobile';
+        const role = localStorage.getItem('myRole') || 'spectator';
+        return `chat_local_notes::${presenceId}::${role}`;
+    }
+
+    function getMobileLocalChatMessages() {
+        try {
+            const parsed = JSON.parse(localStorage.getItem(getMobileLocalChatStorageKey()) || '[]');
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function setMobileLocalChatMessages(list) {
+        localStorage.setItem(getMobileLocalChatStorageKey(), JSON.stringify((list || []).slice(-300)));
+    }
+
+    function clearMobileLocalChatMessages() {
+        localStorage.removeItem(getMobileLocalChatStorageKey());
+    }
+
+    function getMobileUserInfo() {
+        const myRole = localStorage.getItem('myRole') || 'spectator';
+
+        if (myRole === 'p1') {
+            return {
+                name: p1Name || 'Player 1',
+                color: getComputedStyle(document.documentElement).getPropertyValue('--p1-color').trim() || '#ff4444'
+            };
+        }
+
+        if (myRole === 'p2') {
+            return {
+                name: p2Name || 'Player 2',
+                color: getComputedStyle(document.documentElement).getPropertyValue('--p2-color').trim() || '#4488ff'
+            };
+        }
+
+        return { name: 'Spectator', color: '#999999' };
+    }
+
+    function formatMobileChatTime(timestamp) {
+        if (!timestamp) return '';
+        const d = new Date(timestamp);
+        return d.toLocaleString([], {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+    }
+
+    function autoResizeMobileChatInput() {
+        if (!mobileChatInput) return;
+        mobileChatInput.style.height = '44px';
+        mobileChatInput.style.height = Math.min(mobileChatInput.scrollHeight, 132) + 'px';
+    }
+
+    function scrollMobileChatToBottom(behavior = 'auto') {
+        if (!chatOut) return;
+        if (typeof chatOut.scrollTo === 'function') {
+            chatOut.scrollTo({ top: chatOut.scrollHeight, behavior });
+        } else {
+            chatOut.scrollTop = chatOut.scrollHeight;
+        }
+    }
+
+    function buildMobileChatMessageHTML(msg) {
+        const senderKey = getMobileSenderKey();
+        const local = !!msg.localOnly;
+        const own = local ? true : ((msg.senderId && msg.senderId === senderKey) || msg.name === getMobileUserInfo().name);
+        const rowClass = own ? 'sent' : 'received';
+        const extraClass = local ? ' local-note' : '';
+        const safeName = escapeHtml(local ? 'Local' : (msg.name || 'Guest'));
+        const safeText = escapeHtml(msg.text || '');
+        const nameColor = local ? 'var(--accent)' : escapeHtml(msg.color || '#fff');
+        const timeText = formatMobileChatTime(msg.timestamp);
+
+        return `
+            <div class="message-row ${rowClass}${extraClass}">
+                <div class="msg-meta">
+                    <span class="sender-name" style="color:${nameColor}">${safeName}</span>
+                    <span class="msg-time">${escapeHtml(timeText)}</span>
+                </div>
+                <div class="bubble">${safeText}</div>
+            </div>
+        `;
+    }
+
+    function renderMobileChatEmptyState() {
+        if (!chatOut) return;
+        const roomLabel = getMobileChatRoomLabel(currentMobileChatRoom);
+        const text = isMobileLocalRoom(currentMobileChatRoom)
+            ? `No notes in ${roomLabel} yet.`
+            : `No messages in ${roomLabel} yet.`;
+        chatOut.innerHTML = `<div class="chat-empty">${escapeHtml(text)}</div>`;
+    }
+
+    function renderMobileChatMessages(data) {
+        if (!chatOut) return;
+
+        const entries = Object.values(data || {})
+            .filter(msg => msg && msg.text)
+            .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+        if (entries.length === 0) {
+            renderMobileChatEmptyState();
+            return;
+        }
+
+        chatOut.innerHTML = entries.map(buildMobileChatMessageHTML).join('');
+        requestAnimationFrame(() => scrollMobileChatToBottom('auto'));
+    }
+
+    function syncMobileChatRoomButtons() {
+        document.querySelectorAll('.chat-room-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.room === currentMobileChatRoom);
+        });
+    }
+
+    function updateMobileChatRoomUI() {
+        const clearBtn = document.getElementById('m-chat-clear');
+        const isLocal = isMobileLocalRoom(currentMobileChatRoom);
+
+        if (clearBtn) {
+            clearBtn.classList.toggle('visible', isLocal);
+        }
+
+        if (mobileChatInput) {
+            mobileChatInput.placeholder = isLocal
+                ? 'Write a private note...'
+                : `Message ${getMobileChatRoomLabel(currentMobileChatRoom)}...`;
+            autoResizeMobileChatInput();
+        }
+
+        syncMobileChatRoomButtons();
+    }
+
+    function subscribeMobileChatRoom(room) {
+        const safeRoom = MOBILE_CHAT_ROOMS[room] ? room : 'general';
+        currentMobileChatRoom = safeRoom;
+        localStorage.setItem('chatRoom', safeRoom);
+
+        if (mobileChatRoomRef) {
+            mobileChatRoomRef.off();
+            mobileChatRoomRef = null;
+        }
+
+        updateMobileChatRoomUI();
+
+        if (isMobileLocalRoom(safeRoom)) {
+            const fakeMap = {};
+            getMobileLocalChatMessages().forEach((msg, idx) => {
+                fakeMap['local_' + idx] = msg;
+            });
+            renderMobileChatMessages(fakeMap);
+            return;
+        }
+
+        mobileChatRoomRef = db.ref(getMobileChatPath(safeRoom));
+        mobileChatRoomRef.limitToLast(100).on('value', snap => {
+            renderMobileChatMessages(snap.val() || {});
+        });
+    }
+
+    window.switchMobileChatRoom = function(room) {
+        subscribeMobileChatRoom(room);
+    };
+
+    window.clearMobileLocalChat = function() {
+        if (!isMobileLocalRoom(currentMobileChatRoom)) return;
+        if (!confirm('Clear local notes?')) return;
+        clearMobileLocalChatMessages();
+        renderMobileChatMessages({});
+    };
+
+    window.sendMobileChat = function() {
+        if(!mobileChatInput) return;
+        const txt = mobileChatInput.value.replace(/\r/g, '').trim();
+        if(!txt) return;
+
+        if (isMobileLocalRoom(currentMobileChatRoom)) {
+            const notes = getMobileLocalChatMessages();
+            notes.push({
+                name: 'Local',
+                color: '#ffffff',
+                text: txt,
+                timestamp: Date.now(),
+                localOnly: true
+            });
+            setMobileLocalChatMessages(notes);
+            const fakeMap = {};
+            getMobileLocalChatMessages().forEach((msg, idx) => {
+                fakeMap['local_' + idx] = msg;
+            });
+            renderMobileChatMessages(fakeMap);
+        } else {
+            const user = getMobileUserInfo();
+            db.ref(getMobileChatPath(currentMobileChatRoom)).push({
+                name: user.name,
+                color: user.color,
+                text: txt,
+                timestamp: Date.now(),
+                senderId: getMobileSenderKey()
+            });
+        }
+
+        mobileChatInput.value = '';
+        autoResizeMobileChatInput();
+        setTimeout(() => scrollMobileChatToBottom('smooth'), 30);
+    };
+
+    if (mobileChatInput) {
+        mobileChatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMobileChat();
+            }
+        });
+
+        mobileChatInput.addEventListener('input', () => {
+            autoResizeMobileChatInput();
+            if (document.activeElement === mobileChatInput) {
+                scrollMobileChatToBottom('auto');
+            }
+        });
+
+        ['paste', 'copy', 'cut', 'drop'].forEach(evt => {
+            mobileChatInput.addEventListener(evt, ev => ev.stopPropagation());
+        });
+
+        autoResizeMobileChatInput();
+    }
+
+    updateMobileChatRoomUI();
+    subscribeMobileChatRoom(currentMobileChatRoom);
+
     // --- 9. BG UPLOAD ---
+
     const bgInput = document.getElementById('bg-upload');
     if(bgInput) {
         bgInput.addEventListener('change', function(e) {
@@ -1170,52 +1781,47 @@ else sel.value = "-";
     });
 
     // --- KEYBOARD & CHAT HANDLING ---
-const chatInput = document.getElementById('m-chat-input');
-const chatOutput = document.getElementById('m-chat-output');
+    function syncChatViewportOffset() {
+        let offset = 0;
 
-if (chatInput) {
-    // 1. When user taps input -> Hide Nav, Move Input Down
-    chatInput.addEventListener('focus', () => {
-        document.body.classList.add('keyboard-active');
-        // Small delay to allow keyboard to slide up before scrolling
-        setTimeout(scrollToBottom, 300);
-    });
+        if (window.visualViewport) {
+            const vv = window.visualViewport;
+            offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        }
 
-    // 2. When user closes keyboard -> Show Nav, Move Input Up
-    chatInput.addEventListener('blur', () => {
-        document.body.classList.remove('keyboard-active');
-    });
-}
+        document.documentElement.style.setProperty('--chat-keyboard-offset', offset + 'px');
 
-function scrollToBottom() {
-    if(chatOutput) {
-        chatOutput.scrollTop = chatOutput.scrollHeight;
+        if (document.activeElement === mobileChatInput) {
+            setTimeout(() => scrollMobileChatToBottom('auto'), 20);
+        }
     }
-}
 
-    // 2. BLUR: User closes keyboard
-    chatInput.addEventListener('blur', () => {
-        document.body.classList.remove('keyboard-active');
-        // Wait for transition, then scroll to bottom again to realign
-        setTimeout(scrollToBottom, 100);
-    });
+    if (mobileChatInput) {
+        mobileChatInput.addEventListener('focus', () => {
+            document.body.classList.add('keyboard-active');
+            syncChatViewportOffset();
+            setTimeout(() => scrollMobileChatToBottom('smooth'), 180);
+        });
 
-function scrollToBottom() {
-    if(chatOutput) {
-        chatOutput.scrollTop = chatOutput.scrollHeight;
+        mobileChatInput.addEventListener('blur', () => {
+            document.body.classList.remove('keyboard-active');
+            setTimeout(() => {
+                syncChatViewportOffset();
+                scrollMobileChatToBottom('auto');
+            }, 80);
+        });
     }
-}
 
-// Also trigger scroll when new messages arrive
-db.ref('chat').limitToLast(50).on('child_added', snap => {
-    // ... (Your existing create element code) ...
-    // chatOut.appendChild(div);
-    
-    // FORCE SCROLL
-    scrollToBottom();
-});
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', syncChatViewportOffset);
+        window.visualViewport.addEventListener('scroll', syncChatViewportOffset);
+    }
+
+    window.addEventListener('resize', syncChatViewportOffset);
+    syncChatViewportOffset();
 
     // --- 11. THEME & PARTY BUTTONS ---
+
     const THEME_COLORS = ['#00beff', '#ff4444', '#00ff88', '#aa00ff', '#ffaa00', '#ff00cc'];
 
     window.cycleTheme = function() {
