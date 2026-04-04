@@ -1416,6 +1416,95 @@ function playClearSfx() {
     });
 }
 
+function playRecordPickSfx() {
+    const ctx = getSfxCtx();
+    const t = ctx.currentTime + 0.01;
+
+    playNoiseBurst({
+        when: t,
+        dur: 0.010,
+        gain: 0.0022,
+        highpass: 2000
+    });
+
+    playTone({
+        freq: 900,
+        type: 'triangle',
+        when: t,
+        dur: 0.030,
+        gain: 0.012,
+        slideTo: 1120
+    });
+
+    playTone({
+        freq: 1380,
+        type: 'sine',
+        when: t + 0.012,
+        dur: 0.045,
+        gain: 0.007,
+        slideTo: 1200
+    });
+}
+
+window.playSfxClientId = window.playSfxClientId || ('playsfx-' + Math.random().toString(36).slice(2) + Date.now());
+window.lastPlaySfxId = null;
+window.playSfxReady = false;
+
+function runSharedPlaySfx(name) {
+    if (name === 'clear') {
+        unlockSfx();
+        playClearSfx();
+        return;
+    }
+
+    if (name === 'save') {
+        unlockSfx();
+        playSaveCelebration();
+        return;
+    }
+
+    if (name === 'win') {
+        unlockSfx();
+        playWinFanfare();
+    }
+
+    if (name === 'record_pick') {
+        unlockSfx();
+        playRecordPickSfx();
+        return;
+    }
+}
+
+function emitPlaySfx(name) {
+    if (!name) return;
+
+    const payload = {
+        id: 'playsfx-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+        name: name,
+        sourceId: window.playSfxClientId,
+        timestamp: Date.now()
+    };
+
+    window.lastPlaySfxId = payload.id;
+    runSharedPlaySfx(name);
+    db.ref('playSfx').set(payload);
+}
+
+db.ref('playSfx').on('value', snap => {
+    const payload = snap.val();
+
+    if (!window.playSfxReady) {
+        window.playSfxReady = true;
+        if (payload && payload.id) window.lastPlaySfxId = payload.id;
+        return;
+    }
+
+    if (!payload || !payload.id || payload.id === window.lastPlaySfxId) return;
+
+    window.lastPlaySfxId = payload.id;
+    runSharedPlaySfx(payload.name);
+});
+
 /* --- MARIO-LIKE DICE ROLL + DECISION CHIME --- */
 function playRollTick(when, flavor = 'play') {
     const bright = flavor === 'quickgen' ? 1550 : 1320;
@@ -2340,8 +2429,7 @@ window.rollAll = function() {
 };
 
     window.clearBoard = function() {
-    unlockSfx();
-    playClearSfx();
+    emitPlaySfx('clear');
 
     document.body.classList.remove('winner-celebrating');
     const popup = document.getElementById('winner-popup');
@@ -2417,29 +2505,27 @@ window.toggleX3 = function() {
     }
 
     window.flipCoin = function() {
-    let count = window.isX3 ? 3 : 1;
+    let count = window.isX3 ? 3 : (window.isX2 ? 2 : 1);
 
-    function roll() {
-        return Math.random() < 0.5 ? "Heads" : "Tails";
+    function rollSet(rollCount) {
+        let arr = [];
+        for (let i = 0; i < rollCount; i++) {
+            arr.push(Math.random() < 0.5 ? "Heads" : "Tails");
+        }
+        return arr.join(" / ");
     }
 
     let resultA, resultB;
 
-    if (count === 1) {
-        const single = roll();
-        resultA = single;
-        resultB = single;
+    // Normal mode: both sides must match
+    if (!window.isX2 && !window.isX3) {
+        const sharedResult = rollSet(1);
+        resultA = sharedResult;
+        resultB = sharedResult;
     } else {
-        function rollSet() {
-            let arr = [];
-            for (let i = 0; i < count; i++) {
-                arr.push(roll());
-            }
-            return arr.join(" / ");
-        }
-
-        resultA = rollSet();
-        resultB = rollSet();
+        // x2 / x3 mode: each side rolls independently
+        resultA = rollSet(count);
+        resultB = rollSet(count);
     }
 
     const now = Date.now();
@@ -2712,13 +2798,22 @@ window.toggleX3 = function() {
     };
 
     window.togDot = function(i) {
-        let dbVal = window.recState?.dots?.[i] || '';
-        let nextVal = '';
-        if(dbVal === '') nextVal = 'A';
-        else if(dbVal === 'A') nextVal = 'B';
-        else nextVal = '';
-        db.ref(`record/dots/${i}`).set(nextVal);
-    };
+    let dbVal = window.recState?.dots?.[i] || '';
+    let nextVal = '';
+
+    if (dbVal === '') nextVal = 'A';
+    else if (dbVal === 'A') nextVal = 'B';
+    else nextVal = '';
+
+    if (typeof emitPlaySfx === 'function') {
+        emitPlaySfx('record_pick');
+    } else {
+        unlockSfx();
+        playRecordPickSfx();
+    }
+
+    db.ref(`record/dots/${i}`).set(nextVal);
+};
 
     function calculateWinner(dots, format) {
     let a = 0; let b = 0;
@@ -2863,13 +2958,14 @@ window.toggleX3 = function() {
 
             if(lVal) payload.links.push(`G${i+1}: ${lVal}`);
         }
-        playSaveCelebration();
+        emitPlaySfx('save');
 
         await db.ref('history').push(payload);
 
         const winnerColor = getWinnerColor(winner);
         runPlayWinnerCelebration(winnerColor);
         showWinnerPopup(winner, winnerColor);
+        emitPlaySfx('win');
         launchConfetti(document.getElementById('win-res'));
 
         setTimeout(() => {

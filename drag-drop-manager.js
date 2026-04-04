@@ -63,8 +63,8 @@ window.drop = function(ev) {
 var side = parentId.split('-')[1]; 
 saveColumnState(side);
 
-if (typeof window.playUiSfx === 'function') {
-    window.playUiSfx('column_drop');
+if (typeof window.emitUiSfx === 'function') {
+    window.emitUiSfx('column_drop');
 }
 
 let frame = document.getElementById('frame-gen');
@@ -104,19 +104,22 @@ window.allowReturnDrop = function(ev) { if(window.returningId) ev.preventDefault
 window.returnDrop = function(ev) { ev.preventDefault(); handleReturnLogic(); };
 
 window.handleReturnLogic = function() {
-    if(window.returningId && window.returningSide && window.returningIndex > -1) {
-         let frame = document.getElementById('frame-gen');
-         if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
-         
-         // Direct Database Update (Surgical Removal)
-         let dbKey = (window.returningSide === 'alb') ? 'slotsAlb' : 'slotsBiu';
-         
-         // USE GLOBAL DB
-         window.db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
-         
-         window.returningId = null; 
-         window.returningIndex = -1;
-         window.returningSide = null;
+    if (window.returningId && window.returningSide && window.returningIndex > -1) {
+        let frame = document.getElementById('frame-gen');
+        if (frame && frame.contentWindow) {
+            frame.contentWindow.postMessage({ type: 'freePokemon', id: window.returningId }, '*');
+        }
+
+        if (typeof window.emitUiSfx === 'function') {
+            window.emitUiSfx('column_remove');
+        }
+
+        let dbKey = (window.returningSide === 'alb') ? 'slotsAlb' : 'slotsBiu';
+        window.db.ref('dashboard/' + dbKey + '/' + window.returningIndex).set(null);
+
+        window.returningId = null;
+        window.returningIndex = -1;
+        window.returningSide = null;
     }
 };
 
@@ -134,25 +137,35 @@ window.saveColumnState = function(side) {
     window.db.ref('dashboard/slots' + (side==='alb'?'Alb':'Biu')).set(slots);
 };
 
-window.clearCol = function(p) { 
+window.clearCol = function(p) {
     window.syncLock = true;
-    var container = document.getElementById('slots-'+p);
+
+    var container = document.getElementById('slots-' + p);
     var kids = container.getElementsByClassName('slot');
     let frame = document.getElementById('frame-gen');
-    for(var i=0; i<kids.length; i++) {
-       var txt = kids[i].querySelector('.slot-txt');
-       if(txt && txt.dataset.id && frame && frame.contentWindow) {
-           frame.contentWindow.postMessage({ type: 'freePokemon', id: txt.dataset.id }, '*');
-       }
+    let hadPokemon = false;
+
+    for (var i = 0; i < kids.length; i++) {
+        var txt = kids[i].querySelector('.slot-txt');
+        if (txt && txt.dataset.id) {
+            hadPokemon = true;
+            if (frame && frame.contentWindow) {
+                frame.contentWindow.postMessage({ type: 'freePokemon', id: txt.dataset.id }, '*');
+            }
+        }
     }
-    
-    window.initSlots('slots-'+p); 
-    
-    let emptySlots = [null,null,null,null,null,null];
-    window.db.ref('dashboard/slots' + (p==='alb'?'Alb':'Biu')).set(emptySlots);
-    
+
+    if (hadPokemon && typeof window.emitUiSfx === 'function') {
+        window.emitUiSfx('column_remove');
+    }
+
+    window.initSlots('slots-' + p);
+
+    let emptySlots = [null, null, null, null, null, null];
+    window.db.ref('dashboard/slots' + (p === 'alb' ? 'Alb' : 'Biu')).set(emptySlots);
+
     setTimeout(() => window.syncLock = false, 1000);
-    if(window.isCollapsed) generateMiniIcons(p);
+    if (window.isCollapsed) generateMiniIcons(p);
 };
 
 // --- 5. VIEW & COLLAPSE LOGIC ---

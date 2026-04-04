@@ -396,9 +396,10 @@
   };
 
   // --- AUTOCOMPLETE LOGIC ---
-  let allPokemonNames = [];
-  fetch('https://pokeapi.co/api/v2/pokemon?limit=10000')
-      .then(res => res.json()).then(data => { allPokemonNames = data.results.map(p => p.name); });
+    let allPokemonNames = [];
+  fetch('https://pokeapi.co/api/v2/pokemon-species?limit=10000')
+      .then(res => res.json())
+      .then(data => { allPokemonNames = data.results.map(p => p.name); });
 
   function handleInput(val) {
       const list = document.getElementById('autocomplete-list');
@@ -453,23 +454,52 @@
 
   function handleEnter(e) { if(e.key === 'Enter') addPokemon(); }
 
-  async function addPokemon() {
+    async function fetchBattlePokemon(name) {
+      const clean = name.trim().toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+      if (!clean) throw new Error('Empty name');
+
+      // Exact form lookup still works
+      const monRes = await fetch(`https://pokeapi.co/api/v2/pokemon/${clean}`);
+      if (monRes.ok) {
+          const pData = await monRes.json();
+          const sData = await fetch(pData.species.url).then(r => r.json());
+          return { pData, sData };
+      }
+
+      // Base species fallback
+      const speciesRes = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${clean}`);
+      if (!speciesRes.ok) throw new Error('Not Found');
+
+      const sData = await speciesRes.json();
+      const defaultVariety = (sData.varieties || []).find(v => v.is_default) || sData.varieties[0];
+
+      if (!defaultVariety || !defaultVariety.pokemon || !defaultVariety.pokemon.url) {
+          throw new Error('No default variety');
+      }
+
+      const pData = await fetch(defaultVariety.pokemon.url).then(r => r.json());
+      return { pData, sData };
+  }
+
+    async function addPokemon() {
       const input = document.getElementById('poke-search');
       const val = input.value;
-      if(!val) return;
+      if (!val) return;
+
       const list = val.split('/');
-      for(let raw of list) {
+
+      for (let raw of list) {
           let name = raw.trim().toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
-          if(!name) continue;
+          if (!name) continue;
+
           try {
-              const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
-              if(!res.ok) throw new Error("Not Found");
-              const pData = await res.json();
-              const resSpec = await fetch(pData.species.url);
-              const sData = await resSpec.json();
+              const { pData, sData } = await fetchBattlePokemon(name);
               renderCard(pData, sData);
-          } catch(e) { console.error(e); }
+          } catch (e) {
+              console.error(e);
+          }
       }
+
       input.value = "";
       document.getElementById('autocomplete-list').style.display = 'none';
   }
