@@ -25,41 +25,124 @@
   /* Modal Styles */
   .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
 
-  /* Update the width here 👇 */
-  .modal-content { 
-      background: #161616; 
-      border: 1px solid #444; 
-      
-      width: 400px; /* Changed from 500px to 800px */
-      max-width: 95%; /* Allows it to fit on smaller screens */
-      min-height: 450px; /* Adds a minimum height so it doesn't look squashed */
-      
-      max-height: 85vh; 
-      border-radius: 12px; 
-      padding: 30px; /* Increased padding slightly for better spacing */
-      overflow-y: auto; 
-      box-shadow: 0 20px 50px rgba(0,0,0,0.8); 
-      position: relative; 
+  .modal-content {
+      background: #161616;
+      border: 1px solid #444;
+      width: 560px;
+      max-width: 96%;
+      min-height: 520px;
+      max-height: 88vh;
+      border-radius: 16px;
+      padding: 34px;
+      overflow-y: auto;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+      position: relative;
       display: flex;
       flex-direction: column;
   }
-  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
-  .close-modal { font-size: 2rem; cursor: pointer; line-height: 0.5; color: #888; }
+  .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 18px;
+  }
+  .modal-header h3 {
+      margin: 0;
+      font-size: 1.6rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+  }
+  .close-modal { font-size: 2.2rem; cursor: pointer; line-height: 0.5; color: #888; }
   .close-modal:hover { color: #fff; }
 
   /* Type Grid & Details */
-  .type-grid-select { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; }
-  .type-btn { padding: 12px; border-radius: 6px; border: none; font-weight: 800; text-transform: uppercase; cursor: pointer; color: #fff; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,0.6); transition: 0.2s; font-size: 0.9rem; }
-  .type-btn:hover { transform: scale(1.05); filter: brightness(1.2); }
-  
-  .back-btn { background: none; border: none; color: #888; font-weight: 700; cursor: pointer; padding: 0; margin-bottom: 15px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+  .type-grid-select { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 12px; }
+  .type-btn {
+      padding: 14px 12px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 900;
+      text-transform: uppercase;
+      cursor: pointer;
+      color: #fff;
+      text-align: center;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+      transition: 0.2s;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+  }
+  .type-btn:hover { transform: scale(1.05); filter: brightness(1.15); }
+
+  #type-detail-view { display: none; }
+  .back-btn {
+      background: none;
+      border: none;
+      color: #888;
+      font-weight: 800;
+      cursor: pointer;
+      padding: 0;
+      margin-bottom: 18px;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+  }
   .back-btn:hover { color: #fff; }
-  .detail-group { margin-bottom: 25px; }
-  .d-head { font-size: 1.4rem; font-weight: 900; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
-  .d-sub { font-size: 1rem; color: #aaa; margin-bottom: 8px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-  .badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
-  .icon-check { color: #44ff44; font-size: 1.2rem; }
-  .icon-cross { color: #ff4444; font-size: 1.2rem; }
+  .detail-group { margin-bottom: 28px; }
+  .detail-divider { border-top: 1px solid #333; margin: 24px 0; }
+  .d-head { font-size: 1.6rem; font-weight: 900; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  .d-sub { font-size: 1.08rem; color: #aaa; margin-bottom: 10px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .badge-list { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+  .icon-check { color: #44ff44; font-size: 1.35rem; }
+  .icon-cross { color: #ff4444; font-size: 1.35rem; }
+
+  .modal-selected-type { text-align: center; margin-bottom: 22px; }
+  .modal-selected-type .type-badge {
+      font-size: 1.75rem;
+      padding: 8px 22px;
+      border-radius: 8px;
+  }
+
+  .type-match-chip {
+      padding: 7px 10px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: 0.18s;
+      color: inherit;
+      font-family: inherit;
+      outline: none;
+  }
+  .type-match-chip:hover {
+      transform: translateY(-1px) scale(1.02);
+      filter: brightness(1.08);
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(255,255,255,0.08);
+  }
+  .type-match-chip .type-badge {
+      font-size: 0.95rem;
+      padding: 6px 14px;
+      border-radius: 6px;
+  }
+  .type-chip-mult {
+      font-size: 1.05rem;
+      font-weight: 900;
+      letter-spacing: 0.3px;
+      color: inherit;
+  }
+  .empty-matchup {
+      color: #666;
+      font-size: 1.05rem;
+      font-style: italic;
+  }
 
   /* --- THEME & BASICS --- */
   :root { --glass-bg: rgba(20, 20, 20, 0.6); --glass-border: rgba(255, 255, 255, 0.15); }
@@ -686,49 +769,89 @@
       document.getElementById('type-detail-view').style.display = 'none';
   }
 
+  function getMultiplierClass(multiplier) {
+      if (multiplier >= 4) return 'mult-4';
+      if (multiplier >= 2) return 'mult-2';
+      if (multiplier === 0) return 'mult-0';
+      if (multiplier <= 0.25) return 'mult-025';
+      return 'mult-05';
+  }
+
+  function formatMultiplier(multiplier) {
+      return Number.isInteger(multiplier) ? String(multiplier) : String(multiplier);
+  }
+
+  function getAttackMatchups(type) {
+      return allTypes.map(defender => {
+          const multiplier = (typeChart[defender] && typeChart[defender][type] !== undefined) ? typeChart[defender][type] : 1;
+          return { type: defender, multiplier };
+      }).filter(entry => entry.multiplier !== 1);
+  }
+
+  function getDefenseMatchups(type) {
+      return allTypes.map(attacker => {
+          const multiplier = (typeChart[type] && typeChart[type][attacker] !== undefined) ? typeChart[type][attacker] : 1;
+          return { type: attacker, multiplier };
+      }).filter(entry => entry.multiplier !== 1);
+  }
+
+  function sortMatchups(list, descending = false) {
+      return list.slice().sort((a, b) => {
+          if (a.multiplier === b.multiplier) return a.type.localeCompare(b.type);
+          return descending ? b.multiplier - a.multiplier : a.multiplier - b.multiplier;
+      });
+  }
+
+  function renderMatchupChips(list, emptyText = 'None') {
+      if (!list.length) return `<span class="empty-matchup">${emptyText}</span>`;
+
+      return list.map(entry => `
+          <button class="type-match-chip ${getMultiplierClass(entry.multiplier)}" onclick="showTypeDetails('${entry.type}')">
+              <span class="type-badge t-${entry.type}">${entry.type}</span>
+              <span class="type-chip-mult">x${formatMultiplier(entry.multiplier)}</span>
+          </button>
+      `).join('');
+  }
+
   function showTypeDetails(type) {
       document.getElementById('type-selector').style.display = 'none';
       const view = document.getElementById('type-detail-view');
       const content = document.getElementById('type-data-content');
       view.style.display = 'block';
 
-      let atkGood = []; let atkBad = []; 
-      let defGood = []; let defBad = []; 
+      const attackMatchups = getAttackMatchups(type);
+      const defenseMatchups = getDefenseMatchups(type);
 
-      // 1. Attack Analysis: WE are Attacker (Check typeChart[DEFENDER][US])
-      allTypes.forEach(defender => {
-          let mod = (typeChart[defender] && typeChart[defender][type] !== undefined) ? typeChart[defender][type] : 1;
-          if (mod > 1) atkGood.push(defender);
-          if (mod < 1) atkBad.push(defender);
-      });
+      const atkSuper = sortMatchups(attackMatchups.filter(entry => entry.multiplier > 1), true);
+      const atkResisted = sortMatchups(attackMatchups.filter(entry => entry.multiplier > 0 && entry.multiplier < 1));
+      const atkImmune = sortMatchups(attackMatchups.filter(entry => entry.multiplier === 0));
 
-      // 2. Defense Analysis: WE are Defender (Check typeChart[US][ATTACKER])
-      allTypes.forEach(attacker => {
-          let mod = (typeChart[type] && typeChart[type][attacker] !== undefined) ? typeChart[type][attacker] : 1;
-          if (mod < 1) defGood.push(attacker);
-          if (mod > 1) defBad.push(attacker);
-      });
-
-      const renderBadges = (list) => list.length ? list.map(t => `<span class="type-badge t-${t}" style="font-size:0.9rem; padding:5px 12px;">${t}</span>`).join('') : '<span style="color:#666; font-style:italic">None</span>';
+      const defImmune = sortMatchups(defenseMatchups.filter(entry => entry.multiplier === 0));
+      const defResist = sortMatchups(defenseMatchups.filter(entry => entry.multiplier > 0 && entry.multiplier < 1));
+      const defWeak = sortMatchups(defenseMatchups.filter(entry => entry.multiplier > 1), true);
 
       content.innerHTML = `
-          <div style="text-align:center; margin-bottom:20px;">
-              <span class="type-badge t-${type}" style="font-size:1.5rem; padding:5px 20px;">${type}</span>
+          <div class="modal-selected-type">
+              <span class="type-badge t-${type}">${type}</span>
           </div>
           <div class="detail-group">
-              <div class="d-head">Attack <span style="color:#888; font-weight:400; font-size:1rem">pros & cons</span></div>
-              <div class="d-sub"><span class="material-icons icon-check">check_circle</span> Super effective against:</div>
-              <div class="badge-list">${renderBadges(atkGood)}</div>
-              <div class="d-sub"><span class="material-icons icon-cross">cancel</span> Not very effective against:</div>
-              <div class="badge-list">${renderBadges(atkBad)}</div>
+              <div class="d-head">Attack <span style="color:#888; font-weight:400; font-size:1rem">matchups</span></div>
+              <div class="d-sub"><span class="material-icons icon-check">check_circle</span> x2 Super effective:</div>
+              <div class="badge-list">${renderMatchupChips(atkSuper)}</div>
+              <div class="d-sub"><span class="material-icons icon-cross">cancel</span> x0.5 Not very effective:</div>
+              <div class="badge-list">${renderMatchupChips(atkResisted)}</div>
+              <div class="d-sub"><span class="material-icons icon-cross">block</span> x0 No effect:</div>
+              <div class="badge-list">${renderMatchupChips(atkImmune)}</div>
           </div>
-          <div style="border-top:1px solid #333; margin: 20px 0;"></div>
+          <div class="detail-divider"></div>
           <div class="detail-group">
-              <div class="d-head">Defense <span style="color:#888; font-weight:400; font-size:1rem">pros & cons</span></div>
-              <div class="d-sub"><span class="material-icons icon-check">check_circle</span> Resistant to:</div>
-              <div class="badge-list">${renderBadges(defGood)}</div>
-              <div class="d-sub"><span class="material-icons icon-cross">cancel</span> Weak to:</div>
-              <div class="badge-list">${renderBadges(defBad)}</div>
+              <div class="d-head">Defense <span style="color:#888; font-weight:400; font-size:1rem">matchups</span></div>
+              <div class="d-sub"><span class="material-icons icon-check">verified</span> x0 Immune to:</div>
+              <div class="badge-list">${renderMatchupChips(defImmune)}</div>
+              <div class="d-sub"><span class="material-icons icon-check">check_circle</span> x0.5 Resists:</div>
+              <div class="badge-list">${renderMatchupChips(defResist)}</div>
+              <div class="d-sub"><span class="material-icons icon-cross">cancel</span> x2 Weak to:</div>
+              <div class="badge-list">${renderMatchupChips(defWeak)}</div>
           </div>`;
   }
 
