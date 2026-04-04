@@ -90,6 +90,13 @@ function playUiSfxNow(name) {
         playUiTone({ freq: 520, type: 'triangle', when: t, dur: 0.035, gain: 0.010, slideTo: 430 });
         playUiTone({ freq: 690, type: 'sine', when: t + 0.012, dur: 0.055, gain: 0.007, slideTo: 560 });
     }
+
+        if (name === 'column_remove') {
+        playUiNoiseBurst({ when: t, dur: 0.014, gain: 0.0022, highpass: 1800 });
+        playUiTone({ freq: 680, type: 'triangle', when: t, dur: 0.030, gain: 0.009, slideTo: 420 });
+        playUiTone({ freq: 430, type: 'sine', when: t + 0.018, dur: 0.050, gain: 0.006, slideTo: 260 });
+        return;
+    }
 }
 
 window.playUiSfx = function(name) {
@@ -102,6 +109,40 @@ window.playUiSfx = function(name) {
 
     playUiSfxNow(name);
 };
+
+window.uiSfxClientId = window.uiSfxClientId || ('uisfx-' + Math.random().toString(36).slice(2) + Date.now());
+window.lastUiSfxId = null;
+window.uiSfxReady = false;
+
+window.emitUiSfx = function(name) {
+    if (!name) return;
+
+    const payload = {
+        id: 'uisfx-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+        sound: name,
+        sourceId: window.uiSfxClientId,
+        timestamp: Date.now()
+    };
+
+    window.lastUiSfxId = payload.id;
+    window.playUiSfx(name);
+    mainDb.ref('uiSfx').set(payload);
+};
+
+mainDb.ref('uiSfx').on('value', snap => {
+    const payload = snap.val();
+
+    if (!window.uiSfxReady) {
+        window.uiSfxReady = true;
+        if (payload && payload.id) window.lastUiSfxId = payload.id;
+        return;
+    }
+
+    if (!payload || !payload.id || payload.id === window.lastUiSfxId) return;
+
+    window.lastUiSfxId = payload.id;
+    window.playUiSfx(payload.sound);
+});
 
 /* --- 0. FORCE INJECT STYLES (Fixed Glow to Match Global Theme) --- */
 const nameOverlayStyle = document.createElement('style');
@@ -187,7 +228,7 @@ window.addEventListener('message', (event) => {
     }
 
     if (event.data && event.data.type === 'PLAY_UI_SFX' && event.data.sound) {
-    window.playUiSfx(event.data.sound);
+    window.emitUiSfx(event.data.sound);
 }
 
     // Volume Sync

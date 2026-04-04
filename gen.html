@@ -641,9 +641,7 @@ function isSameTeam(a, b) {
     document.getElementById('search-input').value = "";
 
     try {
-        if (window.parent && typeof window.parent.playUiSfx === 'function') {
-            window.parent.playUiSfx('generator_roll');
-        } else if (window.parent) {
+        if (window.parent) {
             window.parent.postMessage({ type: 'PLAY_UI_SFX', sound: 'generator_roll' }, '*');
         }
     } catch (e) {}
