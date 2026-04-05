@@ -228,6 +228,77 @@
     box-shadow: 0 0 14px rgba(255,255,255,0.08);
 }
 
+/* --- QUICK GEN FIXED UI: MULTI DROPDOWNS --- */
+.fixed-section-title {
+    margin-top: 4px;
+    margin-bottom: -2px;
+    padding: 2px 4px;
+    font-size: 0.82rem;
+    font-weight: 900;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.fixed-row.fixed-row-stack {
+    align-items: start;
+}
+
+.fixed-control-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.fixed-multi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.fixed-side-box {
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.fixed-side-box.single {
+    grid-column: 1 / -1;
+}
+
+.fixed-side-head {
+    margin-bottom: 8px;
+    font-size: 0.78rem;
+    font-weight: 900;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.fixed-select-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fixed-mini-help {
+    font-size: 0.78rem;
+    color: #777;
+    line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+    .fixed-row,
+    .fixed-row.fixed-row-stack {
+        grid-template-columns: 1fr;
+    }
+
+    .fixed-multi-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -333,6 +404,57 @@ const FIXED_FIELDS = [
     { key: "sp", label: "SP", listKey: "sp" }
 ];
 
+const QG_TYPE_OPTIONS = [
+    "🔥 Fire", "💧 Water", "🍃 Grass", "⚡ Electric", "🔮 Psychic", "❄️ Ice",
+    "🐉 Dragon", "🌑 Dark", "🎀 Fairy", "🙂 Normal", "🥊 Fighting", "🌪️ Flying",
+    "💀 Poison", "🌎 Ground", "🏔️ Rock", "👻 Ghost", "⚙️ Steel", "🦗 Bug"
+];
+
+const QG_COLOUR_OPTIONS = [
+    "Black", "Blue", "Brown", "Gray", "Green",
+    "Pink", "Purple", "Red", "White", "Yellow"
+];
+
+const QG_RNG_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+
+const QUICK_GEN_FIXED_FIELDS = [
+    {
+        key: "qgType",
+        label: "QG Type",
+        mode: "pair",
+        source: "types",
+        help: "Pick up to 3 results per side. Slot 1 = x1, slots 1-2 = x2, slots 1-3 = x3."
+    },
+    {
+        key: "qgLegend",
+        label: "QG Legend Trio",
+        mode: "pair",
+        source: "trios",
+        help: "Uses Legendary Trio titles from your Library list."
+    },
+    {
+        key: "qgColour",
+        label: "QG Colour",
+        mode: "pair",
+        source: "colours",
+        help: "Pick up to 3 results per side."
+    },
+    {
+        key: "qgRng",
+        label: "QG RNG",
+        mode: "pair",
+        source: "rng",
+        help: "Pick up to 3 numbers per side."
+    },
+    {
+        key: "qgShit",
+        label: "QG Shit Wheel",
+        mode: "single",
+        source: "shitWheel",
+        help: "Pick up to 3 wheel items. Play will auto-fill the note side."
+    }
+];
+
 db.ref("library").on("value", snap => {
     fullLibraryData = snap.val() || {};
     if (currentType === "fixed") renderFixedPanel(fullLibraryData.fixed || {});
@@ -428,9 +550,89 @@ function sortAlpha(list) {
     });
 }
 
+function getQuickGenFieldOptions(field) {
+    if (field.source === 'types') {
+        return QG_TYPE_OPTIONS.map(text => ({ text, note: '' }));
+    }
+
+    if (field.source === 'colours') {
+        return QG_COLOUR_OPTIONS.map(text => ({ text, note: '' }));
+    }
+
+    if (field.source === 'rng') {
+        return QG_RNG_OPTIONS.map(text => ({ text, note: '' }));
+    }
+
+    if (field.source === 'trios') {
+        return sortAlpha(getLibraryList('trios'))
+            .map(normalizeLibEntry)
+            .filter(item => item.text);
+    }
+
+    if (field.source === 'shitWheel') {
+        const rawList = getLibraryList('ShitWheelList').length
+            ? getLibraryList('ShitWheelList')
+            : getLibraryList('shitWheelList');
+
+        return sortAlpha(rawList)
+            .map(normalizeLibEntry)
+            .filter(item => item.text);
+    }
+
+    return [];
+}
+
+function splitFixedSlots(value, max = 3) {
+    const out = String(value || '')
+        .split('/')
+        .map(part => part.trim())
+        .filter(Boolean)
+        .slice(0, max);
+
+    while (out.length < max) out.push('');
+    return out;
+}
+
+function joinFixedSlots(values) {
+    return (values || [])
+        .map(v => String(v || '').trim())
+        .filter(Boolean)
+        .join(' / ');
+}
+
+function buildFixedSelectHtml(id, options, selected, placeholder, onChange) {
+    const optionHtml = options.map(item => {
+        const entry = normalizeLibEntry(item);
+        const isSelected = entry.text === selected ? ' selected' : '';
+        return `<option value="${escapeHtml(entry.text)}"${isSelected}>${escapeHtml(entry.text)}</option>`;
+    }).join('');
+
+    return `
+        <select class="fixed-select" id="${id}" onchange="${onChange}">
+            <option value="">${escapeHtml(placeholder)}</option>
+            ${optionHtml}
+        </select>
+    `;
+}
+
+function getFixedPairSelectValues(key, side) {
+    return [0, 1, 2].map(idx => {
+        const el = document.getElementById(`fixed-${key}-${side}-${idx}`);
+        return el ? el.value : '';
+    });
+}
+
+function getFixedSingleSelectValues(key) {
+    return [0, 1, 2].map(idx => {
+        const el = document.getElementById(`fixed-${key}-${idx}`);
+        return el ? el.value : '';
+    });
+}
+
 function normalizeFixedState(data) {
     const src = data || {};
     const out = {};
+
     FIXED_FIELDS.forEach(field => {
         const row = src[field.key] || {};
         out[field.key] = {
@@ -438,6 +640,24 @@ function normalizeFixedState(data) {
             locked: !!row.locked
         };
     });
+
+    QUICK_GEN_FIXED_FIELDS.forEach(field => {
+        const row = src[field.key] || {};
+
+        if (field.mode === 'pair') {
+            out[field.key] = {
+                a: typeof row.a === 'string' ? row.a : '',
+                b: typeof row.b === 'string' ? row.b : '',
+                locked: !!row.locked
+            };
+        } else {
+            out[field.key] = {
+                value: typeof row.value === 'string' ? row.value : '',
+                locked: !!row.locked
+            };
+        }
+    });
+
     return out;
 }
 
@@ -458,7 +678,10 @@ function renderFixedPanel(data) {
 
     const state = normalizeFixedState(data);
     let html = '<div class="fixed-shell">';
+
     html += '<div class="fixed-help">Choose the value you want for each row. When a row is locked, the Play tab will still do the rolling animation, but it will always land on that locked value.</div>';
+
+    html += '<div class="fixed-section-title">Main Rolls</div>';
 
     FIXED_FIELDS.forEach(field => {
         const selected = state[field.key].value || '';
@@ -485,6 +708,86 @@ function renderFixedPanel(data) {
         `;
     });
 
+    html += '<div class="fixed-section-title">Quick Gen</div>';
+    html += '<div class="fixed-help">Pick up to 3 outcomes. Slot 1 is used for normal rolls, slots 1-2 for x2, and slots 1-3 for x3.</div>';
+
+    QUICK_GEN_FIXED_FIELDS.forEach(field => {
+        const row = state[field.key];
+        const locked = !!row.locked;
+        const options = getQuickGenFieldOptions(field);
+
+        if (field.mode === 'pair') {
+            const valuesA = splitFixedSlots(row.a, 3);
+            const valuesB = splitFixedSlots(row.b, 3);
+
+            const selectsA = [0, 1, 2].map(idx => buildFixedSelectHtml(
+                `fixed-${field.key}-a-${idx}`,
+                options,
+                valuesA[idx],
+                `P1 Slot ${idx + 1}`,
+                `updateFixedPairSlots('${field.key}', 'a')`
+            )).join('');
+
+            const selectsB = [0, 1, 2].map(idx => buildFixedSelectHtml(
+                `fixed-${field.key}-b-${idx}`,
+                options,
+                valuesB[idx],
+                `P2 Slot ${idx + 1}`,
+                `updateFixedPairSlots('${field.key}', 'b')`
+            )).join('');
+
+            html += `
+                <div class="fixed-row fixed-row-stack">
+                    <div class="fixed-label">${escapeHtml(field.label)}</div>
+                    <div class="fixed-control-stack">
+                        <div class="fixed-multi-grid">
+                            <div class="fixed-side-box">
+                                <div class="fixed-side-head">P1</div>
+                                <div class="fixed-select-stack">${selectsA}</div>
+                            </div>
+                            <div class="fixed-side-box">
+                                <div class="fixed-side-head">P2</div>
+                                <div class="fixed-select-stack">${selectsB}</div>
+                            </div>
+                        </div>
+                        <div class="fixed-mini-help">${escapeHtml(field.help || '')}</div>
+                    </div>
+                    <button class="fixed-lock-btn ${locked ? 'locked' : ''}" onclick="toggleFixedPairLock('${field.key}')">
+                        ${locked ? 'Locked' : 'Lock'}
+                    </button>
+                </div>
+            `;
+        } else {
+            const values = splitFixedSlots(row.value, 3);
+
+            const selects = [0, 1, 2].map(idx => buildFixedSelectHtml(
+                `fixed-${field.key}-${idx}`,
+                options,
+                values[idx],
+                `Slot ${idx + 1}`,
+                `updateFixedSingleSlots('${field.key}')`
+            )).join('');
+
+            html += `
+                <div class="fixed-row fixed-row-stack">
+                    <div class="fixed-label">${escapeHtml(field.label)}</div>
+                    <div class="fixed-control-stack">
+                        <div class="fixed-multi-grid">
+                            <div class="fixed-side-box single">
+                                <div class="fixed-side-head">Selected Outcomes</div>
+                                <div class="fixed-select-stack">${selects}</div>
+                            </div>
+                        </div>
+                        <div class="fixed-mini-help">${escapeHtml(field.help || '')}</div>
+                    </div>
+                    <button class="fixed-lock-btn ${locked ? 'locked' : ''}" onclick="toggleFixedLock('${field.key}')">
+                        ${locked ? 'Locked' : 'Lock'}
+                    </button>
+                </div>
+            `;
+        }
+    });
+
     html += '</div>';
     container.innerHTML = html;
 }
@@ -493,15 +796,27 @@ window.updateFixedValue = function(key, value) {
     db.ref(`library/fixed/${key}/value`).set(value || '');
 };
 
+window.updateFixedPairSlots = function(key, side) {
+    const nextValue = joinFixedSlots(getFixedPairSelectValues(key, side));
+    db.ref(`library/fixed/${key}/${side}`).set(nextValue);
+};
+
+window.updateFixedSingleSlots = function(key) {
+    const nextValue = joinFixedSlots(getFixedSingleSelectValues(key));
+    db.ref(`library/fixed/${key}/value`).set(nextValue);
+};
+
 window.toggleFixedLock = function(key) {
-    const select = document.getElementById(`fixed-${key}`);
-    const nextValue = select ? (select.value || '') : '';
+    const singleSelect = document.getElementById(`fixed-${key}`);
+    const nextValue = singleSelect
+        ? (singleSelect.value || '').trim()
+        : joinFixedSlots(getFixedSingleSelectValues(key));
 
     db.ref(`library/fixed/${key}`).once('value').then(snap => {
         const current = snap.val() || { value: '', locked: false };
 
         if (!current.locked && !nextValue) {
-            alert('Choose a value first.');
+            alert('Choose at least one value first.');
             return;
         }
 
@@ -511,6 +826,28 @@ window.toggleFixedLock = function(key) {
         });
     });
 };
+
+window.toggleFixedPairLock = function(key) {
+    const nextA = joinFixedSlots(getFixedPairSelectValues(key, 'a'));
+    const nextB = joinFixedSlots(getFixedPairSelectValues(key, 'b'));
+
+    db.ref(`library/fixed/${key}`).once('value').then(snap => {
+        const current = snap.val() || { a: '', b: '', locked: false };
+
+        if (!current.locked && !nextA && !nextB) {
+            alert('Choose at least one value first.');
+            return;
+        }
+
+        db.ref(`library/fixed/${key}`).update({
+            a: nextA,
+            b: nextB,
+            locked: !current.locked
+        });
+    });
+};
+
+
 
   function parseData(data) {
       currentItems = [];

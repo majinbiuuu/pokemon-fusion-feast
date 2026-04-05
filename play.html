@@ -2073,6 +2073,30 @@ function normalizeFixedState(data) {
         sp: {
             value: typeof src.sp?.value === 'string' ? src.sp.value : '',
             locked: !!src.sp?.locked
+        },
+        qgType: {
+            a: typeof src.qgType?.a === 'string' ? src.qgType.a : '',
+            b: typeof src.qgType?.b === 'string' ? src.qgType.b : '',
+            locked: !!src.qgType?.locked
+        },
+        qgLegend: {
+            a: typeof src.qgLegend?.a === 'string' ? src.qgLegend.a : '',
+            b: typeof src.qgLegend?.b === 'string' ? src.qgLegend.b : '',
+            locked: !!src.qgLegend?.locked
+        },
+        qgColour: {
+            a: typeof src.qgColour?.a === 'string' ? src.qgColour.a : '',
+            b: typeof src.qgColour?.b === 'string' ? src.qgColour.b : '',
+            locked: !!src.qgColour?.locked
+        },
+        qgRng: {
+            a: typeof src.qgRng?.a === 'string' ? src.qgRng.a : '',
+            b: typeof src.qgRng?.b === 'string' ? src.qgRng.b : '',
+            locked: !!src.qgRng?.locked
+        },
+        qgShit: {
+            value: typeof src.qgShit?.value === 'string' ? src.qgShit.value : '',
+            locked: !!src.qgShit?.locked
         }
     };
 }
@@ -2101,6 +2125,115 @@ function getRandomRollResult(listKey) {
 
 function getFinalRollResult(key, listKey) {
     return getFixedRollResult(key, listKey) || getRandomRollResult(listKey) || { text: '', note: '' };
+}
+
+function getQuickGenCount() {
+    return window.isX3 ? 3 : (window.isX2 ? 2 : 1);
+}
+
+function getQuickGenFixedKey(type) {
+    if (type === 'Type') return 'qgType';
+    if (type === 'Legendary Trio') return 'qgLegend';
+    if (type === 'Colour') return 'qgColour';
+    if (type === 'RNG (1-9)') return 'qgRng';
+    if (type === 'ShitWheel') return 'qgShit';
+    return null;
+}
+
+function splitFixedValues(value, count) {
+    return String(value || '')
+        .split('/')
+        .map(part => part.trim())
+        .filter(Boolean)
+        .slice(0, count);
+}
+
+function isQuickGenFixedLocked(type) {
+    const fixed = normalizeFixedState((window.appData || {}).fixed);
+    const key = getQuickGenFixedKey(type);
+    return !!(key && fixed[key] && fixed[key].locked);
+}
+
+function pickUniqueEntries(list, count) {
+    const pool = list.slice();
+    const out = [];
+
+    for (let i = 0; i < count && pool.length; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        out.push(pool[idx]);
+        pool.splice(idx, 1);
+    }
+
+    return out;
+}
+
+function findLegendTrioByTitle(title) {
+    return getList('trios')
+        .map(normalizeEntry)
+        .find(item => item.text === title);
+}
+
+function getShitWheelEntries() {
+    const lib = window.appData || {};
+    const raw = lib.ShitWheelList || lib.shitWheelList || lib.shitWheel || [];
+    const list = Array.isArray(raw) ? raw : Object.values(raw);
+    return list.map(normalizeEntry);
+}
+
+function findShitWheelByText(text) {
+    return getShitWheelEntries().find(item => item.text === text);
+}
+
+function buildFixedQuickGenPair(type, count) {
+    const fixed = normalizeFixedState((window.appData || {}).fixed);
+    const key = getQuickGenFixedKey(type);
+    const row = key ? fixed[key] : null;
+
+    if (!row || !row.locked || typeof row.a !== 'string' || typeof row.b !== 'string') {
+        return null;
+    }
+
+    const aParts = splitFixedValues(row.a, count);
+    const bParts = splitFixedValues(row.b, count);
+
+    if (!aParts.length && !bParts.length) return null;
+
+    return {
+        a: aParts.length ? aParts.join(' / ') : '-',
+        b: bParts.length ? bParts.join(' / ') : '-'
+    };
+}
+
+function buildFixedLegendPair(sideKey, count) {
+    const row = normalizeFixedState((window.appData || {}).fixed).qgLegend;
+    if (!row.locked) return null;
+
+    const titles = splitFixedValues(row[sideKey], count);
+    if (!titles.length) return null;
+
+    const picks = titles.map(findLegendTrioByTitle).filter(Boolean);
+    if (!picks.length) return null;
+
+    return {
+        title: picks.map(item => item.text).join(' / '),
+        value: picks.map(item => item.note || item.text).join(' / ')
+    };
+}
+
+function buildFixedShitWheel(count) {
+    const row = normalizeFixedState((window.appData || {}).fixed).qgShit;
+    if (!row.locked || !row.value) return null;
+
+    const texts = splitFixedValues(row.value, count);
+    if (!texts.length) return null;
+
+    const picks = texts.map(findShitWheelByText).filter(Boolean);
+    if (!picks.length) return null;
+
+    return {
+        a: picks.map(item => item.text).join(' / ') || '-',
+        b: picks.map(item => item.note).filter(Boolean).join(' / ') || '-'
+    };
 }
 
 
@@ -2543,13 +2676,27 @@ window.toggleX3 = function() {
 };
 
     window.runQGen = function(type) {
-    let count = window.isX3 ? 3 : (window.isX2 ? 2 : 1);
+    let count = getQuickGenCount();
+
+    const fixedPair = buildFixedQuickGenPair(type, count);
+    if (fixedPair) {
+        db.ref('gen').update({
+            a: fixedPair.a,
+            b: fixedPair.b,
+            t: type,
+            titleA: null,
+            titleB: null,
+            trigger: 'both',
+            stamp: Date.now()
+        });
+        return;
+    }
 
     let valA = generateSet(type, count, []);
     let valB = generateSet(
         type,
         count,
-        valA.split(' / ').map(s => isNaN(s) ? s : parseInt(s))
+        valA.split(' / ').map(s => isNaN(s) ? s : parseInt(s, 10))
     );
 
     db.ref('gen').update({
@@ -2565,33 +2712,39 @@ window.toggleX3 = function() {
 
     window.rerollSide = function(side) {
     const type = window.lastQType;
-    if(!type || type === "ShitWheel") return;
+    if (!type || type === "ShitWheel") return;
+    if (isQuickGenFixedLocked(type)) return;
+
+    let count = getQuickGenCount();
 
     if (type === 'Legendary Trio') {
-        const trioList = getList('trios').filter(item => item && item.note);
+        const trioList = getList('trios')
+            .map(normalizeEntry)
+            .filter(item => item && item.note);
+
         if (trioList.length === 0) return;
 
-        const pick = trioList[Math.floor(Math.random() * trioList.length)];
+        const picks = pickUniqueEntries(trioList, count);
+
         db.ref('gen').update({
-            [side]: pick.note,
-            ['title' + side.toUpperCase()]: pick.text,
+            [side]: picks.map(item => item.note || item.text).join(' / ') || '-',
+            ['title' + side.toUpperCase()]: picks.map(item => item.text).join(' / ') || null,
             trigger: side,
             stamp: Date.now()
         });
         return;
     }
 
-    let count = window.isX3 ? 3 : (window.isX2 ? 2 : 1);
-
     let otherSide = (side === 'a' ? 'b' : 'a');
     let otherVal = window.lastGenState ? window.lastGenState[otherSide] : "";
     let exclude = [];
 
     if (type !== 'Coin Flip' && otherVal && otherVal !== '-') {
-        exclude = otherVal.toString().split(' / ').map(s => isNaN(s) ? s : parseInt(s));
+        exclude = otherVal.toString().split(' / ').map(s => isNaN(s) ? s : parseInt(s, 10));
     }
 
     let newVal = generateSet(type, count, exclude);
+
     db.ref('gen').update({
         [side]: newVal,
         trigger: side,
@@ -2648,7 +2801,8 @@ window.toggleX3 = function() {
     };
 
     window.rerollOne = function(side, idx) {
-    if (!window.lastQType || window.lastQType === "ShitWheel") return;
+    if (!window.lastQType || window.lastQType === "ShitWheel" || window.lastQType === "Legendary Trio") return;
+    if (isQuickGenFixedLocked(window.lastQType)) return;
 
     const g = window.lastGenState || {};
     const currentStr = g[side] || "";
