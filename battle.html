@@ -6,431 +6,1358 @@
 <link href="style-global.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <style>
-
-    /* --- NEW TYPE CHART STYLES --- */
-  .btn-types { 
-      background: #444; color: #ccc; border: 1px solid #666; 
-      padding: 0 20px; font-weight: 800; border-radius: 8px; 
-      cursor: pointer; text-transform: uppercase; width: auto; 
-      display: flex; align-items: center; justify-content: center;
-      transition: 0.2s; letter-spacing: 1px;
-  }
-  .btn-types:hover { background: #eee; color: #000; border-color: #fff; }
-
-  /* Modal Styles */
-  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-
-  .modal-content {
-      background: #161616;
-      border: 1px solid #444;
-      width: 560px;
-      max-width: 96%;
-      min-height: 520px;
-      max-height: 88vh;
-      border-radius: 16px;
-      padding: 34px;
-      overflow-y: auto;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-      position: relative;
-      display: flex;
-      flex-direction: column;
-  }
-  .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-      border-bottom: 1px solid #333;
-      padding-bottom: 18px;
-  }
-  .modal-header h3 {
-      margin: 0;
-      font-size: 1.6rem;
-      font-weight: 900;
-      letter-spacing: 0.5px;
-  }
-  .close-modal { font-size: 2.2rem; cursor: pointer; line-height: 0.5; color: #888; }
-  .close-modal:hover { color: #fff; }
-
-  /* Type Grid & Details */
-  .type-grid-select { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 12px; }
-  .type-btn {
-      padding: 14px 12px;
-      border-radius: 8px;
-      border: none;
-      font-weight: 900;
-      text-transform: uppercase;
-      cursor: pointer;
-      color: #fff;
-      text-align: center;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
-      transition: 0.2s;
-      font-size: 1rem;
-      letter-spacing: 0.5px;
-  }
-  .type-btn:hover { transform: scale(1.05); filter: brightness(1.15); }
-
-  #type-detail-view { display: none; }
-  .back-btn {
-      background: none;
-      border: none;
-      color: #888;
-      font-weight: 800;
-      cursor: pointer;
-      padding: 0;
-      margin-bottom: 18px;
-      font-size: 1rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-  }
-  .back-btn:hover { color: #fff; }
-  .detail-group { margin-bottom: 28px; }
-  .detail-divider { border-top: 1px solid #333; margin: 24px 0; }
-  .d-head { font-size: 1.6rem; font-weight: 900; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
-  .d-sub { font-size: 1.08rem; color: #aaa; margin-bottom: 10px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-  .badge-list { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
-  .icon-check { color: #44ff44; font-size: 1.35rem; }
-  .icon-cross { color: #ff4444; font-size: 1.35rem; }
-
-  .modal-selected-type { text-align: center; margin-bottom: 22px; }
-  .modal-selected-type .type-badge {
-      font-size: 1.75rem;
-      padding: 8px 22px;
-      border-radius: 8px;
+  :root {
+    --glass-bg: rgba(18, 18, 20, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --card-deep: rgba(0, 0, 0, 0.28);
+    --card-soft: rgba(255, 255, 255, 0.04);
+    --text-dim: #8c8c94;
+    --text-soft: #b7b7be;
   }
 
-  .type-match-chip {
-      padding: 7px 10px;
-      background: rgba(0, 0, 0, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 10px;
-      font-size: 1.15rem;
-      font-weight: 800;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      cursor: pointer;
-      transition: 0.18s;
-      color: inherit;
-      font-family: inherit;
-      outline: none;
-  }
-  .type-match-chip:hover {
-      transform: translateY(-1px) scale(1.02);
-      filter: brightness(1.08);
-      border-color: var(--accent);
-      box-shadow: 0 0 12px rgba(255,255,255,0.08);
-  }
-  .type-match-chip .type-badge {
-      font-size: 0.95rem;
-      padding: 6px 14px;
-      border-radius: 6px;
-  }
-  .type-chip-mult {
-      font-size: 1.05rem;
-      font-weight: 900;
-      letter-spacing: 0.3px;
-      color: inherit;
-  }
-  .empty-matchup {
-      color: #666;
-      font-size: 1.05rem;
-      font-style: italic;
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 18px 20px 24px;
+    font-family: 'Segoe UI', sans-serif;
+    color: #eee;
+    background: transparent;
+    overflow-y: auto;
   }
 
-  /* --- THEME & BASICS --- */
-  :root { --glass-bg: rgba(20, 20, 20, 0.6); --glass-border: rgba(255, 255, 255, 0.15); }
-  body { font-family: 'Segoe UI', sans-serif; color: #eee; margin: 0; padding: 20px; overflow-y: auto; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #35353b; border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-  /* SEARCH BAR */
-  .search-row { display: flex; gap: 10px; margin-bottom: 20px; position: relative; }
-  .poke-input { flex: 1; background: #111; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 8px; font-size: 1.5rem; outline: none; transition: 0.2s; }
-  .poke-input:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
-  
-  /* AUTOCOMPLETE */
+  .search-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 18px;
+    align-items: stretch;
+  }
+
+  .search-input-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .search-actions {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    flex: 0 0 auto;
+  }
+
+  .poke-input {
+    width: 100%;
+    min-width: 0;
+    background: #111;
+    border: 1px solid #3b3b44;
+    color: #fff;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 1.15rem;
+    outline: none;
+    transition: 0.18s;
+  }
+
+  .poke-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 14px rgba(0, 0, 0, 0.35), 0 0 14px var(--accent);
+  }
+
   #autocomplete-list {
-      position: absolute; top: 100%; left: 0; right: 180px; 
-      background: #080808; border: 1px solid #444; border-top: none;
-      border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;
-      max-height: 300px; overflow-y: auto; display: none; z-index: 1000;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #080808;
+    border: 1px solid #3f3f48;
+    border-radius: 0 0 12px 12px;
+    max-height: 320px;
+    overflow-y: auto;
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.55);
   }
-  .auto-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #222; font-size: 1.1rem; text-transform: capitalize; color: #aaa; transition: 0.1s; }
-  .auto-item:hover { background: var(--accent); color: #000; font-weight: 800; }
+
+  .auto-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #1d1d22;
+    font-size: 1rem;
+    text-transform: capitalize;
+    color: #aaa;
+    transition: 0.12s;
+  }
+
+  .auto-item:hover {
+    background: var(--accent);
+    color: #000;
+    font-weight: 800;
+  }
+
   .auto-match { color: var(--accent); font-weight: 700; }
   .auto-item:hover .auto-match { color: #000; }
 
-  /* BUTTONS */
-  .btn-add { background: var(--accent); color: #000; border: none; padding: 0 20px; font-weight: 900; border-radius: 8px; cursor: pointer; text-transform: uppercase; width: 80px; }
-  .btn-add:hover { filter: brightness(1.2); }
-  .btn-clear { background: #333; color: #ccc; border: 1px solid #555; padding: 0 15px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; width: 80px; transition: 0.2s; }
+  .btn-add,
+  .btn-clear,
+  .btn-types,
+  .btn-import {
+    border-radius: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: 0.18s;
+    letter-spacing: 0.8px;
+    padding: 0 16px;
+    border: 1px solid #4b4b55;
+    background: #222;
+    color: #ddd;
+    min-height: 48px;
+  }
+
+  .btn-add {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    width: 88px;
+  }
+
+  .btn-import {
+    width: 48px;
+    min-width: 48px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-import .material-icons {
+    font-size: 20px;
+  }
+
+  .btn-add:hover { filter: brightness(1.08); }
   .btn-clear:hover { background: #d32f2f; color: #fff; border-color: #d32f2f; }
+  .btn-types:hover { background: #eee; color: #000; border-color: #fff; }
+  .btn-import:hover {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border-color: var(--accent);
+    box-shadow: 0 0 14px rgba(255,255,255,0.05), 0 0 14px var(--accent);
+  }
 
-  /* GRID & CARDS */
-  #battle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
+  #battle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(660px, 1fr));
+    gap: 18px;
+    align-items: start;
+  }
+
   .b-card {
-      background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px;
-      padding: 20px; position: relative; animation: slideUp 0.3s ease;
-      display: flex; flex-direction: column; gap: 15px; backdrop-filter: blur(10px); 
-  }
-  /* Find this block and replace it to remove the bottom border line */
-  .b-header { 
-      display: flex; 
-      align-items: center; 
-      gap: 5px; 
-      padding-bottom: 5px;
-  } 
-  
-  /* Larger Sprite Image */
-  .b-sprite { 
-      width: 120px;  /* 👈 Increased from 80px */
-      height: 120px; /* 👈 Increased from 80px */
-      object-fit: contain; 
-      filter: drop-shadow(0 0 5px rgba(0,0,0,0.5)); 
+    position: relative;
+    overflow: hidden;
+    padding: 14px;
+    border-radius: 20px;
+    background:
+      radial-gradient(circle at top right, rgba(255,255,255,0.08), transparent 22%),
+      linear-gradient(155deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)),
+      var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(14px);
+    animation: slideUp 0.28s ease;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   }
 
-  .b-info { flex: 1; }
-  .b-name { font-size: 1.8rem; font-weight: 900; text-transform: capitalize; color: #fff; line-height: 1.1; }
-  .b-types { display: flex; gap: 5px; margin-top: 6px; }
-  .type-badge { padding: 3px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
-
-  .b-sect-title { font-size: 1rem; font-weight: 700; color: #888; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 8px; }
-  /* Remove border for specific sections if needed via inline style, or helper class */
-  .no-border { border-bottom: none !important; margin-bottom: 0 !important; }
-
-  /* ITEMS ROW */
-  .item-row { 
-      display: flex; 
-      flex-wrap: wrap; 
-      gap: 2px; /* Reduced gap between items */
-      margin-bottom: 4px; 
+  .b-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 22px 48px rgba(0, 0, 0, 0.42), 0 0 18px rgba(255, 255, 255, 0.05);
   }
-  
+
+  .b-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.04), transparent 68%);
+    opacity: 0.55;
+  }
+
+  .b-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #6a6a74;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: 0.18s;
+  }
+
+  .b-close:hover {
+    color: #fff;
+    background: rgba(255, 68, 68, 0.2);
+    border-color: rgba(255, 68, 68, 0.5);
+  }
+
+  .b-card-layout {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(300px, 0.92fr) minmax(360px, 1.08fr);
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .b-left-column {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .b-right-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+  min-height: 100%;
+  padding-top: 50px;
+}
+
+.profile-shell {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 2px 6px;
+}
+
+.profile-top {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+  .b-sprite-wrap {
+    min-height: 172px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.18));
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 10px 20px rgba(0,0,0,0.18);
+  }
+
+  .b-sprite {
+    width: min(100%, 170px);
+    height: 170px;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,0.45));
+  }
+
+.b-profile-side {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 2px;
+}
+
+  .b-name {
+    min-width: 0;
+    color: #fff;
+    font-weight: 900;
+    font-size: clamp(2rem, 1.05rem + 0.8vw, 2.1rem);
+    line-height: 1.02;
+    text-transform: capitalize;
+    letter-spacing: 0.15px;
+    word-break: break-word;
+    text-shadow: 0 0 12px rgba(255,255,255,0.04);
+    margin-bottom: 2px;
+    margin-top: 2px;
+  }
+
+.typing-block {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.b-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-start;
+  margin-top: 0;
+}
+
+.form-shell {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+  .form-scroll {
+    max-height: 72px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-content: flex-start;
+  }
+
+  .form-chip {
+    background: #2e2e35;
+    color: #b2b2bb;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: 0.15s;
+    white-space: nowrap;
+  }
+
+  .form-chip:hover {
+    color: #fff;
+    background: #3a3a43;
+    border-color: rgba(255,255,255,0.12);
+  }
+
+  .form-chip.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(255,255,255,0.05);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+  }
+
+.profile-build-row {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 4px;
+}
+
+  .mini-action-btn {
+    flex: 0 0 auto;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: #d5d5dc;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.75px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: 0.18s;
+    white-space: nowrap;
+  }
+
+  .mini-action-btn:hover {
+    color: #000;
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 14px rgba(255,255,255,0.05), 0 0 14px var(--accent);
+  }
+
+  .mini-action-btn .material-icons {
+    font-size: 14px;
+  }
+
+  .type-badge,
+  .move-pill {
+    border: none;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+
+  .type-badge {
+    padding: 6px 11px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 10px rgba(0,0,0,0.22);
+  }
+
+  button.type-badge {
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease;
+  }
+
+  button.type-badge:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+  }
+
+  .micro-label,
+  .section-title,
+  .build-line-label,
+  .build-meta-label {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 900;
+  }
+
+  .micro-label {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+  }
+
+  .side-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .section-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.15));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+    color: var(--accent);
+    font-size: 0.68rem;
+  }
+
+  .section-note {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    text-transform: none;
+  }
+
+ .stats-section-card {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+}
+
+  .stats-section-card .section-title {
+    padding-left: 2px;
+    margin-bottom: 8px;
+  }
+
+  .stats-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  justify-content: flex-start;
+}
+
   .item-chip {
-      font-size: 0.9rem; 
-      background: #222; 
-      border: 1px solid #444; 
-      color: #aaa; 
-      
-      /* 👇 Reduced padding here (was 4px 8px) */
-      padding: 2px 6px; 
-      
-      border-radius: 4px; 
-      cursor: pointer; 
-      text-transform: uppercase; 
-      font-weight: 700; 
-      transition: 0.2s;
-  }
-  .item-chip:hover { color: #fff; border-color: #666; }
-  .item-chip.active-item { background: var(--accent); color: #000; border-color: var(--accent); }
+  font-size: 0.78rem;
+  background: #202026;
+  border: 1px solid #3b3b44;
+  color: #a9a9b2;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  text-transform: none;
+  font-weight: 800;
+  transition: 0.16s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+}
 
-  /* ABILITIES (Interactive) */
-  .abil-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.item-chip-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  image-rendering: auto;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+}
+
+  .item-chip:hover { color: #fff; border-color: #656571; }
+
+  .item-chip.active-item {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(255,255,255,0.04), 0 0 12px var(--accent);
+  }
+
+  .stats-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: rgba(0,0,0,0.3);
+    border-radius: 12px;
+    padding: 16px 14px;
+    min-height: 0;
+  }
+
+  .stat-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1;
+    justify-content: space-between;
+    min-height: 370px;
+  }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: 52px 42px minmax(0, 1fr) 90px;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+  }
+
+  .stat-lbl {
+    font-size: 0.92rem;
+    font-weight: 900;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    text-align: left;
+    letter-spacing: 0.7px;
+  }
+
+  .stat-base {
+    min-width: 0;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #fff;
+    text-align: center;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 5px 4px;
+  }
+
+  .stat-boosted {
+    color: #00e5ff;
+    text-shadow: 0 0 6px #00e5ff;
+  }
+
+  .stat-bar-track {
+    position: relative;
+    height: 10px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.32));
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.45);
+  }
+
+  .stat-fill {
+    height: 100%;
+    border-radius: inherit;
+    transition: width 0.35s ease;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 0 10px currentColor;
+  }
+
+  .stat-range {
+    font-size: 0.84rem;
+    color: #666;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 999px;
+    padding: 6px 1px;
+    font-weight: 800;
+  }
+
+  .stat-range span:first-child { color: #ff6666; }
+  .stat-range span:last-child { color: #6bff92; }
+
+  .abil-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
   .abil-wrapper { position: relative; }
-  .abil-tag { 
-      background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 4px; font-size: 1.1rem; color: #ddd; 
-      cursor: pointer; transition: 0.2s; border: 1px solid transparent; user-select: none;
-  }
-  .abil-tag:hover { background: #444; }
-  .abil-tag.active-abil { 
-      background: var(--accent); color: #000; border-color: #fff; font-weight: 700; box-shadow: 0 0 10px var(--accent);
-  }
-  .abil-hidden { border: 1px dashed #666; color: #aaa; }
 
-  /* HOVER POPUP */
+  .abil-tag {
+    background: rgba(255,255,255,0.08);
+    padding: 7px 11px;
+    border-radius: 12px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #ddd;
+    cursor: pointer;
+    transition: 0.16s;
+    border: 1px solid transparent;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .abil-tag:hover { background: rgba(255,255,255,0.12); }
+
+  .abil-tag.active-abil {
+    background: var(--accent);
+    color: #000;
+    border-color: #fff;
+    box-shadow: 0 0 12px var(--accent);
+  }
+
+  .abil-hidden {
+    border: 1px dashed #6b6b73;
+    color: #aaa;
+  }
+
   .desc-popup {
-      position: absolute; top: 0; left: 100%; margin-left: 10px; width: 220px; 
-      background: #000; border: 1px solid #444; padding: 10px; border-radius: 6px;
-      font-size: 1rem; color: #ccc; z-index: 100; display: none; box-shadow: 0 5px 15px rgba(0,0,0,0.8);
-      line-height: 1.4; pointer-events: none;
-  }
-  .desc-popup::before {
-      content: ""; position: absolute; top: 10px; right: 100%;
-      border-width: 6px; border-style: solid; border-color: transparent #444 transparent transparent;
-  }
-
-  /* STATS */
-  .stat-grid { display: flex; flex-direction: column; gap: 6px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; }
-  .stat-row { display: flex; align-items: center; gap: 10px; height: 24px; }
-  .stat-lbl { width: 40px; font-size: 1rem; font-weight: 800; color: #888; text-transform: uppercase; text-align: right; }
-  .stat-base { width: 40px; font-size: 1.1rem; font-weight: 700; color: #fff; text-align: center; }
-  .stat-boosted { color: #00e5ff; text-shadow: 0 0 5px #00e5ff; } /* Cyan for boosted stats */
-  
-  .stat-bar-track { flex: 1; height: 6px; background: #333; border-radius: 3px; overflow: hidden; position: relative; }
-  .stat-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
-  
-  .stat-range { width: 90px; font-size: 1.1rem; color: #666; text-align: right; font-family: monospace; display: flex; justify-content: space-between; padding-left: 10px; }
-  .stat-range span:first-child { color: #ff5555; }
-  .stat-range span:last-child { color: #55ff55; }
-
-  /* DEFENSES */
-  /* Find this block and replace it to remove the bottom border line */
-  .b-header { 
-      display: flex; 
-      align-items: center; 
-      gap: 15px; 
-      /* Removed border-bottom and padding-bottom here */
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 240px;
+    background: #080808;
+    border: 1px solid #444;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 0.84rem;
+    color: #ccc;
+    z-index: 100;
+    display: none;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+    line-height: 1.45;
+    pointer-events: none;
   }
 
-  /* ... other CSS ... */
-
-  /* Replace the entire DEFENSES section with this to create the boxes */
-  /* DEFENSES */
-  .def-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-  
-  .def-tag { 
-      padding: 6px 12px; /* Added side padding for box look */
-      background: rgba(0, 0, 0, 0.6); /* Dark background */
-      border: 1px solid rgba(255, 255, 255, 0.15); /* Subtle border */
-      border-radius: 6px; 
-      font-size: 1.25rem; /* Increased multiplier font size */
-      font-weight: 700; 
-      display: flex; 
-      align-items: center; 
-      gap: 8px; 
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  .def-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
-  .mult-4 { color: #44ff44; border-color: rgba(68, 255, 68, 0.3); } 
-  .mult-2 { color: #88ff88; } 
-  .mult-05 { color: #ff8888; opacity: 0.9; } 
-  .mult-025 { color: #ff4444; } 
-  .mult-0 { color: #888; text-decoration: none; opacity: 0.7; }
+  .def-tag {
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.42);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    font-size: 0.92rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.22);
+    cursor: pointer;
+    transition: 0.15s;
+  }
 
-  .b-close { position: absolute; top: 10px; right: 10px; cursor: pointer; color: #555; transition: 0.2s; }
-  .b-close:hover { color: #ff4444; }
-  @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-  
+  .def-tag:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.24), 0 0 12px rgba(255,255,255,0.05);
+  }
+
+  .def-tag .type-badge {
+    font-size: 0.72rem;
+    padding: 6px 10px;
+  }
+
+  .mult-4 { color: #44ff88; border-color: rgba(68, 255, 136, 0.35); }
+  .mult-2 { color: #9dff8a; }
+  .mult-05 { color: #ff9898; }
+  .mult-025 { color: #ff5858; }
+  .mult-0 { color: #9a9aa3; opacity: 0.82; }
+
+  .neutral-note {
+    color: #777;
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.86);
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(6px);
+    padding: 14px;
+  }
+
+  .modal-content {
+    width: 560px;
+    max-width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    background: #151518;
+    border: 1px solid #414149;
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 24px 50px rgba(0,0,0,0.7);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 1px solid #2e2e34;
+    padding-bottom: 12px;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 900;
+    letter-spacing: 0.35px;
+  }
+
+  .close-modal {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #888;
+    transition: 0.15s;
+  }
+
+  .close-modal:hover { color: #fff; background: rgba(255,255,255,0.06); }
+
+  .type-grid-select {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(102px, 1fr));
+    gap: 10px;
+  }
+
+  .type-btn {
+    padding: 12px 10px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+    color: #fff;
+    text-align: center;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+    transition: 0.15s;
+    font-size: 0.9rem;
+    letter-spacing: 0.4px;
+  }
+
+  .type-btn:hover { transform: translateY(-1px) scale(1.01); filter: brightness(1.1); }
+
+  #type-detail-view { display: none; }
+
+  .back-btn {
+    align-self: flex-start;
+    background: none;
+    border: none;
+    color: #888;
+    font-weight: 800;
+    cursor: pointer;
+    padding: 0;
+    margin: 0 0 8px;
+    font-size: 0.86rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .back-btn:hover { color: #fff; }
+  .detail-group { margin-bottom: 18px; }
+  .detail-divider { border-top: 1px solid #2f2f36; margin: 10px 0 16px; }
+
+  .d-head {
+    font-size: 1.1rem;
+    font-weight: 900;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .d-sub {
+    font-size: 0.9rem;
+    color: #aaa;
+    margin-bottom: 8px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .icon-check { color: #44ff44; font-size: 1.1rem; }
+  .icon-cross { color: #ff4444; font-size: 1.1rem; }
+
+  .modal-selected-type { text-align: center; margin-bottom: 8px; }
+  .modal-selected-type .type-badge { font-size: 1.2rem; padding: 8px 18px; }
+
+  .type-match-chip {
+    padding: 6px 8px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: 0.15s;
+    color: inherit;
+    font-family: inherit;
+  }
+
+  .type-match-chip:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(255,255,255,0.05);
+  }
+
+  .type-match-chip .type-badge {
+    font-size: 0.74rem;
+    padding: 6px 10px;
+    border-radius: 999px;
+  }
+
+  .type-chip-mult {
+    font-size: 0.84rem;
+    font-weight: 900;
+    color: inherit;
+  }
+
+  .empty-matchup {
+    color: #666;
+    font-size: 0.9rem;
+    font-style: italic;
+  }
+
+  #build-modal .modal-content {
+    width: 510px;
+    padding: 18px;
+    gap: 12px;
+  }
+
+  .build-modal-note,
+  .import-modal-note {
+    margin-top: -4px;
+    color: #8f8f97;
+    font-size: 0.76rem;
+    line-height: 1.45;
+  }
+
+  .build-loading,
+  .build-empty,
+  .import-loading,
+  .import-empty {
+    color: #8d8d95;
+    font-size: 0.9rem;
+    padding: 8px 0 2px;
+  }
+
+  .build-list,
+  .import-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .build-card {
+    border-radius: 15px;
+    padding: 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.18));
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .build-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .build-card-title {
+    font-size: 0.96rem;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.2;
+  }
+
+  .build-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 5px;
+  }
+
+  .build-meta-chip,
+  .format-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    color: #d5d5dc;
+  }
+
+  .build-meta-chip .type-badge {
+    font-size: 0.68rem;
+    padding: 5px 8px;
+  }
+
+  .build-copy-btn {
+    flex: 0 0 auto;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: #ddd;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: 0.16s;
+  }
+
+  .build-copy-btn:hover {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+
+  .build-copy-btn.copied {
+    background: #1e8f4a;
+    color: #fff;
+    border-color: #1e8f4a;
+  }
+
+  .build-copy-btn .material-icons {
+    font-size: 14px;
+  }
+
+  .build-lines-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .build-line {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 8px 9px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .build-line-label {
+    font-size: 0.62rem;
+    color: #81818a;
+  }
+
+  .build-line-value {
+    min-width: 0;
+    color: #f3f3f6;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .moves-line {
+    gap: 8px;
+  }
+
+  .move-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .move-slot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .move-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.35px;
+    text-transform: none;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 10px rgba(0,0,0,0.18);
+  }
+
+  .move-pill.neutral {
+    background: #43434c;
+  }
+
+  .move-slash {
+    color: #666;
+    font-size: 0.75rem;
+    font-weight: 900;
+  }
+
+  .move-choice-note {
+    color: #7f7f88;
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+
+  #import-modal .modal-content {
+    width: 500px;
+    min-height: 0;
+    gap: 12px;
+  }
+
+  .import-choice {
+    --side-color: var(--accent);
+    width: 100%;
+    text-align: left;
+    padding: 14px;
+    border-radius: 15px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-left: 4px solid var(--side-color);
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.18));
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    cursor: pointer;
+    transition: 0.18s;
+  }
+
+  .import-choice:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: rgba(255,255,255,0.16);
+    box-shadow: 0 10px 22px rgba(0,0,0,0.28), 0 0 14px rgba(255,255,255,0.05);
+  }
+
+  .import-choice:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .import-choice-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .import-choice-role {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--side-color);
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.9px;
+    text-transform: uppercase;
+  }
+
+  .import-color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--side-color);
+    box-shadow: 0 0 10px var(--side-color);
+    flex-shrink: 0;
+  }
+
+  .import-count {
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: #c2c2ca;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    padding: 4px 10px;
+    white-space: nowrap;
+  }
+
+  .import-choice-name {
+    font-size: 1.08rem;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.15;
+    word-break: break-word;
+  }
+
+  .import-choice-preview {
+    color: #a8a8b0;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  .import-choice-action {
+    align-self: flex-start;
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.85px;
+    text-transform: uppercase;
+    color: #fff;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    padding: 6px 10px;
+  }
+
   .t-normal { background:#A8A77A; } .t-fire { background:#EE8130; } .t-water { background:#6390F0; }
   .t-electric { background:#F7D02C; } .t-grass { background:#7AC74C; } .t-ice { background:#96D9D6; }
   .t-fighting { background:#C22E28; } .t-poison { background:#A33EA1; } .t-ground { background:#E2BF65; }
   .t-flying { background:#A98FF3; } .t-psychic { background:#F95587; } .t-bug { background:#A6B91A; }
   .t-rock { background:#B6A136; } .t-ghost { background:#735797; } .t-dragon { background:#6F35FC; }
   .t-dark { background:#705746; } .t-steel { background:#B7B7CE; } .t-fairy { background:#D685AD; }
-  
-  /* FORMS */
-  .form-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 5px; }
-  .form-chip { background: #333; color: #aaa; padding: 4px 8px; border-radius: 4px; font-size: 1rem; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
-  .form-chip:hover { color: #fff; background: #444; }
-  .form-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(255,255,255,0.05); font-weight: 700; }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 1180px) {
+    #battle-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 980px) {
+    .b-card-layout { grid-template-columns: 1fr; }
+    .b-right-column { order: 2; }
+    .b-left-column { order: 1; }
+    .stats-panel { min-height: 320px; }
+  }
+
+  @media (max-width: 720px) {
+    body { padding: 14px; }
+    .search-row { flex-direction: column; }
+    .search-actions { width: 100%; flex-wrap: wrap; }
+    .search-actions > button { height: 42px; }
+    .btn-add, .btn-clear, .btn-types { flex: 1 1 110px; width: auto; }
+    .btn-import { width: 42px; min-width: 42px; flex: 0 0 42px; }
+    .profile-top { grid-template-columns: 148px minmax(0, 1fr); gap: 12px; }
+    .b-sprite-wrap { min-height: 148px; }
+    .b-sprite { height: 144px; width: min(100%, 144px); }
+    .stat-row {
+      grid-template-columns: 44px 42px minmax(0, 1fr);
+      grid-template-areas:
+        "lbl base range"
+        "bar bar bar";
+      row-gap: 8px;
+    }
+    .stat-lbl { grid-area: lbl; }
+    .stat-base { grid-area: base; }
+    .stat-range { grid-area: range; }
+    .stat-bar-track { grid-area: bar; }
+    .build-lines-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 560px) {
+    .profile-top { grid-template-columns: 1fr; }
+    .b-sprite-wrap { min-height: 164px; }
+    .b-types { justify-content: flex-start; }
+    .modal-content,
+    #build-modal .modal-content,
+    #import-modal .modal-content { padding: 16px; border-radius: 16px; }
+    .type-grid-select { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .import-choice-top { align-items: flex-start; flex-direction: column; }
+  }
 </style>
 </head>
 <body>
 
-  <div class="search-row">
+<div class="search-row">
+  <div class="search-input-wrap">
     <input type="text" id="poke-search" class="poke-input" placeholder="Type Pokemon Name..." oninput="handleInput(this.value)" onkeypress="handleEnter(event)" autocomplete="off">
     <div id="autocomplete-list"></div>
-    <button class="btn-add" onclick="addPokemon()">ADD</button>
-    <button class="btn-clear" onclick="clearAllCards()">CLEAR</button>
-    
-    <button class="btn-types" onclick="openTypeModal()">TYPES</button>
+  </div>
+  <div class="search-actions">
+    <button class="btn-import" onclick="openImportModal()" title="Import Pokemon from side columns">
+      <span class="material-icons">file_download</span>
+    </button>
+    <button class="btn-add" onclick="addPokemon()">Add</button>
+    <button class="btn-clear" onclick="clearAllCards()">Clear</button>
+    <button class="btn-types" onclick="openTypeModal()">Types</button>
+  </div>
 </div>
 
-  <div id="battle-grid"></div>
+<div id="battle-grid"></div>
 
-  <div id="type-modal" class="modal-overlay" onclick="closeTypeModal(event)">
+<div id="type-modal" class="modal-overlay" onclick="closeTypeModal(event)">
   <div class="modal-content">
     <div class="modal-header">
-      <h3 style="margin:0">Type Matchups</h3>
+      <h3>Type Matchups</h3>
       <span class="close-modal" onclick="closeTypeModal()">×</span>
     </div>
     <div class="type-grid-select" id="type-selector"></div>
-    <div id="type-detail-view" style="display:none;">
-       <button class="back-btn" onclick="resetTypeModal()">← Select Type</button>
-       <div id="type-data-content"></div>
+    <div id="type-detail-view">
+      <button class="back-btn" onclick="resetTypeModal()">← Select Type</button>
+      <div id="type-data-content"></div>
     </div>
   </div>
 </div>
 
+<div id="import-modal" class="modal-overlay" onclick="closeImportModal(event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Import from Columns</h3>
+      <span class="close-modal" onclick="closeImportModal()">×</span>
+    </div>
+    <div class="import-modal-note">Choose a side to import every Pokemon currently shown in that column.</div>
+    <div id="import-modal-status" class="import-loading">Loading column data...</div>
+    <div id="import-modal-list" class="import-list"></div>
+  </div>
+</div>
 
+<div id="build-modal" class="modal-overlay" onclick="closeBuildModal(event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="build-modal-title">Common Builds</h3>
+      <span class="close-modal" onclick="closeBuildModal()">×</span>
+    </div>
+    <div class="build-modal-note">Copy creates a Pokemon Showdown importable. If a slot has multiple move choices, the first move in that slot is used for the copy.</div>
+    <div id="build-modal-status" class="build-loading">Loading builds...</div>
+    <div id="build-modal-list" class="build-list"></div>
+  </div>
+</div>
 
 <script>
   window.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'THEME_UPDATE') {
-          document.documentElement.style.setProperty('--accent', event.data.color);
-      }
+    if (event.data && event.data.type === 'THEME_UPDATE') {
+      document.documentElement.style.setProperty('--accent', event.data.color);
+    }
   });
-  if(window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
+  if (window.parent) window.parent.postMessage({ type: 'REQUEST_THEME' }, '*');
 
-  // --- ABILITY EFFECTS DATABASE ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyDz82Dp56EISYqk3hza3upJ2pAjsStgMKo",
+    authDomain: "pokemon-masters-d153a.firebaseapp.com",
+    databaseURL: "https://pokemon-masters-d153a-default-rtdb.firebaseio.com",
+    projectId: "pokemon-masters-d153a",
+    storageBucket: "pokemon-masters-d153a.firebasestorage.app",
+    messagingSenderId: "67655442054",
+    appId: "1:67655442054:web:705baa26ffda58b5d3fb07",
+    measurementId: "G-LGW9RJZDP3"
+  };
+
+  let battleDb = null;
+
+  function getBattleDb() {
+    try {
+      if (window.parent && window.parent !== window && window.parent.db) return window.parent.db;
+    } catch (err) {}
+
+    if (!window.firebase) return null;
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    if (!battleDb) battleDb = firebase.database();
+    return battleDb;
+  }
+
   const ABILITY_MAP = {
-      'levitate': { typeMod: {'ground': 0} },
-      'flash-fire': { typeMod: {'fire': 0} },
-      'volt-absorb': { typeMod: {'electric': 0} },
-      'lightning-rod': { typeMod: {'electric': 0} },
-      'motor-drive': { typeMod: {'electric': 0} },
-      'water-absorb': { typeMod: {'water': 0} },
-      'storm-drain': { typeMod: {'water': 0} },
-      'sap-sipper': { typeMod: {'grass': 0} },
-      'earth-eater': { typeMod: {'ground': 0} },
-      'dry-skin': { typeMod: {'water': 0, 'fire': 1.25} },
-      'thick-fat': { typeMod: {'fire': 0.5, 'ice': 0.5} },
-      'heatproof': { typeMod: {'fire': 0.5} },
-      'water-bubble': { typeMod: {'fire': 0.5} },
-      'purifying-salt': { typeMod: {'ghost': 0.5} },
-      'fluffy': { typeMod: {'fire': 2} },
-      'wonder-guard': { special: 'wonder_guard' },
-      
-      'huge-power': { statMod: {'attack': 2} },
-      'pure-power': { statMod: {'attack': 2} },
-      'fur-coat': { statMod: {'defense': 2} },
-      'gorilla-tactics': { statMod: {'attack': 1.5} },
-      'intrepid-sword': { statMod: {'attack': 1.5} },
-      'dauntless-shield': { statMod: {'defense': 1.5} }
+    'levitate': { typeMod: {'ground': 0} },
+    'flash-fire': { typeMod: {'fire': 0} },
+    'volt-absorb': { typeMod: {'electric': 0} },
+    'lightning-rod': { typeMod: {'electric': 0} },
+    'motor-drive': { typeMod: {'electric': 0} },
+    'water-absorb': { typeMod: {'water': 0} },
+    'storm-drain': { typeMod: {'water': 0} },
+    'sap-sipper': { typeMod: {'grass': 0} },
+    'earth-eater': { typeMod: {'ground': 0} },
+    'dry-skin': { typeMod: {'water': 0, 'fire': 1.25} },
+    'thick-fat': { typeMod: {'fire': 0.5, 'ice': 0.5} },
+    'heatproof': { typeMod: {'fire': 0.5} },
+    'water-bubble': { typeMod: {'fire': 0.5} },
+    'purifying-salt': { typeMod: {'ghost': 0.5} },
+    'fluffy': { typeMod: {'fire': 2} },
+    'wonder-guard': { special: 'wonder_guard' },
+    'huge-power': { statMod: {'attack': 2} },
+    'pure-power': { statMod: {'attack': 2} },
+    'fur-coat': { statMod: {'defense': 2} },
+    'gorilla-tactics': { statMod: {'attack': 1.5} },
+    'intrepid-sword': { statMod: {'attack': 1.5} },
+    'dauntless-shield': { statMod: {'defense': 1.5} }
   };
 
-  // --- ITEM EFFECTS DATABASE ---
   const ITEM_MAP = {
-      'band': { statMod: {'attack': 1.5} },
-      'specs': { statMod: {'special-attack': 1.5} },
-      'scarf': { statMod: {'speed': 1.5} },
-      'orb': { statMod: {'attack': 1.3, 'special-attack': 1.3} },
-      'vest': { statMod: {'special-defense': 1.5} },
-      'eviolite': { statMod: {'defense': 1.5, 'special-defense': 1.5} }
+    'band': { statMod: {'attack': 1.5} },
+    'specs': { statMod: {'special-attack': 1.5} },
+    'scarf': { statMod: {'speed': 1.5} },
+    'orb': { statMod: {'attack': 1.3, 'special-attack': 1.3} },
+    'vest': { statMod: {'special-defense': 1.5} },
+    'eviolite': { statMod: {'defense': 1.5, 'special-defense': 1.5} }
   };
 
-  // --- AUTOCOMPLETE LOGIC ---
-    let allPokemonNames = [];
-  fetch('https://pokeapi.co/api/v2/pokemon-species?limit=10000')
-      .then(res => res.json())
-      .then(data => { allPokemonNames = data.results.map(p => p.name); });
-
-  function handleInput(val) {
-      const list = document.getElementById('autocomplete-list');
-      list.innerHTML = '';
-      if (!val) { list.style.display = 'none'; return; }
-      const matches = allPokemonNames.filter(n => n.includes(val.toLowerCase())).slice(0, 10);
-      if (matches.length === 0) { list.style.display = 'none'; return; }
-      matches.forEach(name => {
-          const div = document.createElement('div');
-          div.className = 'auto-item';
-          const regex = new RegExp(`(${val})`, 'gi');
-          div.innerHTML = name.replace(regex, '<span class="auto-match">$1</span>');
-          div.onclick = () => {
-              document.getElementById('poke-search').value = name;
-              list.style.display = 'none';
-              addPokemon();
-          };
-          list.appendChild(div);
-      });
-      list.style.display = 'block';
-  }
-  document.addEventListener('click', (e) => {
-      if (!e.target.closest('.search-row')) document.getElementById('autocomplete-list').style.display = 'none';
-  });
-
-  // --- CLEAR FUNCTION ---
-  function clearAllCards() {
-      document.getElementById('battle-grid').innerHTML = "";
-  }
-
-  // --- DATA LOADING ---
   const typeChart = {
     normal: { fighting: 2, ghost: 0 },
     fire: { fire: 0.5, water: 2, grass: 0.5, ice: 0.5, ground: 2, bug: 0.5, rock: 2, steel: 0.5, fairy: 0.5 },
@@ -452,441 +1379,1144 @@
     fairy: { fighting: 0.5, poison: 2, bug: 0.5, dragon: 0, dark: 0.5, steel: 2 }
   };
 
-  function handleEnter(e) { if(e.key === 'Enter') addPokemon(); }
+  const ITEM_OPTIONS = [
+  { id: 'band', label: 'Choice Band', icon: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/choice-band.png' },
+  { id: 'specs', label: 'Choice Specs', icon: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/choice-specs.png' },
+  { id: 'scarf', label: 'Choice Scarf', icon: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/choice-scarf.png' },
+  { id: 'orb', label: 'Life Orb', icon: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/life-orb.png' },
+  { id: 'vest', label: 'Assault Vest', icon: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/assault-vest.png' },
+  { id: 'eviolite', label: 'Eviolite', icon: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/eviolite.png' }
+];
 
-    async function fetchBattlePokemon(name) {
-      const clean = name.trim().toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
-      if (!clean) throw new Error('Empty name');
+  const BUILD_FETCH_URLS = [
+    'https://pkmn.github.io/smogon/data/sets/gen9.json',
+    'https://pkmn.github.io/smogon/data/sets/gen8.json',
+    'https://pkmn.github.io/smogon/data/sets/gen7.json'
+  ];
 
-      // Exact form lookup still works
-      const monRes = await fetch(`https://pokeapi.co/api/v2/pokemon/${clean}`);
-      if (monRes.ok) {
-          const pData = await monRes.json();
-          const sData = await fetch(pData.species.url).then(r => r.json());
-          return { pData, sData };
-      }
+  const BUILD_DATA_STATE = {
+    loadPromise: null,
+    movePromise: null,
+    mergedSets: null,
+    buildIndex: null,
+    moveTypeMap: null
+  };
 
-      // Base species fallback
-      const speciesRes = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${clean}`);
-      if (!speciesRes.ok) throw new Error('Not Found');
+  const BUILD_MODAL_STATE = {
+    cardId: null,
+    builds: []
+  };
 
-      const sData = await speciesRes.json();
-      const defaultVariety = (sData.varieties || []).find(v => v.is_default) || sData.varieties[0];
+  const IMPORT_MODAL_STATE = {
+    choices: []
+  };
 
-      if (!defaultVariety || !defaultVariety.pokemon || !defaultVariety.pokemon.url) {
-          throw new Error('No default variety');
-      }
+  const allTypes = Object.keys(typeChart);
+  let allPokemonNames = [];
 
-      const pData = await fetch(defaultVariety.pokemon.url).then(r => r.json());
-      return { pData, sData };
+  fetch('https://pokeapi.co/api/v2/pokemon?limit=10000')
+    .then(res => res.json())
+    .then(data => { allPokemonNames = data.results.map(p => p.name); })
+    .catch(() => { allPokemonNames = []; });
+
+  function toId(text) {
+    return String(text || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
   }
 
-    async function addPokemon() {
-      const input = document.getElementById('poke-search');
-      const val = input.value;
-      if (!val) return;
+  function prettifyName(name) {
+    return String(name || '').replace(/-/g, ' ');
+  }
 
-      const list = val.split('/');
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
-      for (let raw of list) {
-          let name = raw.trim().toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
-          if (!name) continue;
+  function statLabel(key) {
+    const map = {
+      hp: 'HP', atk: 'Atk', def: 'Def', spa: 'SpA', spd: 'SpD', spe: 'Spe',
+      attack: 'Atk', defense: 'Def', speed: 'Spe', 'special-attack': 'SpA', 'special-defense': 'SpD'
+    };
+    return map[key] || String(key || '').toUpperCase();
+  }
 
-          try {
-              const { pData, sData } = await fetchBattlePokemon(name);
-              renderCard(pData, sData);
-          } catch (e) {
-              console.error(e);
-          }
+  function normalizeSpreadObject(obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return {};
+    const out = {};
+    Object.keys(obj).forEach(key => {
+      const val = Number(obj[key]);
+      if (!Number.isNaN(val) && val >= 0) out[key] = val;
+    });
+    return out;
+  }
+
+  function formatStatSpread(stats) {
+    const normalized = normalizeSpreadObject(stats);
+    const order = ['hp', 'atk', 'def', 'spa', 'spd', 'spe', 'special-attack', 'special-defense', 'speed', 'attack', 'defense'];
+    const seen = new Set();
+    const parts = [];
+
+    order.forEach(key => {
+      if (seen.has(key)) return;
+      if (normalized[key] > 0) {
+        parts.push(`${normalized[key]} ${statLabel(key)}`);
+        seen.add(key);
       }
+    });
 
-      input.value = "";
+    Object.keys(normalized).forEach(key => {
+      if (!seen.has(key) && normalized[key] > 0) parts.push(`${normalized[key]} ${statLabel(key)}`);
+    });
+
+    return parts.join(' / ');
+  }
+
+  function getFirstValue(value) {
+    if (Array.isArray(value)) return value.find(Boolean) || '';
+    return value || '';
+  }
+
+  function normalizeMoveSlots(rawMoves) {
+    if (!Array.isArray(rawMoves)) return [];
+    return rawMoves.map(slot => {
+      if (Array.isArray(slot)) return slot.flat().filter(Boolean).map(String);
+      if (typeof slot === 'string' && slot.includes(' / ')) return slot.split(' / ').map(part => part.trim()).filter(Boolean);
+      if (slot) return [String(slot)];
+      return [];
+    }).filter(slot => slot.length > 0);
+  }
+
+  function normalizeBuildSet(setName, formatKey, rawSet, exportName, fallbackAbility = '') {
+  const spreadNature = rawSet && Array.isArray(rawSet.spreads) && rawSet.spreads[0] ? rawSet.spreads[0].nature : '';
+  const spreadEvs = rawSet && Array.isArray(rawSet.spreads) && rawSet.spreads[0] ? rawSet.spreads[0].evs : null;
+  const spreadIvs = rawSet && Array.isArray(rawSet.spreads) && rawSet.spreads[0] ? rawSet.spreads[0].ivs : null;
+
+  const moves = normalizeMoveSlots(rawSet ? rawSet.moves : []);
+  const teraType = getFirstValue(rawSet ? (rawSet.teraType || rawSet.teraTypes) : '');
+  const setAbility = getFirstValue(rawSet ? (rawSet.ability || rawSet.abilities) : '') || fallbackAbility || '';
+
+  return {
+    setName: setName || 'Common Set',
+    formatKey: formatKey || '',
+    formatLabel: formatKey ? formatKey.replace(/_/g, ' ').replace(/gen(\d+)/i, 'Gen $1 ').trim().toUpperCase() : 'SET',
+    exportName: exportName || '',
+    item: getFirstValue(rawSet ? (rawSet.item || rawSet.items) : ''),
+    ability: setAbility,
+    nature: getFirstValue(rawSet ? (rawSet.nature || rawSet.natures) : '') || spreadNature || '',
+    evs: normalizeSpreadObject(rawSet ? (rawSet.evs || spreadEvs) : {}),
+    ivs: normalizeSpreadObject(rawSet ? (rawSet.ivs || spreadIvs) : {}),
+    teraType: teraType || '',
+    level: rawSet && rawSet.level ? rawSet.level : null,
+    moveSlots: moves,
+    hasAlternatives: moves.some(slot => slot.length > 1)
+  };
+}
+
+  function buildLookupCandidates(p, s) {
+    const raw = [p?.name, p?.species?.name, s?.name];
+    const candidates = new Set();
+    raw.filter(Boolean).forEach(value => {
+      candidates.add(toId(value));
+      candidates.add(toId(String(value).replace(/-/g, ' ')));
+    });
+
+    const name = String((p && p.name) || '');
+    if (name.startsWith('urshifu-single')) { candidates.add('urshifusinglestrike'); candidates.add('urshifu'); }
+    if (name.startsWith('urshifu-rapid')) candidates.add('urshifurapidstrike');
+    if (name.startsWith('deoxys-')) candidates.add('deoxys');
+    if (name.startsWith('toxtricity-')) candidates.add('toxtricity');
+    if (name.startsWith('lycanroc-')) candidates.add('lycanroc');
+    if (name.startsWith('rotom-')) candidates.add('rotom');
+
+    return Array.from(candidates).filter(Boolean);
+  }
+
+  function buildBuildIndex(source) {
+    const index = {};
+    Object.keys(source || {}).forEach(key => {
+      const ids = new Set([toId(key), toId(key.replace(/-/g, ' '))]);
+      if (/^Urshifu(?:$|[^A-Za-z])/i.test(key)) ids.add('urshifu');
+      ids.forEach(id => {
+        if (!index[id]) index[id] = [];
+        index[id].push(key);
+      });
+    });
+    BUILD_DATA_STATE.buildIndex = index;
+    return index;
+  }
+
+  function getParentSmogonData() {
+    try {
+      if (window.parent && window.parent !== window && window.parent.smogonData && Object.keys(window.parent.smogonData).length) {
+        return window.parent.smogonData;
+      }
+    } catch (err) {}
+    return null;
+  }
+
+  function ensureBuildData() {
+    if (BUILD_DATA_STATE.mergedSets) return Promise.resolve(BUILD_DATA_STATE.mergedSets);
+    if (BUILD_DATA_STATE.loadPromise) return BUILD_DATA_STATE.loadPromise;
+
+    const parentData = getParentSmogonData();
+    if (parentData) {
+      BUILD_DATA_STATE.mergedSets = parentData;
+      if (!BUILD_DATA_STATE.buildIndex) buildBuildIndex(parentData);
+      return Promise.resolve(parentData);
+    }
+
+    BUILD_DATA_STATE.loadPromise = Promise.allSettled(
+      BUILD_FETCH_URLS.map(url => fetch(url).then(res => {
+        if (!res.ok) throw new Error('Failed build fetch');
+        return res.json();
+      }))
+    ).then(results => {
+      const merged = {};
+      results.forEach(result => {
+        if (result.status !== 'fulfilled' || !result.value) return;
+        Object.keys(result.value).forEach(key => {
+          merged[key] = Object.assign({}, result.value[key], merged[key] || {});
+        });
+      });
+      if (!Object.keys(merged).length) throw new Error('No build data returned');
+      BUILD_DATA_STATE.mergedSets = merged;
+      buildBuildIndex(merged);
+      return merged;
+    }).finally(() => {
+      BUILD_DATA_STATE.loadPromise = null;
+    });
+
+    return BUILD_DATA_STATE.loadPromise;
+  }
+
+  function ensureMoveTypes() {
+    if (BUILD_DATA_STATE.moveTypeMap) return Promise.resolve(BUILD_DATA_STATE.moveTypeMap);
+    if (BUILD_DATA_STATE.movePromise) return BUILD_DATA_STATE.movePromise;
+
+    BUILD_DATA_STATE.movePromise = fetch('https://play.pokemonshowdown.com/data/moves.json')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed moves fetch');
+        return res.json();
+      })
+      .then(data => {
+        const map = {};
+        Object.keys(data || {}).forEach(key => {
+          const entry = data[key] || {};
+          if (entry.type) {
+            map[toId(key)] = entry.type;
+            if (entry.name) map[toId(entry.name)] = entry.type;
+          }
+        });
+        BUILD_DATA_STATE.moveTypeMap = map;
+        return map;
+      })
+      .catch(() => {
+        BUILD_DATA_STATE.moveTypeMap = {};
+        return {};
+      })
+      .finally(() => {
+        BUILD_DATA_STATE.movePromise = null;
+      });
+
+    return BUILD_DATA_STATE.movePromise;
+  }
+
+  function getResolvedBuildKeys(p, s) {
+    const source = BUILD_DATA_STATE.mergedSets || {};
+    const index = BUILD_DATA_STATE.buildIndex || buildBuildIndex(source);
+    const candidates = buildLookupCandidates(p, s);
+    const exact = [];
+    const fuzzy = [];
+    const seen = new Set();
+
+    candidates.forEach(candidate => {
+      (index[candidate] || []).forEach(key => {
+        if (!seen.has(key)) {
+          exact.push(key);
+          seen.add(key);
+        }
+      });
+    });
+
+    if (!exact.length) {
+      Object.keys(source).forEach(key => {
+        const id = toId(key);
+        if (candidates.some(candidate => id.includes(candidate) || candidate.includes(id))) {
+          if (!seen.has(key)) {
+            fuzzy.push(key);
+            seen.add(key);
+          }
+        }
+      });
+    }
+
+    return exact.concat(fuzzy);
+  }
+
+  function extractBuildsForPokemon(p, s) {
+  const source = BUILD_DATA_STATE.mergedSets || {};
+  const resolvedKeys = getResolvedBuildKeys(p, s);
+  const builds = [];
+  const seen = new Set();
+
+  const fallbackAbility = Array.isArray(p && p.abilities) && p.abilities.length === 1
+    ? prettifyName(p.abilities[0].ability.name).replace(/\b\w/g, char => char.toUpperCase())
+    : '';
+
+  resolvedKeys.forEach(key => {
+    const formats = source[key] || {};
+    Object.keys(formats).forEach(formatKey => {
+      const sets = formats[formatKey] || {};
+      Object.keys(sets).forEach(setName => {
+        const signature = `${key}::${formatKey}::${setName}`;
+        if (seen.has(signature)) return;
+        seen.add(signature);
+        builds.push(normalizeBuildSet(setName, formatKey, sets[setName], key, fallbackAbility));
+      });
+    });
+  });
+
+    const preferred = ['GEN 9 OU', 'GEN 9 UBERS', 'GEN 9 UU', 'GEN 9 NATDEX', 'GEN 8 OU', 'GEN 8 UBERS', 'GEN 7 OU'];
+    builds.sort((a, b) => {
+      const aIndex = preferred.indexOf(a.formatLabel);
+      const bIndex = preferred.indexOf(b.formatLabel);
+      const safeA = aIndex === -1 ? 999 : aIndex;
+      const safeB = bIndex === -1 ? 999 : bIndex;
+      if (safeA !== safeB) return safeA - safeB;
+      if (a.exportName !== b.exportName) return a.exportName.localeCompare(b.exportName);
+      return a.setName.localeCompare(b.setName);
+    });
+
+    return builds.slice(0, 6);
+  }
+
+  function getMoveType(moveName) {
+    if (!moveName || !BUILD_DATA_STATE.moveTypeMap) return '';
+    return BUILD_DATA_STATE.moveTypeMap[toId(moveName)] || '';
+  }
+
+  function formatShowdownSet(build) {
+    const lines = [];
+    const header = build.item ? `${build.exportName} @ ${build.item}` : build.exportName;
+    lines.push(header);
+    if (build.ability) lines.push(`Ability: ${build.ability}`);
+    if (build.level) lines.push(`Level: ${build.level}`);
+    if (build.teraType) lines.push(`Tera Type: ${build.teraType}`);
+    const evText = formatStatSpread(build.evs);
+    const ivText = formatStatSpread(build.ivs);
+    if (evText) lines.push(`EVs: ${evText}`);
+    if (ivText) lines.push(`IVs: ${ivText}`);
+    if (build.nature) lines.push(`${build.nature} Nature`);
+    build.moveSlots.forEach(slot => {
+      const move = slot && slot.length ? slot[0] : '';
+      if (move) lines.push(`- ${move}`);
+    });
+    return lines.join('\n');
+  }
+
+  function renderMoveSlot(slot) {
+    return `
+      <div class="move-slot">
+        ${slot.map((move, idx) => {
+          const moveType = getMoveType(move);
+          const typeClass = moveType ? `t-${toId(moveType)}` : 'neutral';
+          return `${idx > 0 ? '<span class="move-slash">/</span>' : ''}<span class="move-pill ${typeClass}">${escapeHtml(move)}</span>`;
+        }).join('')}
+      </div>`;
+  }
+
+  function renderBuildCard(build, index) {
+    const evText = formatStatSpread(build.evs) || 'Standard spread';
+    const ivText = formatStatSpread(build.ivs);
+    const teraChip = build.teraType
+      ? `<span class="build-meta-chip"><span class="build-meta-label">Tera</span><span class="type-badge t-${toId(build.teraType)}">${escapeHtml(build.teraType)}</span></span>`
+      : '';
+
+    return `
+      <div class="build-card">
+        <div class="build-card-header">
+          <div>
+            <div class="build-card-title">${escapeHtml(build.setName)}</div>
+            <div class="build-card-meta">
+              <span class="format-chip">${escapeHtml(build.formatLabel)}</span>
+              ${teraChip}
+            </div>
+          </div>
+          <button class="build-copy-btn" onclick="copyBuildSet(${index}, this)">
+            <span class="material-icons">content_copy</span>
+            Copy
+          </button>
+        </div>
+        <div class="build-lines-grid">
+          <div class="build-line"><span class="build-line-label">Item</span><span class="build-line-value">${escapeHtml(build.item || '—')}</span></div>
+          <div class="build-line"><span class="build-line-label">Ability</span><span class="build-line-value">${escapeHtml(build.ability || '—')}</span></div>
+          <div class="build-line"><span class="build-line-label">Nature</span><span class="build-line-value">${escapeHtml(build.nature ? `${build.nature} Nature` : '—')}</span></div>
+          <div class="build-line"><span class="build-line-label">EVs</span><span class="build-line-value">${escapeHtml(evText)}</span></div>
+          ${ivText ? `<div class="build-line"><span class="build-line-label">IVs</span><span class="build-line-value">${escapeHtml(ivText)}</span></div>` : ''}
+        </div>
+        <div class="build-line moves-line">
+          <span class="build-line-label">Moves</span>
+          <div class="move-stack">${build.moveSlots.map(renderMoveSlot).join('')}</div>
+        </div>
+        ${build.hasAlternatives ? '<div class="move-choice-note">Copy uses the first move whenever a slot shows multiple choices.</div>' : ''}
+      </div>`;
+  }
+
+  function showBuildStatus(text, isEmpty) {
+    const status = document.getElementById('build-modal-status');
+    status.className = isEmpty ? 'build-empty' : 'build-loading';
+    status.textContent = text;
+    status.style.display = 'block';
+  }
+
+  function renderBuildModal(builds) {
+    const list = document.getElementById('build-modal-list');
+    if (!builds.length) {
+      list.innerHTML = '';
+      showBuildStatus('No common builds were found for this Pokemon.', true);
+      return;
+    }
+    document.getElementById('build-modal-status').style.display = 'none';
+    list.innerHTML = builds.map((build, index) => renderBuildCard(build, index)).join('');
+  }
+
+  async function copyBuildSet(index, button) {
+    const build = BUILD_MODAL_STATE.builds[index];
+    if (!build) return;
+    const text = formatShowdownSet(build);
+
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      const area = document.createElement('textarea');
+      area.value = text;
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand('copy');
+      area.remove();
+    }
+
+    if (button) {
+      const original = button.innerHTML;
+      button.classList.add('copied');
+      button.innerHTML = '<span class="material-icons">check</span>Copied';
+      setTimeout(() => {
+        button.classList.remove('copied');
+        button.innerHTML = original;
+      }, 1200);
+    }
+  }
+
+  async function openBuildModal(cardId) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+
+    const modal = document.getElementById('build-modal');
+    const list = document.getElementById('build-modal-list');
+    const title = document.getElementById('build-modal-title');
+
+    BUILD_MODAL_STATE.cardId = cardId;
+    BUILD_MODAL_STATE.builds = [];
+
+    title.textContent = `${prettifyName(card._pData.name)} · Common Builds`;
+    list.innerHTML = '';
+    showBuildStatus('Loading builds...', false);
+    modal.style.display = 'flex';
+
+    try {
+      await Promise.all([ensureBuildData(), ensureMoveTypes()]);
+      const builds = extractBuildsForPokemon(card._pData, card._sData);
+      BUILD_MODAL_STATE.builds = builds;
+      renderBuildModal(builds);
+    } catch (err) {
+      list.innerHTML = '';
+      showBuildStatus('Build data could not be loaded right now.', true);
+    }
+  }
+
+  function closeBuildModal(event) {
+    if (!event || event.target.id === 'build-modal' || event.target.classList.contains('close-modal')) {
+      document.getElementById('build-modal').style.display = 'none';
+    }
+  }
+
+  function showImportStatus(text, isEmpty) {
+    const status = document.getElementById('import-modal-status');
+    status.className = isEmpty ? 'import-empty' : 'import-loading';
+    status.textContent = text;
+    status.style.display = 'block';
+  }
+
+  function normalizePokemonQuery(value) {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/♀/g, '-f')
+      .replace(/♂/g, '-m')
+      .replace(/[’']/g, '')
+      .replace(/[.:]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
+  }
+
+  function getPokemonQueryCandidates(rawValue) {
+    const primary = normalizePokemonQuery(rawValue);
+    const compact = primary.replace(/-/g, '');
+    const specialMap = {
+      mrmime: 'mr-mime', mrrime: 'mr-rime', mimejr: 'mime-jr', porygonz: 'porygon-z', nidoranf: 'nidoran-f', nidoranm: 'nidoran-m',
+      hooh: 'ho-oh', kommoo: 'kommo-o', hakamoo: 'hakamo-o', jangmoo: 'jangmo-o', tapukoko: 'tapu-koko', tapulele: 'tapu-lele',
+      tapubulu: 'tapu-bulu', tapufini: 'tapu-fini', tinglu: 'ting-lu', chienpao: 'chien-pao', wochien: 'wo-chien', chiyu: 'chi-yu',
+      landorustherian: 'landorus-therian', tornadustherian: 'tornadus-therian', thundurustherian: 'thundurus-therian', enamorustherian: 'enamorus-therian',
+      deoxysattack: 'deoxys-attack', deoxysdefense: 'deoxys-defense', deoxysspeed: 'deoxys-speed', urshifurapidstrike: 'urshifu-rapid-strike',
+      urshifusinglestrike: 'urshifu-single-strike', rotomwash: 'rotom-wash', rotomheat: 'rotom-heat', rotomfrost: 'rotom-frost', rotommow: 'rotom-mow',
+      rotomfan: 'rotom-fan', basculegionf: 'basculegion-female', indeedeef: 'indeedee-female', meowsticf: 'meowstic-female', oinkolognef: 'oinkologne-female',
+      toxtricitylowkey: 'toxtricity-low-key', lycanrocdusk: 'lycanroc-dusk', lycanrocmidnight: 'lycanroc-midnight', lycanrocmidday: 'lycanroc-midday',
+      calyrexice: 'calyrex-ice', calyrexshadow: 'calyrex-shadow', zaciancrowned: 'zacian-crowned', zamazentacrowned: 'zamazenta-crowned', wishiwashischool: 'wishiwashi-school'
+    };
+
+    const candidates = [primary];
+    if (specialMap[primary]) candidates.push(specialMap[primary]);
+    if (specialMap[compact]) candidates.push(specialMap[compact]);
+    if (compact && compact !== primary) candidates.push(compact);
+    return Array.from(new Set(candidates.filter(Boolean)));
+  }
+
+  async function addPokemonFromSource(rawValue) {
+    const candidates = getPokemonQueryCandidates(rawValue);
+    let lastError = null;
+
+    for (const name of candidates) {
+      try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
+        if (!res.ok) throw new Error('Not Found');
+        const pData = await res.json();
+        const resSpec = await fetch(pData.species.url);
+        const sData = await resSpec.json();
+        renderCard(pData, sData);
+        return true;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (lastError) console.error(lastError);
+    return false;
+  }
+
+  function normalizeColumnPokemonList(list) {
+    if (!Array.isArray(list)) return [];
+    return list.map(entry => {
+      if (!entry) return null;
+      if (typeof entry === 'string') {
+        const name = String(entry).trim();
+        return name ? { name, id: toId(name) } : null;
+      }
+      const name = String(entry.name || entry.text || entry.id || '').trim();
+      const id = String(entry.id || '').trim();
+      return name ? { name, id } : null;
+    }).filter(Boolean);
+  }
+
+  function getImportChoicesFromParent() {
+    try {
+      if (!window.parent || window.parent === window || !window.parent.document) return null;
+      const rootStyles = window.parent.getComputedStyle(window.parent.document.documentElement);
+      const p1NameEl = window.parent.document.getElementById('disp-p1-name');
+      const p2NameEl = window.parent.document.getElementById('disp-p2-name');
+
+      const getSideList = side => {
+        const container = window.parent.document.getElementById(`slots-${side}`);
+        if (!container) return [];
+        return Array.from(container.querySelectorAll('.slot')).map(slot => {
+          const txt = slot.querySelector('.slot-txt');
+          if (!txt) return null;
+          return { name: txt.innerText.trim(), id: txt.dataset.id || '' };
+        }).filter(entry => entry && entry.name);
+      };
+
+      const p1Color = (p1NameEl ? window.parent.getComputedStyle(p1NameEl).color : rootStyles.getPropertyValue('--p1-color')).trim() || '#ff4444';
+      const p2Color = (p2NameEl ? window.parent.getComputedStyle(p2NameEl).color : rootStyles.getPropertyValue('--p2-color')).trim() || '#4488ff';
+
+      return [
+        { side: 'alb', role: 'Player 1', name: (p1NameEl && p1NameEl.innerText.trim()) || 'User 1', color: p1Color, pokemon: getSideList('alb') },
+        { side: 'biu', role: 'Player 2', name: (p2NameEl && p2NameEl.innerText.trim()) || 'User 2', color: p2Color, pokemon: getSideList('biu') }
+      ];
+    } catch (err) {
+      return null;
+    }
+  }
+
+  async function getImportChoicesFromDb() {
+    const db = getBattleDb();
+    if (!db) return null;
+    const [dashboardSnap, configSnap] = await Promise.all([
+      db.ref('dashboard').once('value'),
+      db.ref('config').once('value')
+    ]);
+    const dashboard = dashboardSnap.val() || {};
+    const config = configSnap.val() || {};
+    return [
+      { side: 'alb', role: 'Player 1', name: config.p1Name || 'User 1', color: config.p1Color || '#ff4444', pokemon: normalizeColumnPokemonList(dashboard.slotsAlb) },
+      { side: 'biu', role: 'Player 2', name: config.p2Name || 'User 2', color: config.p2Color || '#4488ff', pokemon: normalizeColumnPokemonList(dashboard.slotsBiu) }
+    ];
+  }
+
+  async function resolveImportChoices() {
+    const parentChoices = getImportChoicesFromParent();
+    let dbChoices = null;
+    try { dbChoices = await getImportChoicesFromDb(); } catch (err) { dbChoices = null; }
+
+    return ['alb', 'biu'].map(side => {
+      const parentChoice = Array.isArray(parentChoices) ? parentChoices.find(choice => choice.side === side) || {} : {};
+      const dbChoice = Array.isArray(dbChoices) ? dbChoices.find(choice => choice.side === side) || {} : {};
+      return {
+        side,
+        role: side === 'alb' ? 'Player 1' : 'Player 2',
+        name: parentChoice.name || dbChoice.name || (side === 'alb' ? 'User 1' : 'User 2'),
+        color: parentChoice.color || dbChoice.color || (side === 'alb' ? '#ff4444' : '#4488ff'),
+        pokemon: (parentChoice.pokemon && parentChoice.pokemon.length ? parentChoice.pokemon : dbChoice.pokemon) || []
+      };
+    });
+  }
+
+  function renderImportChoices(choices) {
+    const list = document.getElementById('import-modal-list');
+    const total = choices.reduce((sum, choice) => sum + choice.pokemon.length, 0);
+    list.innerHTML = choices.map(choice => {
+      const preview = choice.pokemon.length
+        ? `${choice.pokemon.slice(0, 3).map(mon => escapeHtml(prettifyName(mon.name || mon.id))).join(', ')}${choice.pokemon.length > 3 ? ` +${choice.pokemon.length - 3} more` : ''}`
+        : 'No Pokemon in this column yet.';
+
+      return `
+        <button class="import-choice" style="--side-color:${escapeHtml(choice.color)}" onclick="importColumnPokemon('${choice.side}')" ${choice.pokemon.length ? '' : 'disabled'}>
+          <div class="import-choice-top">
+            <div class="import-choice-role"><span class="import-color-dot"></span>${escapeHtml(choice.role)}</div>
+            <div class="import-count">${choice.pokemon.length} Pokemon</div>
+          </div>
+          <div class="import-choice-name">${escapeHtml(choice.name)}</div>
+          <div class="import-choice-preview">${preview}</div>
+          <div class="import-choice-action">Import Column</div>
+        </button>`;
+    }).join('');
+
+    if (!total) showImportStatus('Both columns are empty right now.', true);
+    else document.getElementById('import-modal-status').style.display = 'none';
+  }
+
+  async function openImportModal() {
+    const modal = document.getElementById('import-modal');
+    const list = document.getElementById('import-modal-list');
+    IMPORT_MODAL_STATE.choices = [];
+    list.innerHTML = '';
+    showImportStatus('Loading column data...', false);
+    modal.style.display = 'flex';
+
+    try {
+      const choices = await resolveImportChoices();
+      IMPORT_MODAL_STATE.choices = choices;
+      renderImportChoices(choices);
+    } catch (err) {
+      list.innerHTML = '';
+      showImportStatus('Import data could not be loaded right now.', true);
+    }
+  }
+
+  function closeImportModal(event) {
+    if (!event || event.target.id === 'import-modal' || event.target.classList.contains('close-modal')) {
+      document.getElementById('import-modal').style.display = 'none';
+    }
+  }
+
+  async function importColumnPokemon(side) {
+    const choice = IMPORT_MODAL_STATE.choices.find(entry => entry.side === side);
+    if (!choice || !choice.pokemon.length) return;
+
+    const list = document.getElementById('import-modal-list');
+    list.style.pointerEvents = 'none';
+    showImportStatus(`Importing ${choice.pokemon.length} Pokemon from ${choice.name}...`, false);
+
+    let imported = 0;
+    const ordered = choice.pokemon.slice();
+    for (let i = ordered.length - 1; i >= 0; i--) {
+      const entry = ordered[i];
+      const added = await addPokemonFromSource(entry.name || entry.id);
+      if (added) imported++;
+    }
+
+    list.style.pointerEvents = '';
+    if (!imported) {
+      showImportStatus('No Pokemon could be imported from this column.', true);
+      return;
+    }
+    closeImportModal();
+  }
+
+  function handleInput(val) {
+    const list = document.getElementById('autocomplete-list');
+    list.innerHTML = '';
+    if (!val) { list.style.display = 'none'; return; }
+    const matches = allPokemonNames.filter(name => name.includes(val.toLowerCase())).slice(0, 10);
+    if (!matches.length) { list.style.display = 'none'; return; }
+
+    matches.forEach(name => {
+      const div = document.createElement('div');
+      div.className = 'auto-item';
+      const regex = new RegExp(`(${val})`, 'gi');
+      div.innerHTML = name.replace(regex, '<span class="auto-match">$1</span>');
+      div.onclick = () => {
+        document.getElementById('poke-search').value = name;
+        list.style.display = 'none';
+        addPokemon();
+      };
+      list.appendChild(div);
+    });
+
+    list.style.display = 'block';
+  }
+
+  document.addEventListener('click', (event) => {
+    if (!event.target.closest('.search-row')) {
       document.getElementById('autocomplete-list').style.display = 'none';
+    }
+  });
+
+  function handleEnter(event) {
+    if (event.key === 'Enter') addPokemon();
+  }
+
+  function clearAllCards() {
+    document.getElementById('battle-grid').innerHTML = '';
+  }
+
+  async function addPokemon() {
+    const input = document.getElementById('poke-search');
+    const rawValue = input.value;
+    if (!rawValue) return;
+    const list = rawValue.split('/');
+    for (const raw of list) await addPokemonFromSource(raw);
+    input.value = '';
+    document.getElementById('autocomplete-list').style.display = 'none';
   }
 
   function renderCard(p, s) {
-      const container = document.getElementById('battle-grid');
-      const div = document.createElement('div');
-      div.className = 'b-card';
-      div.id = `card-${p.name}-${Date.now()}`; 
-      
-      div._pData = p;
-      div._sData = s;
-      div._activeAbility = null; 
-      div._activeItem = null; // New Item Tracker
-
-      updateCardContent(div);
-      container.insertBefore(div, container.firstChild);
+    const container = document.getElementById('battle-grid');
+    const div = document.createElement('div');
+    div.className = 'b-card';
+    div.id = `card-${p.name}-${Date.now()}`;
+    div._pData = p;
+    div._sData = s;
+    div._activeAbility = null;
+    div._activeItem = null;
+    updateCardContent(div);
+    container.insertBefore(div, container.firstChild);
   }
 
-  // --- MAIN RENDER FUNCTION ---
   function updateCardContent(cardEl) {
-      const p = cardEl._pData;
-      const s = cardEl._sData;
-      const activeAbilName = cardEl._activeAbility;
-      const activeItem = cardEl._activeItem;
+    const p = cardEl._pData;
+    const s = cardEl._sData;
+    const activeAbilName = cardEl._activeAbility;
+    const activeItem = cardEl._activeItem;
 
-      // 1. Calculate Weaknesses
-      const types = p.types.map(t => t.type.name);
-      const defenses = calcDefenses(types, activeAbilName);
-      const typeHtml = types.map(t => `<span class="type-badge t-${t}">${t}</span>`).join('');
-      
-      // 2. Prepare Stats
-      const statsObj = {};
-      p.stats.forEach(st => statsObj[st.stat.name] = st.base_stat);
+    const types = p.types.map(t => t.type.name);
+    const defenses = calcDefenses(types, activeAbilName);
+    const typeHtml = types.map(type => `
+      <button class="type-badge t-${type}" onclick="openTypeModal('${type}')" title="Open ${type} type chart">${type}</button>
+    `).join('');
 
-      // 3. Render Abilities
-      const abilHtml = p.abilities.map(a => {
-          const nameClean = a.ability.name; 
-          const nameDisp = nameClean.replace(/-/g,' ');
-          const url = a.ability.url;
-          const isActive = (nameClean === activeAbilName) ? 'active-abil' : '';
-          return `
-            <div class="abil-wrapper" 
-                 onmouseenter="showAbilDesc(this, '${url}')" 
-                 onmouseleave="hideAbilDesc(this)">
-                <div class="abil-tag ${a.is_hidden ? 'abil-hidden' : ''} ${isActive}" 
-                     onclick="toggleAbility('${cardEl.id}', '${nameClean}')">
-                     ${nameDisp} ${a.is_hidden ? '<i style="font-size:1em">(H)</i>' : ''}
-                </div>
-                <div class="desc-popup">Loading...</div>
-            </div>`;
+    const statsObj = {};
+    p.stats.forEach(stat => { statsObj[stat.stat.name] = stat.base_stat; });
+
+    const abilHtml = p.abilities.map(ability => {
+      const nameClean = ability.ability.name;
+      const nameDisp = nameClean
+  .replace(/-/g, ' ')
+  .replace(/\b\w/g, char => char.toUpperCase());
+      const url = ability.ability.url;
+      const isActive = nameClean === activeAbilName ? 'active-abil' : '';
+      return `
+        <div class="abil-wrapper" onmouseenter="showAbilDesc(this, '${url}')" onmouseleave="hideAbilDesc(this)">
+          <div class="abil-tag ${ability.is_hidden ? 'abil-hidden' : ''} ${isActive}" onclick="toggleAbility('${cardEl.id}', '${nameClean}')">
+            ${escapeHtml(nameDisp)} ${ability.is_hidden ? '<i style="font-size:1em">(H)</i>' : ''}
+          </div>
+          <div class="desc-popup">Loading...</div>
+        </div>`;
+    }).join('');
+
+    const itemHtml = ITEM_OPTIONS.map(item => {
+  const isActive = item.id === activeItem ? 'active-item' : '';
+  return `
+    <div class="item-chip ${isActive}" onclick="toggleItem('${cardEl.id}', '${item.id}')">
+      <img class="item-chip-icon" src="${item.icon}" alt="${escapeHtml(item.label)}">
+      <span>${escapeHtml(item.label)}</span>
+    </div>`;
+}).join('');
+
+    let formsHtml = '<div class="form-shell"><div class="micro-label">Single Form</div><div class="neutral-note">No alternate forms available.</div></div>';
+    if (s && Array.isArray(s.varieties) && s.varieties.length > 1) {
+      const chips = s.varieties.map(variety => {
+        const label = (
+  variety.pokemon.name.replace(s.name, '').replace(/-/g, ' ').trim() || 'Base'
+).replace(/\b\w/g, char => char.toUpperCase());
+        const isActive = variety.pokemon.name === p.name ? 'active' : '';
+        return `<div class="form-chip ${isActive}" onclick="switchForm('${cardEl.id}', '${variety.pokemon.url}')">${escapeHtml(label)}</div>`;
       }).join('');
 
-      // 4. Render Items (SPLIT INTO TWO ROWS)
-      const row1Items = [
-          {id: 'band', label: 'Choice Band'},
-          {id: 'specs', label: 'Choice Specs'},
-          {id: 'scarf', label: 'Choice Scarf'}
-      ];
-      
-      const row2Items = [
-          {id: 'orb', label: 'Life Orb'},
-          {id: 'vest', label: 'Assault Vest'}
-      ];
-      
-      // Helper to generate HTML for a list
-      const renderItemRow = (list) => list.map(itm => {
-          const isActive = (itm.id === activeItem) ? 'active-item' : '';
-          return `<div class="item-chip ${isActive}" onclick="toggleItem('${cardEl.id}', '${itm.id}')">${itm.label}</div>`;
-      }).join('');
+      formsHtml = `
+        <div class="form-shell">
+          <div class="micro-label">Forms</div>
+          <div class="form-scroll"><div class="form-row">${chips}</div></div>
+        </div>`;
+    }
 
-      const row1Html = renderItemRow(row1Items);
-      const row2Html = renderItemRow(row2Items);
+    cardEl.innerHTML = `
+      <div class="b-close" onclick="this.parentElement.remove()"><span class="material-icons">close</span></div>
 
-      // 5. Render Forms
-      let formsHtml = "";
-      if(s && s.varieties.length > 1) {
-          formsHtml = `<div class="b-sect-title">Forms</div><div class="form-row">`;
-          s.varieties.forEach(v => {
-              const fName = v.pokemon.name.replace(s.name, '').replace(/-/g, ' ').trim() || "Base";
-              const isActive = (v.pokemon.name === p.name) ? "active" : "";
-              formsHtml += `<div class="form-chip ${isActive}" onclick="switchForm('${cardEl.id}', '${v.pokemon.url}')">${fName}</div>`;
-          });
-          formsHtml += `</div>`;
-      }
+      <div class="b-card-layout">
+  <div class="b-left-column">
+    <div class="b-name">${escapeHtml(prettifyName(p.name))}</div>
+    <div class="profile-shell">
+      <div class="profile-top">
+        <div class="b-sprite-wrap">
+          <img class="b-sprite" src="${p.sprites.other['official-artwork'].front_default || p.sprites.front_default}" alt="${escapeHtml(prettifyName(p.name))}">
+        </div>
 
-      cardEl.innerHTML = `
-          <div class="b-close" onclick="this.parentElement.remove()"><span class="material-icons">close</span></div>
-          <div class="b-header">
-              <img class="b-sprite" src="${p.sprites.other['official-artwork'].front_default || p.sprites.front_default}">
-              <div class="b-info">
-                  <div class="b-name">${p.name.replace(/-/g, ' ')}</div>
-                  <div class="b-types">${typeHtml}</div>
-              </div>
+        <div class="b-profile-side">
+          
+
+          <div class="typing-block">
+            <div class="micro-label">Typing</div>
+            <div class="b-types">${typeHtml}</div>
           </div>
 
           ${formsHtml}
 
-          <div class="b-sect-title">Base Stats</div>
-          
-          <div class="item-row" style="margin-bottom: 4px;">${row1Html}</div>
-          <div class="item-row">${row2Html}</div>
-
-          <div class="stat-grid">
-              ${makeStat('HP', statsObj.hp, true)}
-              ${makeStat('Atk', statsObj.attack, false, 'attack', activeAbilName, activeItem)}
-              ${makeStat('Def', statsObj.defense, false, 'defense', activeAbilName, activeItem)}
-              ${makeStat('SpA', statsObj['special-attack'], false, 'special-attack', activeAbilName, activeItem)}
-              ${makeStat('SpD', statsObj['special-defense'], false, 'special-defense', activeAbilName, activeItem)}
-              ${makeStat('Spe', statsObj.speed, false, 'speed', activeAbilName, activeItem)}
+          <div class="profile-build-row">
+            <button class="mini-action-btn" onclick="openBuildModal('${cardEl.id}')" title="Show common builds">
+              <span class="material-icons">article</span>
+              Builds
+            </button>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <div class="b-sect-title">Abilities (Click to Activate)</div>
-          <div class="abil-row">${abilHtml}</div>
+    <div class="side-stack">
+      <div class="section-card">
+        <div class="section-title">
+          <span>Weaknesses</span>
+          <span class="section-note">Tap a type for the chart</span>
+        </div>
+        <div class="def-grid">${defenses}</div>
+      </div>
+    </div>
+  </div>
 
-          <div class="b-sect-title">Weaknesses</div>
-          <div class="def-grid">${defenses}</div>
-      `;
+  <div class="b-right-column">
+    <div class="section-card">
+      <div class="section-title">
+        <span>Abilities</span>
+        <span class="section-note">Click to activate</span>
+      </div>
+      <div class="abil-row">${abilHtml}</div>
+    </div>
+
+    <div class="section-card stats-section-card">
+      <div class="section-title">
+        <span>Base Stats</span>
+        <span class="section-note">Tap an item to preview boosts</span>
+      </div>
+      <div class="stats-toolbar">${itemHtml}</div>
+      <div class="stats-panel">
+        <div class="stat-grid">
+          ${makeStat('HP', statsObj.hp, true)}
+          ${makeStat('Atk', statsObj.attack, false, 'attack', activeAbilName, activeItem)}
+          ${makeStat('Def', statsObj.defense, false, 'defense', activeAbilName, activeItem)}
+          ${makeStat('SpA', statsObj['special-attack'], false, 'special-attack', activeAbilName, activeItem)}
+          ${makeStat('SpD', statsObj['special-defense'], false, 'special-defense', activeAbilName, activeItem)}
+          ${makeStat('Spe', statsObj.speed, false, 'speed', activeAbilName, activeItem)}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
   }
 
-  // --- INTERACTIVITY ---
-  window.toggleAbility = function(cardId, abilName) {
-      const card = document.getElementById(cardId);
-      if(!card) return;
-      card._activeAbility = (card._activeAbility === abilName) ? null : abilName;
-      updateCardContent(card);
+  window.toggleAbility = function(cardId, abilityName) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    card._activeAbility = card._activeAbility === abilityName ? null : abilityName;
+    updateCardContent(card);
   };
 
   window.toggleItem = function(cardId, itemId) {
-      const card = document.getElementById(cardId);
-      if(!card) return;
-      card._activeItem = (card._activeItem === itemId) ? null : itemId;
-      updateCardContent(card);
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    card._activeItem = card._activeItem === itemId ? null : itemId;
+    updateCardContent(card);
   };
 
   async function switchForm(cardId, url) {
-      const cardEl = document.getElementById(cardId);
-      if(!cardEl) return;
-      cardEl.style.opacity = "0.5"; 
-      try {
-          const res = await fetch(url);
-          const newP = await res.json();
-          cardEl._pData = newP;
-          cardEl._activeAbility = null;
-          // Keep active item on form switch? Yes, usually preferred.
-          updateCardContent(cardEl);
-          cardEl.style.opacity = "1";
-      } catch(e) { console.error(e); }
+    const cardEl = document.getElementById(cardId);
+    if (!cardEl) return;
+    cardEl.style.opacity = '0.55';
+
+    try {
+      const res = await fetch(url);
+      const newPokemon = await res.json();
+      cardEl._pData = newPokemon;
+      cardEl._activeAbility = null;
+      updateCardContent(cardEl);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      cardEl.style.opacity = '1';
+    }
   }
 
-  // --- STAT CALCULATOR (With Ability & Item Mods) ---
-  function makeStat(lbl, val, isHP = false, statName = null, activeAbil = null, activeItem = null) {
-      let displayVal = val;
-      let isBoosted = false;
-      
-      // 1. Ability Mods
-      if(activeAbil && !isHP && ABILITY_MAP[activeAbil] && ABILITY_MAP[activeAbil].statMod) {
-          const mods = ABILITY_MAP[activeAbil].statMod;
-          if(mods[statName]) {
-              displayVal = Math.floor(displayVal * mods[statName]);
-              isBoosted = true;
-          }
-      }
+  function makeStat(label, value, isHP = false, statName = null, activeAbil = null, activeItem = null) {
+    let displayVal = value;
+    let isBoosted = false;
 
-      // 2. Item Mods
-      if(activeItem && !isHP && ITEM_MAP[activeItem] && ITEM_MAP[activeItem].statMod) {
-          const iMods = ITEM_MAP[activeItem].statMod;
-          if(iMods[statName]) {
-              displayVal = Math.floor(displayVal * iMods[statName]);
-              isBoosted = true;
-          }
+    if (activeAbil && !isHP && ABILITY_MAP[activeAbil] && ABILITY_MAP[activeAbil].statMod) {
+      const mods = ABILITY_MAP[activeAbil].statMod;
+      if (mods[statName]) {
+        displayVal = Math.floor(displayVal * mods[statName]);
+        isBoosted = true;
       }
+    }
 
-      let pct = Math.min(100, (displayVal / 180) * 100);
-      
-      let min, max;
-      if (isHP) {
-          min = (2 * val) + 110; 
-          max = (2 * val + 31 + 63) + 110;
-      } else {
-          // Approximate effect on final stats based on Base
-          // If boosted, we show the boosted base roughly
-          min = Math.floor(((2 * displayVal) + 5) * 0.9);
-          max = Math.floor(((2 * displayVal + 31 + 63) + 5) * 1.1);
+    if (activeItem && !isHP && ITEM_MAP[activeItem] && ITEM_MAP[activeItem].statMod) {
+      const itemMods = ITEM_MAP[activeItem].statMod;
+      if (itemMods[statName]) {
+        displayVal = Math.floor(displayVal * itemMods[statName]);
+        isBoosted = true;
       }
+    }
 
-      let color = "#ff4444"; 
-      if(displayVal >= 100) color = "#44ff44"; 
-      else if(displayVal >= 60) color = "#ffcc00"; 
-      
-      if(isBoosted) color = "#00e5ff"; // Cyan for boost
+    const pct = Math.min(100, (displayVal / 180) * 100);
+    let min, max;
+    if (isHP) {
+      min = (2 * value) + 110;
+      max = (2 * value + 31 + 63) + 110;
+    } else {
+      min = Math.floor(((2 * displayVal) + 5) * 0.9);
+      max = Math.floor(((2 * displayVal + 31 + 63) + 5) * 1.1);
+    }
+
+    let color = '#ff5f5f';
+    if (displayVal >= 100) color = '#43ff8f';
+    else if (displayVal >= 60) color = '#ffd24c';
+    if (isBoosted) color = '#00e5ff';
+
+    return `
+      <div class="stat-row">
+        <div class="stat-lbl">${label}</div>
+        <div class="stat-base ${isBoosted ? 'stat-boosted' : ''}">${displayVal}</div>
+        <div class="stat-bar-track">
+          <div class="stat-fill" style="width:${pct}%; background:${color}; color:${color};"></div>
+        </div>
+        <div class="stat-range">
+          <span>${min}</span>
+          <span>${max}</span>
+        </div>
+      </div>`;
+  }
+
+  function calcDefenses(types, activeAbility) {
+    const multipliers = {};
+    Object.keys(typeChart).forEach(type => { multipliers[type] = 1; });
+
+    types.forEach(defType => {
+      const data = typeChart[defType];
+      if (!data) return;
+      Object.keys(data).forEach(attackType => {
+        multipliers[attackType] *= data[attackType];
+      });
+    });
+
+    if (activeAbility && ABILITY_MAP[activeAbility]) {
+      const effect = ABILITY_MAP[activeAbility];
+      if (effect.special === 'wonder_guard') {
+        Object.keys(multipliers).forEach(type => {
+          if (multipliers[type] <= 1) multipliers[type] = 0;
+        });
+      }
+      if (effect.typeMod) {
+        Object.keys(effect.typeMod).forEach(type => {
+          if (multipliers[type] !== undefined) multipliers[type] *= effect.typeMod[type];
+        });
+      }
+    }
+
+    const sorted = Object.keys(multipliers)
+      .filter(type => multipliers[type] !== 1)
+      .sort((a, b) => multipliers[b] - multipliers[a]);
+
+    if (!sorted.length) {
+      return `<span class="neutral-note">Neutral to every attacking type.</span>`;
+    }
+
+    return sorted.map(type => {
+      const value = multipliers[type];
+      let cls = 'mult-05';
+      if (value >= 4) cls = 'mult-4';
+      else if (value >= 2) cls = 'mult-2';
+      else if (value === 0) cls = 'mult-0';
+      else if (value <= 0.25) cls = 'mult-025';
 
       return `
-          <div class="stat-row">
-              <div class="stat-lbl">${lbl}</div>
-              <div class="stat-base ${isBoosted ? 'stat-boosted' : ''}">${displayVal}</div>
-              <div class="stat-bar-track">
-                  <div class="stat-fill" style="width:${pct}%; background:${color}"></div>
-              </div>
-              <div class="stat-range">
-                  <span>${min}</span>
-                  <span>${max}</span>
-              </div>
-          </div>
-      `;
+        <button class="def-tag ${cls}" onclick="openTypeModal('${type}')" title="Open ${type} type chart">
+          <span class="type-badge t-${type}">${type}</span>
+          <span>x${Number.isInteger(value) ? value : value}</span>
+        </button>`;
+    }).join('');
   }
 
-  // --- DEFENSE CALCULATOR ---
-  function calcDefenses(types, activeAbil) {
-      let mults = {};
-      Object.keys(typeChart).forEach(t => mults[t] = 1);
-
-      types.forEach(defType => {
-          const data = typeChart[defType];
-          if(data) {
-              Object.keys(data).forEach(atkType => {
-                  mults[atkType] *= data[atkType];
-              });
-          }
-      });
-
-      if (activeAbil && ABILITY_MAP[activeAbil]) {
-          const effect = ABILITY_MAP[activeAbil];
-          if (effect.special === 'wonder_guard') {
-              Object.keys(mults).forEach(t => {
-                  if (mults[t] <= 1) mults[t] = 0; 
-              });
-          }
-          if (effect.typeMod) {
-              for (const [type, mod] of Object.entries(effect.typeMod)) {
-                  if (mults[type] !== undefined) mults[type] *= mod;
-              }
-          }
-      }
-
-      let html = "";
-      const sorted = Object.keys(mults).filter(k => mults[k] !== 1).sort((a,b) => mults[b] - mults[a]);
-      sorted.forEach(t => {
-          let m = mults[t];
-          let cls = "";
-          if(m >= 4) cls = "mult-4";
-          else if(m >= 2) cls = "mult-2";
-          else if(m === 0) cls = "mult-0";
-          else if(m <= 0.25) cls = "mult-025";
-          else cls = "mult-05";
-          html += `<div class="def-tag ${cls}"><span class="type-badge t-${t}" style="font-size:0.8rem;">${t}</span> x${m}</div>`;
-      });
-      return html || "<span style='color:#666; font-size:1rem;'>Neutral to everything</span>";
-  }
-
-  // Hover logic
   async function showAbilDesc(wrapper, url) {
-      const popup = wrapper.querySelector('.desc-popup');
-      if(!popup) return;
-      popup.style.display = 'block';
-      if(popup.dataset.loaded === "true") return;
-      try {
-          const res = await fetch(url);
-          const data = await res.json();
-          const entry = data.effect_entries.find(e => e.language.name === 'en');
-          popup.innerText = entry ? entry.short_effect : "No description available.";
-          popup.dataset.loaded = "true";
-      } catch(e) { popup.innerText = "Error loading description."; }
+    const popup = wrapper.querySelector('.desc-popup');
+    if (!popup) return;
+    popup.style.display = 'block';
+    if (popup.dataset.loaded === 'true') return;
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      const entry = data.effect_entries.find(item => item.language.name === 'en');
+      popup.innerText = entry ? entry.short_effect : 'No description available.';
+      popup.dataset.loaded = 'true';
+    } catch (err) {
+      popup.innerText = 'Error loading description.';
+    }
   }
+
   function hideAbilDesc(wrapper) {
-      const popup = wrapper.querySelector('.desc-popup');
-      if(popup) popup.style.display = 'none';
+    const popup = wrapper.querySelector('.desc-popup');
+    if (popup) popup.style.display = 'none';
   }
 
+  function openTypeModal(selectedType = null) {
+    const grid = document.getElementById('type-selector');
+    grid.innerHTML = '';
 
+    allTypes.forEach(type => {
+      const btn = document.createElement('button');
+      btn.className = `type-btn t-${type}`;
+      btn.innerText = type;
+      btn.onclick = () => showTypeDetails(type);
+      grid.appendChild(btn);
+    });
 
-  // --- NEW TYPE MODAL LOGIC ---
-  const allTypes = Object.keys(typeChart);
-
-  function openTypeModal() {
-      const grid = document.getElementById('type-selector');
-      grid.innerHTML = "";
-      allTypes.forEach(t => {
-          const btn = document.createElement('button');
-          btn.className = `type-btn t-${t}`;
-          btn.innerText = t;
-          btn.onclick = () => showTypeDetails(t);
-          grid.appendChild(btn);
-      });
-      resetTypeModal();
-      document.getElementById('type-modal').style.display = 'flex';
+    resetTypeModal();
+    document.getElementById('type-modal').style.display = 'flex';
+    if (selectedType) showTypeDetails(selectedType);
   }
 
-  function closeTypeModal(e) {
-      if(!e || e.target.id === 'type-modal' || e.target.classList.contains('close-modal')) {
-          document.getElementById('type-modal').style.display = 'none';
-      }
+  function closeTypeModal(event) {
+    if (!event || event.target.id === 'type-modal' || event.target.classList.contains('close-modal')) {
+      document.getElementById('type-modal').style.display = 'none';
+    }
   }
 
   function resetTypeModal() {
-      document.getElementById('type-selector').style.display = 'grid';
-      document.getElementById('type-detail-view').style.display = 'none';
+    document.getElementById('type-selector').style.display = 'grid';
+    document.getElementById('type-detail-view').style.display = 'none';
   }
 
   function getMultiplierClass(multiplier) {
-      if (multiplier >= 4) return 'mult-4';
-      if (multiplier >= 2) return 'mult-2';
-      if (multiplier === 0) return 'mult-0';
-      if (multiplier <= 0.25) return 'mult-025';
-      return 'mult-05';
+    if (multiplier >= 4) return 'mult-4';
+    if (multiplier >= 2) return 'mult-2';
+    if (multiplier === 0) return 'mult-0';
+    if (multiplier <= 0.25) return 'mult-025';
+    return 'mult-05';
   }
 
   function formatMultiplier(multiplier) {
-      return Number.isInteger(multiplier) ? String(multiplier) : String(multiplier);
+    return Number.isInteger(multiplier) ? String(multiplier) : String(multiplier);
   }
 
   function getAttackMatchups(type) {
-      return allTypes.map(defender => {
-          const multiplier = (typeChart[defender] && typeChart[defender][type] !== undefined) ? typeChart[defender][type] : 1;
-          return { type: defender, multiplier };
-      }).filter(entry => entry.multiplier !== 1);
+    return allTypes.map(defender => {
+      const multiplier = typeChart[defender] && typeChart[defender][type] !== undefined ? typeChart[defender][type] : 1;
+      return { type: defender, multiplier };
+    }).filter(entry => entry.multiplier !== 1);
   }
 
   function getDefenseMatchups(type) {
-      return allTypes.map(attacker => {
-          const multiplier = (typeChart[type] && typeChart[type][attacker] !== undefined) ? typeChart[type][attacker] : 1;
-          return { type: attacker, multiplier };
-      }).filter(entry => entry.multiplier !== 1);
+    return allTypes.map(attacker => {
+      const multiplier = typeChart[type] && typeChart[type][attacker] !== undefined ? typeChart[type][attacker] : 1;
+      return { type: attacker, multiplier };
+    }).filter(entry => entry.multiplier !== 1);
   }
 
   function sortMatchups(list, descending = false) {
-      return list.slice().sort((a, b) => {
-          if (a.multiplier === b.multiplier) return a.type.localeCompare(b.type);
-          return descending ? b.multiplier - a.multiplier : a.multiplier - b.multiplier;
-      });
+    return list.slice().sort((a, b) => {
+      if (a.multiplier === b.multiplier) return a.type.localeCompare(b.type);
+      return descending ? b.multiplier - a.multiplier : a.multiplier - b.multiplier;
+    });
   }
 
   function renderMatchupChips(list, emptyText = 'None') {
-      if (!list.length) return `<span class="empty-matchup">${emptyText}</span>`;
-
-      return list.map(entry => `
-          <button class="type-match-chip ${getMultiplierClass(entry.multiplier)}" onclick="showTypeDetails('${entry.type}')">
-              <span class="type-badge t-${entry.type}">${entry.type}</span>
-              <span class="type-chip-mult">x${formatMultiplier(entry.multiplier)}</span>
-          </button>
-      `).join('');
+    if (!list.length) return `<span class="empty-matchup">${emptyText}</span>`;
+    return list.map(entry => `
+      <button class="type-match-chip ${getMultiplierClass(entry.multiplier)}" onclick="showTypeDetails('${entry.type}')">
+        <span class="type-badge t-${entry.type}">${entry.type}</span>
+        <span class="type-chip-mult">x${formatMultiplier(entry.multiplier)}</span>
+      </button>`).join('');
   }
 
   function showTypeDetails(type) {
-      document.getElementById('type-selector').style.display = 'none';
-      const view = document.getElementById('type-detail-view');
-      const content = document.getElementById('type-data-content');
-      view.style.display = 'block';
+    document.getElementById('type-selector').style.display = 'none';
+    const view = document.getElementById('type-detail-view');
+    const content = document.getElementById('type-data-content');
+    view.style.display = 'block';
 
-      const attackMatchups = getAttackMatchups(type);
-      const defenseMatchups = getDefenseMatchups(type);
+    const attackMatchups = getAttackMatchups(type);
+    const defenseMatchups = getDefenseMatchups(type);
+    const attackSuper = sortMatchups(attackMatchups.filter(entry => entry.multiplier > 1), true);
+    const attackResisted = sortMatchups(attackMatchups.filter(entry => entry.multiplier > 0 && entry.multiplier < 1));
+    const attackImmune = sortMatchups(attackMatchups.filter(entry => entry.multiplier === 0));
+    const defenseImmune = sortMatchups(defenseMatchups.filter(entry => entry.multiplier === 0));
+    const defenseResist = sortMatchups(defenseMatchups.filter(entry => entry.multiplier > 0 && entry.multiplier < 1));
+    const defenseWeak = sortMatchups(defenseMatchups.filter(entry => entry.multiplier > 1), true);
 
-      const atkSuper = sortMatchups(attackMatchups.filter(entry => entry.multiplier > 1), true);
-      const atkResisted = sortMatchups(attackMatchups.filter(entry => entry.multiplier > 0 && entry.multiplier < 1));
-      const atkImmune = sortMatchups(attackMatchups.filter(entry => entry.multiplier === 0));
+    content.innerHTML = `
+      <div class="modal-selected-type">
+        <span class="type-badge t-${type}">${type}</span>
+      </div>
 
-      const defImmune = sortMatchups(defenseMatchups.filter(entry => entry.multiplier === 0));
-      const defResist = sortMatchups(defenseMatchups.filter(entry => entry.multiplier > 0 && entry.multiplier < 1));
-      const defWeak = sortMatchups(defenseMatchups.filter(entry => entry.multiplier > 1), true);
+      <div class="detail-group">
+        <div class="d-head">Attack <span style="color:#888; font-weight:600; font-size:0.9rem">matchups</span></div>
+        <div class="d-sub"><span class="material-icons icon-check">check_circle</span> x2 Super effective</div>
+        <div class="badge-list">${renderMatchupChips(attackSuper)}</div>
+        <div class="d-sub"><span class="material-icons icon-cross">cancel</span> x0.5 Not very effective</div>
+        <div class="badge-list">${renderMatchupChips(attackResisted)}</div>
+        <div class="d-sub"><span class="material-icons icon-cross">block</span> x0 No effect</div>
+        <div class="badge-list">${renderMatchupChips(attackImmune)}</div>
+      </div>
 
-      content.innerHTML = `
-          <div class="modal-selected-type">
-              <span class="type-badge t-${type}">${type}</span>
-          </div>
-          <div class="detail-group">
-              <div class="d-head">Attack <span style="color:#888; font-weight:400; font-size:1rem">matchups</span></div>
-              <div class="d-sub"><span class="material-icons icon-check">check_circle</span> x2 Super effective:</div>
-              <div class="badge-list">${renderMatchupChips(atkSuper)}</div>
-              <div class="d-sub"><span class="material-icons icon-cross">cancel</span> x0.5 Not very effective:</div>
-              <div class="badge-list">${renderMatchupChips(atkResisted)}</div>
-              <div class="d-sub"><span class="material-icons icon-cross">block</span> x0 No effect:</div>
-              <div class="badge-list">${renderMatchupChips(atkImmune)}</div>
-          </div>
-          <div class="detail-divider"></div>
-          <div class="detail-group">
-              <div class="d-head">Defense <span style="color:#888; font-weight:400; font-size:1rem">matchups</span></div>
-              <div class="d-sub"><span class="material-icons icon-check">verified</span> x0 Immune to:</div>
-              <div class="badge-list">${renderMatchupChips(defImmune)}</div>
-              <div class="d-sub"><span class="material-icons icon-check">check_circle</span> x0.5 Resists:</div>
-              <div class="badge-list">${renderMatchupChips(defResist)}</div>
-              <div class="d-sub"><span class="material-icons icon-cross">cancel</span> x2 Weak to:</div>
-              <div class="badge-list">${renderMatchupChips(defWeak)}</div>
-          </div>`;
+      <div class="detail-divider"></div>
+
+      <div class="detail-group">
+        <div class="d-head">Defense <span style="color:#888; font-weight:600; font-size:0.9rem">matchups</span></div>
+        <div class="d-sub"><span class="material-icons icon-check">verified</span> x0 Immune to</div>
+        <div class="badge-list">${renderMatchupChips(defenseImmune)}</div>
+        <div class="d-sub"><span class="material-icons icon-check">check_circle</span> x0.5 Resists</div>
+        <div class="badge-list">${renderMatchupChips(defenseResist)}</div>
+        <div class="d-sub"><span class="material-icons icon-cross">cancel</span> x2 Weak to</div>
+        <div class="badge-list">${renderMatchupChips(defenseWeak)}</div>
+      </div>`;
   }
 
-
-
+  window.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    closeTypeModal();
+    closeImportModal();
+    closeBuildModal();
+  });
 </script>
 </body>
 </html>
