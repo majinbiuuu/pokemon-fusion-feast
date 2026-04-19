@@ -240,6 +240,7 @@
   align-items: stretch;
   min-height: 100%;
   padding-top: 50px;
+  height: 100%;
 }
 
 .profile-shell {
@@ -471,11 +472,12 @@
 
  .stats-section-card {
   width: 100%;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding-top: 8px;
+  padding-top: 10px;
+  margin-top: auto;
 }
 
   .stats-section-card .section-title {
@@ -528,23 +530,23 @@
   }
 
   .stats-panel {
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     background: rgba(0,0,0,0.3);
     border-radius: 12px;
-    padding: 10px 12px;
-    min-height: 0;
+    padding: 12px 14px;
+    min-height: auto;
   }
 
   .stat-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 0;
-  justify-content: flex-start;
-  min-height: 0;
-}
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    min-height: 0;
+  }
 
 
   .stat-row {
@@ -1038,6 +1040,21 @@
     word-break: break-word;
   }
 
+    .build-item-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .build-item-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex: 0 0 auto;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+  }
+
   .moves-line {
     gap: 8px;
   }
@@ -1083,6 +1100,68 @@
     color: #7f7f88;
     font-size: 0.72rem;
     line-height: 1.4;
+  }
+
+    .build-gen-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .build-gen-tab {
+    min-width: 52px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.05);
+    color: #9d9da6;
+    font: inherit;
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: 0.18s;
+  }
+
+  .build-gen-tab:hover:not(:disabled) {
+    color: #fff;
+    border-color: rgba(255,255,255,0.20);
+    transform: translateY(-1px);
+  }
+
+  .build-gen-tab.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(255,255,255,0.04), 0 0 12px var(--accent);
+  }
+
+  .build-gen-tab:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .build-list-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .build-item-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .build-item-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex: 0 0 auto;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
   }
 
   #import-modal .modal-content {
@@ -1405,10 +1484,33 @@
   { id: 'eviolite', label: 'Eviolite', icon: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/eviolite.png' }
 ];
 
-  const BUILD_FETCH_URLS = [
-    'https://pkmn.github.io/smogon/data/sets/gen9.json',
-    'https://pkmn.github.io/smogon/data/sets/gen8.json',
-    'https://pkmn.github.io/smogon/data/sets/gen7.json'
+   const BUILD_FETCH_SOURCES = [
+    { gen: 9, url: 'https://pkmn.github.io/smogon/data/sets/gen9.json' },
+    { gen: 8, url: 'https://pkmn.github.io/smogon/data/sets/gen8.json' },
+    { gen: 7, url: 'https://pkmn.github.io/smogon/data/sets/gen7.json' },
+    { gen: 6, url: 'https://pkmn.github.io/smogon/data/sets/gen6.json' },
+    { gen: 5, url: 'https://pkmn.github.io/smogon/data/sets/gen5.json' },
+    { gen: 4, url: 'https://pkmn.github.io/smogon/data/sets/gen4.json' }
+  ];
+
+  const BUILD_GEN_LABELS = {
+    4: 'DP',
+    5: 'BW',
+    6: 'XY',
+    7: 'SM',
+    8: 'SS',
+    9: 'SV'
+  };
+
+  const BUILD_GEN_ORDER = [9, 8, 7, 6, 5, 4];
+
+  const BUILD_FORMAT_PRIORITY = [
+    'ou', 'ubers', 'uu', 'ru', 'nu', 'pu', 'zu', 'lc', 'nfe',
+    'nationaldex', 'nationaldexubers', 'nationaldexuu', 'nationaldexru',
+    'monotype', 'doublesou',
+    'vgc2025', 'vgc2024', 'vgc2023', 'vgc2022', 'vgc2021', 'vgc2020', 'vgc2019', 'vgc2018', 'vgc2017',
+    'battlestadiumsingles', 'battlestadiumdoubles',
+    'bdspou', 'anythinggoes', '1v1'
   ];
 
   const BUILD_DATA_STATE = {
@@ -1421,7 +1523,8 @@
 
   const BUILD_MODAL_STATE = {
     cardId: null,
-    builds: []
+    builds: [],
+    selectedGen: null
   };
 
   const IMPORT_MODAL_STATE = {
@@ -1452,6 +1555,83 @@
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
   }
+
+    function normalizeItemSpriteKey(value) {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[’']/g, '')
+      .replace(/\./g, '')
+      .replace(/%/g, '')
+      .replace(/:/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  function getBuildItemIconSources(itemName) {
+    const key = normalizeItemSpriteKey(itemName);
+    if (!key) return [];
+
+    const overrideMap = {
+      'heavy-duty-boots': 'heavy-duty-boots',
+      'covert-cloak': 'covert-cloak',
+      'booster-energy': 'booster-energy',
+      'clear-amulet': 'clear-amulet',
+      'loaded-dice': 'loaded-dice',
+      'ability-shield': 'ability-shield',
+      'punching-glove': 'punching-glove',
+      'mirror-herb': 'mirror-herb',
+      'safety-goggles': 'safety-goggles',
+      'rocky-helmet': 'rocky-helmet',
+      'never-melt-ice': 'never-melt-ice',
+      'kings-rock': 'kings-rock'
+    };
+
+    const finalKey = overrideMap[key] || key;
+
+    const pokeApiRaw = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${finalKey}.png`;
+    const pokeApiGit = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${key}.png`;
+    const showdownItem = `https://play.pokemonshowdown.com/sprites/itemicons/${finalKey}.png`;
+    const showdownItemAlt = `https://play.pokemonshowdown.com/sprites/itemicons/${key}.png`;
+
+    return [pokeApiRaw, pokeApiGit, showdownItem, showdownItemAlt]
+      .filter(Boolean)
+      .filter((src, idx, arr) => arr.indexOf(src) === idx);
+  }
+
+  function buildItemImageHtml(itemName) {
+    const sources = getBuildItemIconSources(itemName);
+    if (!sources.length) return '';
+
+    const firstSrc = sources[0];
+    const fallbackAttr = sources.slice(1).join('|').replace(/"/g, '&quot;');
+
+    return `<img
+      class="build-item-icon"
+      src="${firstSrc}"
+      alt="${escapeHtml(itemName)}"
+      data-fallbacks="${fallbackAttr}"
+      onerror="handleBuildItemIconError(this)"
+    >`;
+  }
+
+  window.handleBuildItemIconError = function(img) {
+    if (!img) return;
+    const fallbacks = String(img.dataset.fallbacks || '')
+      .split('|')
+      .filter(Boolean);
+
+    if (!fallbacks.length) {
+      img.style.display = 'none';
+      return;
+    }
+
+    const nextSrc = fallbacks.shift();
+    img.dataset.fallbacks = fallbacks.join('|');
+    img.src = nextSrc;
+  };
 
   function statLabel(key) {
     const map = {
@@ -1497,52 +1677,141 @@
     return value || '';
   }
 
-  function normalizeMoveSlots(rawMoves) {
+    function normalizeMoveSlots(rawMoves) {
     if (!Array.isArray(rawMoves)) return [];
     return rawMoves.map(slot => {
       if (Array.isArray(slot)) return slot.flat().filter(Boolean).map(String);
-      if (typeof slot === 'string' && slot.includes(' / ')) return slot.split(' / ').map(part => part.trim()).filter(Boolean);
+      if (typeof slot === 'string' && slot.includes(' / ')) {
+        return slot.split(' / ').map(part => part.trim()).filter(Boolean);
+      }
       if (slot) return [String(slot)];
       return [];
     }).filter(slot => slot.length > 0);
   }
 
+  function getBuildGenNum(formatKey) {
+    const match = String(formatKey || '').match(/^gen(\d+)_/i);
+    return match ? Number(match[1]) : 0;
+  }
+
+  function getBuildFormatId(formatKey) {
+    return String(formatKey || '')
+      .replace(/^gen\d+_/i, '')
+      .toLowerCase();
+  }
+
+  function formatBuildLabel(formatId) {
+    const labelMap = {
+      ou: 'OU',
+      ubers: 'Ubers',
+      uu: 'UU',
+      ru: 'RU',
+      nu: 'NU',
+      pu: 'PU',
+      zu: 'ZU',
+      lc: 'LC',
+      nfe: 'NFE',
+      nationaldex: 'NatDex',
+      nationaldexubers: 'NatDex Ubers',
+      nationaldexuu: 'NatDex UU',
+      nationaldexru: 'NatDex RU',
+      monotype: 'Monotype',
+      doublesou: 'DOU',
+      bdspou: 'BDSP OU',
+      anythinggoes: 'AG',
+      battlestadiumsingles: 'BSS',
+      battlestadiumdoubles: 'BSD',
+      '1v1': '1v1',
+      vgc2025: 'VGC 2025',
+      vgc2024: 'VGC 2024',
+      vgc2023: 'VGC 2023',
+      vgc2022: 'VGC 2022',
+      vgc2021: 'VGC 2021',
+      vgc2020: 'VGC 2020',
+      vgc2019: 'VGC 2019',
+      vgc2018: 'VGC 2018',
+      vgc2017: 'VGC 2017'
+    };
+
+    if (labelMap[formatId]) return labelMap[formatId];
+
+    return String(formatId || '')
+      .replace(/_/g, ' ')
+      .replace(/([a-z])(\d)/ig, '$1 $2')
+      .replace(/\b\w/g, char => char.toUpperCase());
+  }
+
+  function slugifyBuildItem(itemName) {
+    return String(itemName || '')
+      .toLowerCase()
+      .replace(/[’']/g, '')
+      .replace(/\./g, '')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  function getBuildItemIcon(itemName) {
+    const slug = slugifyBuildItem(itemName);
+    return slug
+      ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${slug}.png`
+      : '';
+  }
+
   function normalizeBuildSet(setName, formatKey, rawSet, exportName, fallbackAbility = '') {
-  const spreadNature = rawSet && Array.isArray(rawSet.spreads) && rawSet.spreads[0] ? rawSet.spreads[0].nature : '';
-  const spreadEvs = rawSet && Array.isArray(rawSet.spreads) && rawSet.spreads[0] ? rawSet.spreads[0].evs : null;
-  const spreadIvs = rawSet && Array.isArray(rawSet.spreads) && rawSet.spreads[0] ? rawSet.spreads[0].ivs : null;
+    const spreadNature = rawSet && Array.isArray(rawSet.spreads) && rawSet.spreads[0]
+      ? rawSet.spreads[0].nature
+      : '';
+    const spreadEvs = rawSet && Array.isArray(rawSet.spreads) && rawSet.spreads[0]
+      ? rawSet.spreads[0].evs
+      : null;
+    const spreadIvs = rawSet && Array.isArray(rawSet.spreads) && rawSet.spreads[0]
+      ? rawSet.spreads[0].ivs
+      : null;
 
-  const moves = normalizeMoveSlots(rawSet ? rawSet.moves : []);
-  const teraType = getFirstValue(rawSet ? (rawSet.teraType || rawSet.teraTypes) : '');
-  const setAbility = getFirstValue(rawSet ? (rawSet.ability || rawSet.abilities) : '') || fallbackAbility || '';
+    const moves = normalizeMoveSlots(rawSet ? rawSet.moves : []);
+    const teraType = getFirstValue(rawSet ? (rawSet.teraType || rawSet.teraTypes) : '');
+    const setAbility = getFirstValue(rawSet ? (rawSet.ability || rawSet.abilities) : '') || fallbackAbility || '';
+    const item = getFirstValue(rawSet ? (rawSet.item || rawSet.items) : '');
+    const genNum = getBuildGenNum(formatKey);
+    const formatId = getBuildFormatId(formatKey);
 
-  return {
-    setName: setName || 'Common Set',
-    formatKey: formatKey || '',
-    formatLabel: formatKey ? formatKey.replace(/_/g, ' ').replace(/gen(\d+)/i, 'Gen $1 ').trim().toUpperCase() : 'SET',
-    exportName: exportName || '',
-    item: getFirstValue(rawSet ? (rawSet.item || rawSet.items) : ''),
-    ability: setAbility,
-    nature: getFirstValue(rawSet ? (rawSet.nature || rawSet.natures) : '') || spreadNature || '',
-    evs: normalizeSpreadObject(rawSet ? (rawSet.evs || spreadEvs) : {}),
-    ivs: normalizeSpreadObject(rawSet ? (rawSet.ivs || spreadIvs) : {}),
-    teraType: teraType || '',
-    level: rawSet && rawSet.level ? rawSet.level : null,
-    moveSlots: moves,
-    hasAlternatives: moves.some(slot => slot.length > 1)
-  };
-}
+    return {
+      setName: setName || 'Common Set',
+      formatKey: formatKey || '',
+      formatId,
+      formatLabel: formatBuildLabel(formatId),
+      genNum,
+      genLabel: BUILD_GEN_LABELS[genNum] || `Gen ${genNum}`,
+      exportName: exportName || '',
+      item,
+      itemIcon: getBuildItemIcon(item),
+      ability: setAbility,
+      nature: getFirstValue(rawSet ? (rawSet.nature || rawSet.natures) : '') || spreadNature || '',
+      evs: normalizeSpreadObject(rawSet ? (rawSet.evs || spreadEvs) : {}),
+      ivs: normalizeSpreadObject(rawSet ? (rawSet.ivs || spreadIvs) : {}),
+      teraType: teraType || '',
+      level: rawSet && rawSet.level ? rawSet.level : null,
+      moveSlots: moves,
+      hasAlternatives: moves.some(slot => slot.length > 1)
+    };
+  }
 
   function buildLookupCandidates(p, s) {
     const raw = [p?.name, p?.species?.name, s?.name];
     const candidates = new Set();
+
     raw.filter(Boolean).forEach(value => {
       candidates.add(toId(value));
       candidates.add(toId(String(value).replace(/-/g, ' ')));
     });
 
     const name = String((p && p.name) || '');
-    if (name.startsWith('urshifu-single')) { candidates.add('urshifusinglestrike'); candidates.add('urshifu'); }
+    if (name.startsWith('urshifu-single')) {
+      candidates.add('urshifusinglestrike');
+      candidates.add('urshifu');
+    }
     if (name.startsWith('urshifu-rapid')) candidates.add('urshifurapidstrike');
     if (name.startsWith('deoxys-')) candidates.add('deoxys');
     if (name.startsWith('toxtricity-')) candidates.add('toxtricity');
@@ -1554,23 +1823,38 @@
 
   function buildBuildIndex(source) {
     const index = {};
+
     Object.keys(source || {}).forEach(key => {
       const ids = new Set([toId(key), toId(key.replace(/-/g, ' '))]);
       if (/^Urshifu(?:$|[^A-Za-z])/i.test(key)) ids.add('urshifu');
+
       ids.forEach(id => {
         if (!index[id]) index[id] = [];
         index[id].push(key);
       });
     });
+
     BUILD_DATA_STATE.buildIndex = index;
     return index;
   }
 
+  function hasScopedParentBuildData(data) {
+    const speciesKeys = Object.keys(data || {});
+    for (const speciesKey of speciesKeys) {
+      const formats = data[speciesKey];
+      if (formats && typeof formats === 'object') {
+        return Object.keys(formats).some(key => /^gen\d+_/i.test(key));
+      }
+    }
+    return false;
+  }
+
   function getParentSmogonData() {
     try {
-      if (window.parent && window.parent !== window && window.parent.smogonData && Object.keys(window.parent.smogonData).length) {
-        return window.parent.smogonData;
-      }
+      if (!window.parent || window.parent === window) return null;
+      const parentData = window.parent.smogonData;
+      if (!parentData || !Object.keys(parentData).length) return null;
+      return hasScopedParentBuildData(parentData) ? parentData : null;
     } catch (err) {}
     return null;
   }
@@ -1587,19 +1871,33 @@
     }
 
     BUILD_DATA_STATE.loadPromise = Promise.allSettled(
-      BUILD_FETCH_URLS.map(url => fetch(url).then(res => {
-        if (!res.ok) throw new Error('Failed build fetch');
-        return res.json();
-      }))
+      BUILD_FETCH_SOURCES.map(source =>
+        fetch(source.url)
+          .then(res => {
+            if (!res.ok) throw new Error('Failed build fetch');
+            return res.json();
+          })
+          .then(data => ({ gen: source.gen, data }))
+      )
     ).then(results => {
       const merged = {};
+
       results.forEach(result => {
         if (result.status !== 'fulfilled' || !result.value) return;
-        Object.keys(result.value).forEach(key => {
-          merged[key] = Object.assign({}, result.value[key], merged[key] || {});
+
+        const { gen, data } = result.value;
+        Object.keys(data || {}).forEach(speciesKey => {
+          const formats = data[speciesKey] || {};
+          if (!merged[speciesKey]) merged[speciesKey] = {};
+
+          Object.keys(formats).forEach(formatKey => {
+            merged[speciesKey][`gen${gen}_${formatKey}`] = formats[formatKey];
+          });
         });
       });
+
       if (!Object.keys(merged).length) throw new Error('No build data returned');
+
       BUILD_DATA_STATE.mergedSets = merged;
       buildBuildIndex(merged);
       return merged;
@@ -1674,41 +1972,72 @@
     return exact.concat(fuzzy);
   }
 
+    function getBuildFormatRank(formatId) {
+    const idx = BUILD_FORMAT_PRIORITY.indexOf(formatId);
+    return idx === -1 ? 999 : idx;
+  }
+
+  function getDefaultBuildGen(builds) {
+    return BUILD_GEN_ORDER.find(gen => builds.some(build => build.genNum === gen)) || null;
+  }
+
+  function renderBuildTabs(builds) {
+    const available = new Set(builds.map(build => build.genNum).filter(Boolean));
+
+    return `
+      <div class="build-gen-tabs">
+        ${BUILD_GEN_ORDER.map(gen => `
+          <button
+            class="build-gen-tab${BUILD_MODAL_STATE.selectedGen === gen ? ' active' : ''}"
+            ${available.has(gen) ? `onclick="setBuildGeneration(${gen})"` : 'disabled'}
+          >
+            ${BUILD_GEN_LABELS[gen]}
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  window.setBuildGeneration = function(genNum) {
+    BUILD_MODAL_STATE.selectedGen = Number(genNum);
+    renderBuildModal(BUILD_MODAL_STATE.builds);
+  };
+
   function extractBuildsForPokemon(p, s) {
-  const source = BUILD_DATA_STATE.mergedSets || {};
-  const resolvedKeys = getResolvedBuildKeys(p, s);
-  const builds = [];
-  const seen = new Set();
+    const source = BUILD_DATA_STATE.mergedSets || {};
+    const resolvedKeys = getResolvedBuildKeys(p, s);
+    const builds = [];
+    const seen = new Set();
 
-  const fallbackAbility = Array.isArray(p && p.abilities) && p.abilities.length === 1
-    ? prettifyName(p.abilities[0].ability.name).replace(/\b\w/g, char => char.toUpperCase())
-    : '';
+    const fallbackAbility = Array.isArray(p && p.abilities) && p.abilities.length === 1
+      ? prettifyName(p.abilities[0].ability.name).replace(/\b\w/g, char => char.toUpperCase())
+      : '';
 
-  resolvedKeys.forEach(key => {
-    const formats = source[key] || {};
-    Object.keys(formats).forEach(formatKey => {
-      const sets = formats[formatKey] || {};
-      Object.keys(sets).forEach(setName => {
-        const signature = `${key}::${formatKey}::${setName}`;
-        if (seen.has(signature)) return;
-        seen.add(signature);
-        builds.push(normalizeBuildSet(setName, formatKey, sets[setName], key, fallbackAbility));
+    resolvedKeys.forEach(key => {
+      const formats = source[key] || {};
+      Object.keys(formats).forEach(formatKey => {
+        const sets = formats[formatKey] || {};
+        Object.keys(sets).forEach(setName => {
+          const signature = `${key}::${formatKey}::${setName}`;
+          if (seen.has(signature)) return;
+          seen.add(signature);
+          builds.push(normalizeBuildSet(setName, formatKey, sets[setName], key, fallbackAbility));
+        });
       });
     });
-  });
 
-    const preferred = ['GEN 9 OU', 'GEN 9 UBERS', 'GEN 9 UU', 'GEN 9 NATDEX', 'GEN 8 OU', 'GEN 8 UBERS', 'GEN 7 OU'];
     builds.sort((a, b) => {
-      const aIndex = preferred.indexOf(a.formatLabel);
-      const bIndex = preferred.indexOf(b.formatLabel);
-      const safeA = aIndex === -1 ? 999 : aIndex;
-      const safeB = bIndex === -1 ? 999 : bIndex;
-      if (safeA !== safeB) return safeA - safeB;
+      if (b.genNum !== a.genNum) return b.genNum - a.genNum;
+
+      const rankDiff = getBuildFormatRank(a.formatId) - getBuildFormatRank(b.formatId);
+      if (rankDiff !== 0) return rankDiff;
+
+      if (a.formatLabel !== b.formatLabel) return a.formatLabel.localeCompare(b.formatLabel);
       if (a.exportName !== b.exportName) return a.exportName.localeCompare(b.exportName);
       return a.setName.localeCompare(b.setName);
     });
 
-    return builds.slice(0, 6);
+    return builds;
   }
 
   function getMoveType(moveName) {
@@ -1723,15 +2052,19 @@
     if (build.ability) lines.push(`Ability: ${build.ability}`);
     if (build.level) lines.push(`Level: ${build.level}`);
     if (build.teraType) lines.push(`Tera Type: ${build.teraType}`);
+
     const evText = formatStatSpread(build.evs);
     const ivText = formatStatSpread(build.ivs);
+
     if (evText) lines.push(`EVs: ${evText}`);
     if (ivText) lines.push(`IVs: ${ivText}`);
     if (build.nature) lines.push(`${build.nature} Nature`);
+
     build.moveSlots.forEach(slot => {
       const move = slot && slot.length ? slot[0] : '';
       if (move) lines.push(`- ${move}`);
     });
+
     return lines.join('\n');
   }
 
@@ -1749,9 +2082,17 @@
   function renderBuildCard(build, index) {
     const evText = formatStatSpread(build.evs) || 'Standard spread';
     const ivText = formatStatSpread(build.ivs);
+
     const teraChip = build.teraType
       ? `<span class="build-meta-chip"><span class="build-meta-label">Tera</span><span class="type-badge t-${toId(build.teraType)}">${escapeHtml(build.teraType)}</span></span>`
       : '';
+
+    const itemValueHtml = build.item
+      ? `<span class="build-item-inline">
+           ${build.itemIcon ? `<img class="build-item-icon" src="${build.itemIcon}" alt="${escapeHtml(build.item)}" onerror="this.style.display='none'">` : ''}
+           <span>${escapeHtml(build.item)}</span>
+         </span>`
+      : '—';
 
     return `
       <div class="build-card">
@@ -1759,26 +2100,52 @@
           <div>
             <div class="build-card-title">${escapeHtml(build.setName)}</div>
             <div class="build-card-meta">
+              <span class="format-chip">${escapeHtml(build.genLabel)}</span>
               <span class="format-chip">${escapeHtml(build.formatLabel)}</span>
               ${teraChip}
             </div>
           </div>
+
           <button class="build-copy-btn" onclick="copyBuildSet(${index}, this)">
             <span class="material-icons">content_copy</span>
             Copy
           </button>
         </div>
+
         <div class="build-lines-grid">
-          <div class="build-line"><span class="build-line-label">Item</span><span class="build-line-value">${escapeHtml(build.item || '—')}</span></div>
-          <div class="build-line"><span class="build-line-label">Ability</span><span class="build-line-value">${escapeHtml(build.ability || '—')}</span></div>
-          <div class="build-line"><span class="build-line-label">Nature</span><span class="build-line-value">${escapeHtml(build.nature ? `${build.nature} Nature` : '—')}</span></div>
-          <div class="build-line"><span class="build-line-label">EVs</span><span class="build-line-value">${escapeHtml(evText)}</span></div>
-          ${ivText ? `<div class="build-line"><span class="build-line-label">IVs</span><span class="build-line-value">${escapeHtml(ivText)}</span></div>` : ''}
+          <div class="build-line">
+            <span class="build-line-label">Item</span>
+            <span class="build-line-value">${itemValueHtml}</span>
+          </div>
+
+          <div class="build-line">
+            <span class="build-line-label">Ability</span>
+            <span class="build-line-value">${escapeHtml(build.ability || '—')}</span>
+          </div>
+
+          <div class="build-line">
+            <span class="build-line-label">Nature</span>
+            <span class="build-line-value">${escapeHtml(build.nature ? `${build.nature} Nature` : '—')}</span>
+          </div>
+
+          <div class="build-line">
+            <span class="build-line-label">EVs</span>
+            <span class="build-line-value">${escapeHtml(evText)}</span>
+          </div>
+
+          ${ivText ? `
+            <div class="build-line">
+              <span class="build-line-label">IVs</span>
+              <span class="build-line-value">${escapeHtml(ivText)}</span>
+            </div>
+          ` : ''}
         </div>
+
         <div class="build-line moves-line">
           <span class="build-line-label">Moves</span>
           <div class="move-stack">${build.moveSlots.map(renderMoveSlot).join('')}</div>
         </div>
+
         ${build.hasAlternatives ? '<div class="move-choice-note">Copy uses the first move whenever a slot shows multiple choices.</div>' : ''}
       </div>`;
   }
@@ -1792,13 +2159,31 @@
 
   function renderBuildModal(builds) {
     const list = document.getElementById('build-modal-list');
+
     if (!builds.length) {
       list.innerHTML = '';
       showBuildStatus('No common builds were found for this Pokemon.', true);
       return;
     }
+
+    if (!BUILD_MODAL_STATE.selectedGen || !builds.some(build => build.genNum === BUILD_MODAL_STATE.selectedGen)) {
+      BUILD_MODAL_STATE.selectedGen = getDefaultBuildGen(builds);
+    }
+
+    const filtered = builds
+      .map((build, globalIndex) => ({ build, globalIndex }))
+      .filter(entry => entry.build.genNum === BUILD_MODAL_STATE.selectedGen);
+
     document.getElementById('build-modal-status').style.display = 'none';
-    list.innerHTML = builds.map((build, index) => renderBuildCard(build, index)).join('');
+
+    list.innerHTML = `
+      ${renderBuildTabs(builds)}
+      <div class="build-list-inner">
+        ${filtered.length
+          ? filtered.map(entry => renderBuildCard(entry.build, entry.globalIndex)).join('')
+          : '<div class="build-empty">No builds found for this generation.</div>'}
+      </div>
+    `;
   }
 
   async function copyBuildSet(index, button) {
@@ -1828,7 +2213,7 @@
     }
   }
 
-  async function openBuildModal(cardId) {
+    async function openBuildModal(cardId) {
     const card = document.getElementById(cardId);
     if (!card) return;
 
@@ -1838,6 +2223,7 @@
 
     BUILD_MODAL_STATE.cardId = cardId;
     BUILD_MODAL_STATE.builds = [];
+    BUILD_MODAL_STATE.selectedGen = null;
 
     title.textContent = `${prettifyName(card._pData.name)} · Common Builds`;
     list.innerHTML = '';
@@ -1848,6 +2234,7 @@
       await Promise.all([ensureBuildData(), ensureMoveTypes()]);
       const builds = extractBuildsForPokemon(card._pData, card._sData);
       BUILD_MODAL_STATE.builds = builds;
+      BUILD_MODAL_STATE.selectedGen = getDefaultBuildGen(builds);
       renderBuildModal(builds);
     } catch (err) {
       list.innerHTML = '';
@@ -2222,24 +2609,25 @@
     </div>
 
     <div class="side-stack">
-      <div class="section-card">
-        <div class="section-title">
-          <span>Weaknesses</span>
-          <span class="section-note">Tap a type for the chart</span>
-        </div>
-        <div class="def-grid">${defenses}</div>
-      </div>
+  <div class="section-card">
+    <div class="section-title">
+      <span>Weaknesses</span>
+      <span class="section-note">Tap a type for the chart</span>
     </div>
+    <div class="def-grid">${defenses}</div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">
+      <span>Abilities</span>
+      <span class="section-note">Click to activate</span>
+    </div>
+    <div class="abil-row">${abilHtml}</div>
+  </div>
+</div>
   </div>
 
   <div class="b-right-column">
-    <div class="section-card">
-      <div class="section-title">
-        <span>Abilities</span>
-        <span class="section-note">Click to activate</span>
-      </div>
-      <div class="abil-row">${abilHtml}</div>
-    </div>
 
     <div class="section-card stats-section-card">
       <div class="section-title">
