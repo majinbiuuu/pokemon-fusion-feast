@@ -555,8 +555,15 @@ window.exportTeamToClipboard = function(colSuffix) {
 window.sideColumnsPopout = null;
 
 window.openSideColumnsPopout = function() {
-    const width = 760;
-    const height = 920;
+   const width = Math.min(
+    window.screen.availWidth - 40,
+    Math.max(980, Math.floor(window.screen.availWidth * 0.78))
+);
+
+const height = Math.min(
+    window.screen.availHeight - 80,
+    Math.max(820, Math.floor(window.screen.availHeight * 0.88))
+);
 
     const left = Math.max(40, window.screenX + Math.round((window.outerWidth - width) / 2));
     const top = Math.max(40, window.screenY + 40);
